@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'Vivia - Tableau de bord')
+@section('title', 'Tableau de bord')
 
 @section('content')
     <div class="grid grid-cols-12 gap-6">
@@ -142,7 +142,6 @@
                     @endforeach
                 </div>
             @else
-                {{-- VUE GESTIONNAIRE : APPEL (Ton code actuel amélioré) --}}
                 <div class="flex justify-between items-center mb-10">
                     <div class="flex items-center gap-2">
                         <span class="w-1.5 h-1.5 rounded-full bg-sv-green"></span>
