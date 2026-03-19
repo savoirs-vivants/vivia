@@ -11,17 +11,22 @@
     @livewireStyles
 </head>
 <body class="font-grotesk bg-[#f3f5f8] text-sv-blue antialiased">
-
+    @if(!Route::is('login') && !Route::is('inscription'))
     @include('components.sidebar')
 
     <div class="pl-[300px] pr-8 pt-4 pb-8 min-h-screen flex flex-col max-w-[1600px] mx-auto">
-
         @include('components.header', ['title' => $title ?? 'Tableau de bord', 'saison' => $saison ?? null])
 
         <main class="mt-4">
             @yield('content')
             {{ $slot ?? '' }}
         </main>
+        @else
+        <main>
+            @yield('content')
+            {{ $slot ?? '' }}
+            </main>
+        @endif
     </div>
 
     @livewireScripts
