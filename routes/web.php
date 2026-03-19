@@ -1,9 +1,11 @@
 <?php
 
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\BackOfficeController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\InscriptionController;
 use App\Http\Controllers\PasswordResetController;
+use App\Livewire\EditUser;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -26,4 +28,9 @@ Route::middleware('auth')->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
     Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
+
+    Route::get('/backoffice', [BackOfficeController::class, 'index'])->name('backoffice');
+    Route::get('/backoffice/user/{user}/edit', EditUser::class)->name('user.edit');
+    Route::delete('backoffice/bulk', [BackofficeController::class, 'destroyMultiple'])->name('backoffice.destroyMultiple');
+    Route::delete('/backoffice/users/{user}', [BackOfficeController::class, 'destroy'])->name('backoffice.destroy');
 });
