@@ -24,4 +24,6 @@ Route::post('/reinitialiser', [PasswordResetController::class, 'reset'])->name('
 Route::middleware('auth')->group(function () {
 
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+
+    Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 });
