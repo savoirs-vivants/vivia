@@ -4,8 +4,13 @@
 @source '../../storage/framework/views/*.php';
 @source '../**/*.blade.php';
 @source '../**/*.js';
+@source '../../node_modules/flowbite/**/*.js'; /* Ajout de Flowbite ici ! */
 
+/* 3. Ton thème sur-mesure (Couleurs et Polices) */
 @theme {
-    --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
-        'Segoe UI Symbol', 'Noto Color Emoji';
+  --color-sv-blue: #222A60;
+  --color-sv-green: #16987C;
+
+  --font-grotesk: "Space Grotesk", sans-serif;
+  --font-mono: "Space Mono", monospace;
 }
