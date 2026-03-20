@@ -21,7 +21,7 @@
 
         <div class="ml-[292px] px-8 pt-6 pb-8 min-h-screen flex flex-col">
             @include('components.header', [
-                'title' => view()->yieldContent('title', 'Tableau de bord'),
+                'title' => view()->yieldContent('title' ?? ''),
                 'saison' => $saison ?? null,
             ])
             <main class="flex-1 flex flex-col">
