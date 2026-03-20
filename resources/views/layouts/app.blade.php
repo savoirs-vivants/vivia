@@ -10,7 +10,7 @@
     <link
         href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300..700&family=Space+Mono:wght@400;700&display=swap"
         rel="stylesheet">
-    @vite(['resources/css/app.css', 'resources/js/app.js', 'resources/js/password-toggle.js'])
+    @vite(['resources/css/app.css', 'resources/js/app.js', 'resources/js/password-toggle.js', 'resources/js/selection.js'])
     @livewireStyles
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 </head>
