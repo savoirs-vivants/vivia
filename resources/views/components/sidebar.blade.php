@@ -1,65 +1,97 @@
-<aside
-    class="w-[260px] fixed top-4 bottom-4 left-4 z-20 bg-sv-blue rounded-3xl flex flex-col overflow-hidden shadow-2xl shadow-sv-blue/20">
+<aside class="w-64 shrink-0 flex flex-col fixed top-0 left-0 h-screen z-20 bg-[#083325] text-white"
+    style="box-shadow: 4px 0 24px rgba(0,0,0,0.18);">
 
-    {{-- Logo Area avec effet Glassmorphism --}}
-    <div
-        class="px-8 h-24 flex items-center bg-white/5 backdrop-blur-sm border-b border-white/10 relative overflow-hidden">
-        <div class="absolute -right-4 -top-4 w-20 h-20 bg-sv-green/30 blur-2xl rounded-full"></div>
-        <span class="font-grotesk font-bold text-white text-3xl tracking-tight relative z-10">Vivia</span>
+    {{-- Logo --}}
+    <div class="px-6 pt-7 pb-6 border-b border-white/5">
+        <span class="font-mono font-black text-3xl text-white tracking-tight">Vivia</span>
+        <div class="mt-1 h-1 w-8 rounded-full bg-[#16A37A]"></div>
     </div>
 
-    {{-- Navigation --}}
-    <nav class="flex-1 px-4 py-8 space-y-2 overflow-y-auto">
-        @php
-            $navItems = [
-                [
-                    'route' => 'dashboard',
-                    'label' => 'Tableau de bord',
-                    'icon' =>
-                        'M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z',
-                ],
-                [
-                    'route' => '#',
-                    'label' => 'Base Adhérents',
-                    'icon' =>
-                        'M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z',
-                ],
-                [
-                    'route' => '#',
-                    'label' => 'Activités & Stages',
-                    'icon' => 'M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z',
-                ],
-                [
-                    'route' => '#',
-                    'label' => 'Statistiques',
-                    'icon' =>
-                        'M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z',
-                ],
-                [
-                    'route' => 'backoffice',
-                    'label' => 'Équipe',
-                    'icon' =>
-                        'M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z',
-                ],
-            ];
-        @endphp
+    {{-- Menu --}}
+    <nav class="flex-1 px-4 pt-6 space-y-1 overflow-y-auto">
+        <p class="px-3 pb-3 text-white/40 text-[10px] font-bold uppercase tracking-widest">Menu</p>
 
-        @foreach ($navItems as $item)
-            @if (!isset($item['roles']) || in_array(Auth::user()->role, $item['roles']))
-                @php $active = Route::is($item['route']); @endphp
-                <a href="#"
-                    class="flex items-center gap-4 px-4 py-3.5 rounded-2xl transition-all duration-300
-                    {{ $active
-                        ? 'bg-sv-green text-white shadow-lg shadow-sv-green/20'
-                        : 'text-white hover:bg-white/10 hover:text-white' }}">
-                    <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="{{ $item['icon'] }}" />
-                    </svg>
-                    <span class="font-grotesk font-semibold text-sm tracking-wide">{{ $item['label'] }}</span>
-                </a>
+        <a href="{{ route('dashboard') }}"
+            class="group flex items-center gap-3.5 px-4 py-3 rounded-xl transition-all duration-200 relative
+            {{ Route::is('dashboard')
+                ? 'bg-[#16A37A]/15 text-white font-bold'
+                : 'text-white/60 hover:bg-white/5 hover:text-white font-medium' }}">
+            @if (Route::is('dashboard'))
+                <span class="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 rounded-r-full bg-[#16A37A]"></span>
             @endif
-        @endforeach
-    </nav>
+            <svg class="w-5 h-5 shrink-0 {{ Route::is('dashboard') ? 'text-[#16A37A]' : 'text-white/40 group-hover:text-white/80' }}"
+                fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M4 5a1 1 0 011-1h4a1 1 0 011 1v5a1 1 0 01-1 1H5a1 1 0 01-1-1V5zm10 0a1 1 0 011-1h4a1 1 0 011 1v2a1 1 0 01-1 1h-4a1 1 0 01-1-1V5zM4 15a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1H5a1 1 0 01-1-1v-4zm10-3a1 1 0 011-1h4a1 1 0 011 1v7a1 1 0 01-1 1h-4a1 1 0 01-1-1v-7z" />
+            </svg>
+            <span class="text-sm">Dashboard</span>
+        </a>
 
-    </div>
+        <a href="#"
+            class="group flex items-center gap-3.5 px-4 py-3 rounded-xl transition-all duration-200 relative
+            {{ Route::is('questionnaire.*')
+                ? 'bg-[#16A37A]/15 text-white font-bold'
+                : 'text-white/60 hover:bg-white/5 hover:text-white font-medium' }}">
+            @if (Route::is('questionnaire.*'))
+                <span class="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 rounded-r-full bg-[#16A37A]"></span>
+            @endif
+            <svg class="w-5 h-5 shrink-0 {{ Route::is('questionnaire.*') ? 'text-[#16A37A]' : 'text-white/40 group-hover:text-white/80' }}"
+                fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+            </svg>
+            <span class="text-sm">Adhérents</span>
+        </a>
+
+        <a href="#"
+            class="group flex items-center gap-3.5 px-4 py-3 rounded-xl transition-all duration-200 relative
+            {{ Route::is('passations')
+                ? 'bg-[#16A37A]/15 text-white font-bold'
+                : 'text-white/60 hover:bg-white/5 hover:text-white font-medium' }}">
+            @if (Route::is('passations'))
+                <span class="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 rounded-r-full bg-[#16A37A]"></span>
+            @endif
+            <svg class="w-5 h-5 shrink-0 {{ Route::is('passations') ? 'text-[#16A37A]' : 'text-white/40 group-hover:text-white/80' }}"
+                fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
+            </svg>
+            <span class="text-sm">Activités & Stages</span>
+        </a>
+
+        <a href="#"
+            class="group flex items-center gap-3.5 px-4 py-3 rounded-xl transition-all duration-200 relative
+            {{ Route::is('statistiques.*')
+                ? 'bg-[#16A37A]/15 text-white font-bold'
+                : 'text-white/60 hover:bg-white/5 hover:text-white font-medium' }}">
+            @if (Route::is('statistiques.*'))
+                <span class="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 rounded-r-full bg-[#16A37A]"></span>
+            @endif
+            <svg class="w-5 h-5 shrink-0 {{ Route::is('statistiques.*') ? 'text-[#16A37A]' : 'text-white/40 group-hover:text-white/80' }}"
+                fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+            </svg>
+            <span class="text-sm">Statistiques</span>
+        </a>
+
+        @if (Auth::user()->role !== 'lecteur')
+            <a href="{{ route('backoffice') }}"
+                class="group flex items-center gap-3.5 px-4 py-3 rounded-xl transition-all duration-200 relative
+                {{ Route::is('backoffice')
+                    ? 'bg-[#16A37A]/15 text-white font-bold'
+                    : 'text-white/60 hover:bg-white/5 hover:text-white font-medium' }}">
+                @if (Route::is('backoffice'))
+                    <span class="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 rounded-r-full bg-[#16A37A]"></span>
+                @endif
+                <svg class="w-5 h-5 shrink-0 {{ Route::is('backoffice') ? 'text-[#16A37A]' : 'text-white/40 group-hover:text-white/80' }}"
+                    fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
+                </svg>
+                <span class="text-sm">Équipe</span>
+            </a>
+        @endif
+
+    </nav>
 </aside>
