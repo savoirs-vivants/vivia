@@ -12,11 +12,11 @@
         rel="stylesheet">
     @vite(['resources/css/app.css', 'resources/js/app.js', 'resources/js/password-toggle.js'])
     @livewireStyles
-        <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 </head>
 
 <body class="font-grotesk bg-[#f3f5f8] antialiased">
-    @if (!Route::is('login') && !Route::is('inscription'))
+    @if (!Route::is('login') && !Route::is('inscription') && !Route::is('password.forgot') && !Route::is('password.reset'))
         @include('components.sidebar')
 
         <div class="ml-[292px] px-8 pt-6 pb-8 min-h-screen flex flex-col">
