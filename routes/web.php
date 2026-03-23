@@ -38,4 +38,5 @@ Route::middleware('auth')->group(function () {
     Route::get('/adherents', [AdherentController::class, 'index'])->name('adherents.index');
     Route::get('/adherents/{adherent}', [AdherentController::class, 'show'])->name('adherents.show');
     Route::post('/adherents/{adherent}/commentaire', [AdherentController::class, 'commentaire'])->name('adherents.commentaire');
+    Route::post('/adherents/{adherent}/valider', [AdherentController::class, 'valider'])->name('adherents.valider');
 });

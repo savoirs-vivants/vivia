@@ -182,13 +182,12 @@ class Adherent extends Model
      */
     public function getMontantTotalAttribute(): float
     {
-        $fraisAdhesion = 10.0;
 
         if ($this->relationLoaded('paiements')) {
-            return (float) $this->paiements->sum(fn($p) => (float) $p->montant) + $fraisAdhesion;
+            return (float) $this->paiements->sum(fn($p) => (float) $p->montant);
         }
 
-        return (float) $this->paiements()->sum('montant') + $fraisAdhesion;
+        return (float) $this->paiements()->sum('montant');
     }
 
     /**

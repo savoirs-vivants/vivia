@@ -123,4 +123,22 @@ class AdherentController extends Controller
             ->route('adherents.show', $adherent)
             ->with('success', 'Note enregistrée avec succès.');
     }
+
+    public function valider(Request $request, Adherent $adherent)
+    {
+        if ($request->filled('commentaire')) {
+            $adherent->update(['commentaire' => $request->commentaire]);
+        }
+
+        // Paiement en plusieurs fois → statut Partiel, sinon Payé
+        $statut = $request->boolean('plusieurs_versements') ? 'Partiel' : Inscription::PAYE;
+
+        $adherent->inscription()->update(['a_paye' => $statut]);
+
+        $tab = $statut === Inscription::PAYE ? 'payes' : 'attente';
+
+        return redirect()
+            ->route('adherents.index', ['tab' => $tab])
+            ->with('success', $adherent->prenom . ' ' . $adherent->nom . ' — adhésion ' . strtolower($statut) . '.');
+    }
 }
