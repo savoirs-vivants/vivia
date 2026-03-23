@@ -27,15 +27,15 @@
             <span class="text-sm">Dashboard</span>
         </a>
 
-        <a href="#"
+        <a href="{{ route('adherents.index') }}"
             class="group flex items-center gap-3.5 px-4 py-3 rounded-xl transition-all duration-200 relative
-            {{ Route::is('questionnaire.*')
+            {{ Route::is('adherents.index')
                 ? 'bg-[#16A37A]/15 text-white font-bold'
                 : 'text-white/60 hover:bg-white/5 hover:text-white font-medium' }}">
-            @if (Route::is('questionnaire.*'))
+            @if (Route::is('adherents.index'))
                 <span class="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 rounded-r-full bg-[#16A37A]"></span>
             @endif
-            <svg class="w-5 h-5 shrink-0 {{ Route::is('questionnaire.*') ? 'text-[#16A37A]' : 'text-white/40 group-hover:text-white/80' }}"
+            <svg class="w-5 h-5 shrink-0 {{ Route::is('adherents.index') ? 'text-[#16A37A]' : 'text-white/40 group-hover:text-white/80' }}"
                 fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                     d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />

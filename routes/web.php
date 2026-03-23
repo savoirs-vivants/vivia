@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\AdherentController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\BackOfficeController;
 use App\Http\Controllers\DashboardController;
@@ -33,4 +34,6 @@ Route::middleware('auth')->group(function () {
     Route::get('/backoffice/user/{user}/edit', EditUser::class)->name('user.edit');
     Route::delete('backoffice/bulk', [BackofficeController::class, 'destroyMultiple'])->name('backoffice.destroyMultiple');
     Route::delete('/backoffice/users/{user}', [BackOfficeController::class, 'destroy'])->name('backoffice.destroy');
+
+    Route::get('/adherents', [AdherentController::class, 'index'])->name('adherents.index');
 });
