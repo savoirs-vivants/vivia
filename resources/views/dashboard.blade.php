@@ -100,7 +100,7 @@
                 </div>
 
                 <div class="space-y-5">
-                    @php $total = $statutPaye + $statutAttente ?: 1; @endphp
+                    @php $total = max(1, $statutPaye + $statutPartiel + $statutAttente); @endphp
                     <div>
                         <div class="flex items-center justify-between text-xs mb-1.5">
                             <div class="flex items-center gap-2 font-bold text-gray-700">
@@ -110,19 +110,31 @@
                         </div>
                         <div class="h-2 w-full bg-gray-100 rounded-full overflow-hidden">
                             <div class="h-full bg-[#16A37A] rounded-full"
-                                style="width: {{ $total > 0 ? ($statutPaye / $total) * 100 : 0 }}%"></div>
+                                style="width: {{ round(($statutPaye / $total) * 100) }}%"></div>
                         </div>
                     </div>
                     <div>
                         <div class="flex items-center justify-between text-xs mb-1.5">
                             <div class="flex items-center gap-2 font-bold text-gray-700">
-                                <span class="w-2.5 h-2.5 rounded-full bg-amber-400 shadow-sm"></span> Attente
+                                <span class="w-2.5 h-2.5 rounded-full bg-amber-400 shadow-sm"></span> Partiel
+                            </div>
+                            <span class="font-black text-gray-900 text-sm">{{ $statutPartiel }}</span>
+                        </div>
+                        <div class="h-2 w-full bg-gray-100 rounded-full overflow-hidden">
+                            <div class="h-full bg-amber-400 rounded-full"
+                                style="width: {{ round(($statutPartiel / $total) * 100) }}%"></div>
+                        </div>
+                    </div>
+                    <div>
+                        <div class="flex items-center justify-between text-xs mb-1.5">
+                            <div class="flex items-center gap-2 font-bold text-gray-700">
+                                <span class="w-2.5 h-2.5 rounded-full bg-rose-400 shadow-sm"></span> En attente
                             </div>
                             <span class="font-black text-gray-900 text-sm">{{ $statutAttente }}</span>
                         </div>
                         <div class="h-2 w-full bg-gray-100 rounded-full overflow-hidden">
-                            <div class="h-full bg-amber-400 rounded-full"
-                                style="width: {{ $total > 0 ? ($statutAttente / $total) * 100 : 0 }}%"></div>
+                            <div class="h-full bg-rose-400 rounded-full"
+                                style="width: {{ round(($statutAttente / $total) * 100) }}%"></div>
                         </div>
                     </div>
                 </div>

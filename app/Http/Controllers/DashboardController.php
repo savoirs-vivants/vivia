@@ -48,6 +48,7 @@ class DashboardController extends Controller
 
         $statutPaye    = $statuts->get('Payé', 0);
         $statutAttente = $statuts->get('En attente', 0);
+        $statutPartiel = $statuts->get('Partiel', 0);
 
         // ── Prochaine séance ─────────────────────────────────────────────
         $prochaineSeance = DB::table('seances')
@@ -113,11 +114,12 @@ $repartitionTypes = DB::table('inscriptions')
             'totalAdherents',
             'newThisMonth',
             'activitesStats',
-            'maxInscrits', 
+            'maxInscrits',
             'totalCotisations',
             'totalEnAttente',
             'statutPaye',
             'statutAttente',
+            'statutPartiel',
             'prochaineSeance',
             'presencesSeance',
             'nbPresencesEnregistrees',
