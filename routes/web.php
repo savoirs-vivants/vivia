@@ -36,4 +36,6 @@ Route::middleware('auth')->group(function () {
     Route::delete('/backoffice/users/{user}', [BackOfficeController::class, 'destroy'])->name('backoffice.destroy');
 
     Route::get('/adherents', [AdherentController::class, 'index'])->name('adherents.index');
+    Route::get('/adherents/{adherent}', [AdherentController::class, 'show'])->name('adherents.show');
+    Route::post('/adherents/{adherent}/commentaire', [AdherentController::class, 'commentaire'])->name('adherents.commentaire');
 });

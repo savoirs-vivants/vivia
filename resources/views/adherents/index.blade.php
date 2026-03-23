@@ -209,7 +209,7 @@
 
                             <td class="px-6 py-4">
                                 <div class="flex items-center justify-end gap-2">
-                                    <a href="#"
+                                    <a href="{{ route('adherents.show', $adherent) }}"
                                         class="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-[#222A60] hover:bg-[#1a2050] text-white rounded-lg text-xs font-bold transition-all duration-150 shadow-sm">
                                         Détails
                                         <svg class="w-3 h-3 opacity-60" fill="none" stroke="currentColor"
