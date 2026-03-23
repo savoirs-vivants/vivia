@@ -29,21 +29,21 @@ class AdherentController extends Controller
             );
 
         $queryPayes = (clone $base)
-            ->whereHas('inscriptions', fn($q) => $q->where('a_paye', Inscription::PAYE))
-            ->when(
-                $filterStatut && $filterStatut !== 'Tous',
-                fn($q) =>
-                $q->whereHas('inscriptions', fn($q) => $q->where('a_paye', $filterStatut))
-            );
+            ->whereHas('inscriptions', fn($q) => $q->where('a_paye', Inscription::PAYE));
 
         $queryAttente = (clone $base)
             ->whereHas('inscriptions', fn($q) => $q->where('a_paye', Inscription::EN_ATTENTE));
 
+        $queryPartiel = (clone $base)
+            ->whereHas('inscriptions', fn($q) => $q->where('a_paye', Inscription::PARTIEL));
+
         $countPayes   = (clone $queryPayes)->count();
         $countAttente = (clone $queryAttente)->count();
+        $countPartiel = (clone $queryPartiel)->count();
 
         $adherentsPayes     = $queryPayes->orderBy('nom')->paginate(25)->withQueryString();
         $adherentsEnAttente = $queryAttente->orderBy('nom')->paginate(25)->withQueryString();
+        $adherentsPartiel   = $queryPartiel->orderBy('nom')->paginate(25)->withQueryString();
 
         return view('adherents.index', compact(
             'tab',
@@ -52,20 +52,16 @@ class AdherentController extends Controller
             'filterStatut',
             'adherentsPayes',
             'adherentsEnAttente',
+            'adherentsPartiel',
             'countPayes',
             'countAttente',
+            'countPartiel',
         ));
     }
 
     public function show(Adherent $adherent)
     {
-        $adherent->load([
-            'tuteur',
-            'inscriptions',
-            'inscription',
-            'activitesActives',
-            'paiements',
-        ]);
+        $adherent->load(['tuteur','inscriptions', 'inscription', 'activitesActives', 'paiements']);
 
         $idActivites = $adherent->activitesActives->pluck('id');
 
@@ -87,11 +83,7 @@ class AdherentController extends Controller
         });
 
         $totalSeances = $seances->count();
-
-        $nbAbsences = $absencesMap->filter(
-            fn($p) => strtolower($p->statut) === 'absent'
-        )->count();
-
+        $nbAbsences   = $absencesMap->filter(fn($p) => strtolower($p->statut) === 'absent')->count();
         $nbPresences  = max(0, $totalSeances - $nbAbsences);
         $tauxPresence = $totalSeances > 0 ? round(($nbPresences / $totalSeances) * 100) : 0;
 
@@ -111,17 +103,10 @@ class AdherentController extends Controller
 
     public function commentaire(Request $request, Adherent $adherent)
     {
-        $request->validate([
-            'commentaire' => ['required', 'string', 'max:2000'],
-        ]);
+        $request->validate(['commentaire' => ['required', 'string', 'max:2000']]);
+        $adherent->update(['commentaire' => $request->commentaire]);
 
-        $adherent->update([
-            'commentaire' => $request->commentaire,
-        ]);
-
-        return redirect()
-            ->route('adherents.show', $adherent)
-            ->with('success', 'Note enregistrée avec succès.');
+        return redirect()->route('adherents.show', $adherent)->with('success', 'Note enregistrée.');
     }
 
     public function valider(Request $request, Adherent $adherent)
@@ -130,15 +115,30 @@ class AdherentController extends Controller
             $adherent->update(['commentaire' => $request->commentaire]);
         }
 
-        // Paiement en plusieurs fois → statut Partiel, sinon Payé
-        $statut = $request->boolean('plusieurs_versements') ? 'Partiel' : Inscription::PAYE;
+        $statut = $request->boolean('plusieurs_versements') ? Inscription::PARTIEL : Inscription::PAYE;
 
-        $adherent->inscription()->update(['a_paye' => $statut]);
+        $totalAttendu = $adherent->load('activitesActives')->activitesActives->sum('tarif') + 10;
 
-        $tab = $statut === Inscription::PAYE ? 'payes' : 'attente';
+        $adherent->inscription()->update([
+            'a_paye'  => $statut,
+            'montant' => $totalAttendu,
+        ]);
+
+        if ($statut === Inscription::PARTIEL && $request->filled('montant_recu')) {
+            $paiement = $adherent->paiements()->latest()->first();
+            if ($paiement) {
+                $paiement->update(['montant' => (float) $request->montant_recu]);
+            }
+        }
+
+        $tab = match ($statut) {
+            Inscription::PAYE    => 'payes',
+            Inscription::PARTIEL => 'partiel',
+            default              => 'attente',
+        };
 
         return redirect()
             ->route('adherents.index', ['tab' => $tab])
-            ->with('success', $adherent->prenom . ' ' . $adherent->nom . ' — adhésion ' . strtolower($statut) . '.');
+            ->with('success', $adherent->prenom . ' ' . $adherent->nom . ' — ' . strtolower($statut) . '.');
     }
 }

@@ -224,8 +224,10 @@
             <p class="text-sm text-gray-400 font-medium">
                 @if ($tab === 'payes')
                     <span class="font-bold text-gray-600">{{ $adherentsPayes->total() }}</span> adhérents ayant payé cette saison
+                @elseif ($tab === 'partiel')
+                    <span class="font-bold text-amber-600">{{ $adherentsPartiel->total() }}</span> adhérents en paiement partiel
                 @else
-                    <span class="font-bold text-amber-600">{{ $adherentsEnAttente->total() }}</span> adhérents en attente de paiement
+                    <span class="font-bold text-rose-500">{{ $adherentsEnAttente->total() }}</span> adhérents en attente de paiement
                 @endif
             </p>
         </div>
@@ -246,10 +248,15 @@
                 Adhérents payés
                 <span class="px-2 py-0.5 rounded-full text-xs font-black {{ $tab === 'payes' ? 'bg-[#16987C]/10 text-[#16987C]' : 'bg-gray-200 text-gray-500' }}">{{ $countPayes }}</span>
             </a>
+            <a href="{{ route('adherents.index', ['tab' => 'partiel'] + request()->except('tab', 'page')) }}"
+               class="flex items-center gap-2 px-5 py-2 rounded-lg text-sm font-bold transition-all duration-200 {{ $tab === 'partiel' ? 'bg-white text-[#222A60] shadow-sm' : 'text-gray-500 hover:text-gray-700' }}">
+                Partiel
+                <span class="px-2 py-0.5 rounded-full text-xs font-black {{ $tab === 'partiel' ? 'bg-amber-100 text-amber-600' : 'bg-gray-200 text-gray-500' }}">{{ $countPartiel }}</span>
+            </a>
             <a href="{{ route('adherents.index', ['tab' => 'attente'] + request()->except('tab', 'page')) }}"
                class="flex items-center gap-2 px-5 py-2 rounded-lg text-sm font-bold transition-all duration-200 {{ $tab === 'attente' ? 'bg-white text-[#222A60] shadow-sm' : 'text-gray-500 hover:text-gray-700' }}">
                 En attente
-                <span class="px-2 py-0.5 rounded-full text-xs font-black {{ $tab === 'attente' ? 'bg-amber-100 text-amber-600' : 'bg-gray-200 text-gray-500' }}">{{ $countAttente }}</span>
+                <span class="px-2 py-0.5 rounded-full text-xs font-black {{ $tab === 'attente' ? 'bg-rose-100 text-rose-500' : 'bg-gray-200 text-gray-500' }}">{{ $countAttente }}</span>
             </a>
         </div>
     </div>
@@ -288,7 +295,7 @@
             </div>
 
             <span class="ml-auto text-xs font-medium text-gray-400 whitespace-nowrap hidden lg:block">
-                Affichage de <span class="font-bold text-gray-600">{{ $tab === 'payes' ? $adherentsPayes->total() : $adherentsEnAttente->total() }}</span> résultats
+                Affichage de <span class="font-bold text-gray-600">{{ match($tab) { 'payes' => $adherentsPayes->total(), 'partiel' => $adherentsPartiel->total(), default => $adherentsEnAttente->total() } }}</span> résultats
             </span>
         </div>
 
@@ -300,9 +307,11 @@
                         <th class="px-6 py-3 text-left text-[10px] font-black text-gray-400 uppercase tracking-widest">Adhérent</th>
                         <th class="px-4 py-3 text-left text-[10px] font-black text-gray-400 uppercase tracking-widest">Âge</th>
                         <th class="px-4 py-3 text-left text-[10px] font-black text-gray-400 uppercase tracking-widest">Activités</th>
-                        @if ($tab === 'attente')
+                        @if ($tab === 'attente' || $tab === 'partiel')
                             <th class="px-4 py-3 text-left text-[10px] font-black text-gray-400 uppercase tracking-widest">Source paiement</th>
-                            <th class="px-4 py-3 text-right text-[10px] font-black text-gray-400 uppercase tracking-widest">Montant</th>
+                            <th class="px-4 py-3 text-right text-[10px] font-black text-gray-400 uppercase tracking-widest">
+                                {{ $tab === 'partiel' ? 'Versé / Total' : 'Montant' }}
+                            </th>
                             <th class="px-4 py-3 text-left text-[10px] font-black text-gray-400 uppercase tracking-widest">Inscrit le</th>
                         @endif
                         <th class="px-6 py-3 text-right text-[10px] font-black text-gray-400 uppercase tracking-widest">Actions</th>
@@ -310,7 +319,11 @@
                 </thead>
                 <tbody class="divide-y divide-gray-50">
 
-                    @php $items = $tab === 'payes' ? $adherentsPayes : $adherentsEnAttente; @endphp
+                    @php $items = match($tab) {
+                        'payes'   => $adherentsPayes,
+                        'partiel' => $adherentsPartiel,
+                        default   => $adherentsEnAttente,
+                    }; @endphp
 
                     @forelse ($items as $adherent)
                         <tr class="group hover:bg-gray-50/70 transition-colors duration-100">
@@ -356,7 +369,7 @@
                                 </div>
                             </td>
 
-                            @if ($tab === 'attente')
+                            @if ($tab === 'attente' || $tab === 'partiel')
                                 <td class="px-4 py-4">
                                     @php
                                         $source = $adherent->paiements->first()?->source;
@@ -376,10 +389,24 @@
                                 </td>
 
                                 <td class="px-4 py-4 text-right">
-                                    @if ($adherent->montant_total > 0)
-                                        <span class="font-black text-sm text-[#0F143A]">{{ number_format($adherent->montant_total, 2, ',', ' ') }} €</span>
+                                    @if ($tab === 'partiel')
+                                        @php
+                                            $verse        = (float) $adherent->paiements->sum('montant');
+                                            // Total de référence stocké dans inscriptions.montant
+                                            $totalAttendu = (float) ($adherent->inscription?->montant ?? $adherent->montant_total);
+                                        @endphp
+                                        <span class="font-black text-sm text-amber-600">
+                                            {{ number_format($verse, 2, ',', ' ') }} €
+                                        </span>
+                                        <span class="text-xs text-gray-400">
+                                            / {{ number_format($totalAttendu, 2, ',', ' ') }} €
+                                        </span>
                                     @else
-                                        <span class="text-xs text-gray-300">—</span>
+                                        @if ($adherent->montant_total > 0)
+                                            <span class="font-black text-sm text-[#0F143A]">{{ number_format($adherent->montant_total, 2, ',', ' ') }} €</span>
+                                        @else
+                                            <span class="text-xs text-gray-300">—</span>
+                                        @endif
                                     @endif
                                 </td>
 
@@ -390,7 +417,7 @@
 
                             <td class="px-6 py-4">
                                 <div class="flex items-center justify-end gap-2">
-                                    @if ($tab === 'attente')
+                                    @if ($tab === 'attente' || $tab === 'partiel')
                                         <button
                                             @click="ouvrirModal({{ json_encode([
                                                 'id'          => $adherent->id,
@@ -432,7 +459,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="{{ $tab === 'attente' ? 7 : 4 }}" class="px-6 py-20 text-center">
+                            <td colspan="{{ in_array($tab, ['attente', 'partiel']) ? 7 : 4 }}" class="px-6 py-20 text-center">
                                 <div class="flex flex-col items-center gap-3">
                                     <div class="w-14 h-14 rounded-2xl bg-gray-100 flex items-center justify-center">
                                         <svg class="w-7 h-7 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
