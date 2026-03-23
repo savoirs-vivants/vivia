@@ -48,4 +48,5 @@ Route::middleware('auth')->group(function () {
     Route::post('/activites/{activite}/seances/{seance}/presences', [ActiviteController::class, 'storePresences'])->name('activites.presences.store');
     Route::get('/activites/{activite}/edit', [ActiviteController::class, 'edit'])->name('activites.edit');
     Route::put('/activites/{activite}', [ActiviteController::class, 'update'])->name('activites.update');
+    Route::post('/activites/{activite}/toggle-archive', [ActiviteController::class, 'toggleArchive'])->name('activites.toggleArchive');
 });

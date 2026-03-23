@@ -17,11 +17,13 @@ class Activite extends Model
         'ville',
         'tarif',
         'horaires',
+        'is_archived',
     ];
 
     protected $casts = [
         'horaires' => 'array',
         'tarif'    => 'decimal:2',
+        'is_archived' => 'boolean',
     ];
 
     /**
@@ -87,6 +89,16 @@ class Activite extends Model
     public function scopeStages($query)
     {
         return $query->where('type', self::TYPE_STAGE);
+    }
+
+    public function scopeActive($query)
+    {
+        return $query->where('is_archived', false);
+    }
+
+    public function scopeArchived($query)
+    {
+        return $query->where('is_archived', true);
     }
 
 
