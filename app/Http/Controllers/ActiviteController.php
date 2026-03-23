@@ -75,4 +75,83 @@ class ActiviteController extends Controller
         return redirect()->route('activites.index')
             ->with('success', 'L\'événement a été créé avec succès.');
     }
+
+    public function show(Activite $activite)
+    {
+        $activite->load(['adherentsActifs', 'gestionnaires']);
+
+        $seances = $activite->seances()
+            ->with('presences') 
+            ->where('date', '<=', now())
+            ->orderByDesc('date')
+            ->get();
+
+        $nbSeancesPassees = $seances->count();
+        $adherents = $activite->adherentsActifs;
+
+        $adherentsStats = $adherents->map(function ($adherent) use ($seances, $nbSeancesPassees) {
+            if ($nbSeancesPassees === 0) {
+                $adherent->taux_presence = 0;
+                return $adherent;
+            }
+
+            $nbAbsences = 0;
+            foreach ($seances as $seance) {
+                if ($seance->presences->where('id_adherent', $adherent->id)->isNotEmpty()) {
+                    $nbAbsences++;
+                }
+            }
+
+            $nbPresences = $nbSeancesPassees - $nbAbsences;
+            $adherent->taux_presence = round(($nbPresences / $nbSeancesPassees) * 100);
+            return $adherent;
+        });
+
+        $tauxMoyen = $adherentsStats->count() > 0 ? round($adherentsStats->avg('taux_presence')) : 0;
+        $actifs = $adherentsStats->where('taux_presence', '>=', 75)->count();
+
+        $graphiqueSeances = $seances->take(8)->reverse()->map(function($seance) use ($adherents) {
+            $nbAbsents = $seance->presences->whereIn('id_adherent', $adherents->pluck('id'))->count();
+            $nbPresents = $adherents->count() - $nbAbsents;
+
+            return [
+                'date' => $seance->date->isoFormat('D MMM'),
+                'presents' => $nbPresents,
+                'total' => $adherents->count(),
+                'pourcentage' => $adherents->count() > 0 ? ($nbPresents / $adherents->count()) * 100 : 0
+            ];
+        });
+
+        return view('activites.show', compact('activite', 'adherentsStats', 'seances', 'tauxMoyen', 'actifs', 'nbSeancesPassees', 'graphiqueSeances'));
+    }
+
+    public function storePresences(Request $request, Activite $activite, $seance)
+    {
+        $presences = $request->input('presences', []);
+        $adherents = $activite->adherentsActifs->pluck('id');
+
+        foreach ($adherents as $idAdherent) {
+            $data = $presences[$idAdherent] ?? [];
+            $estPresent = isset($data['statut']) && $data['statut'] === 'present';
+
+            if ($estPresent) {
+                \App\Models\Presence::where('id_seance', $seance)
+                    ->where('id_adherent', $idAdherent)
+                    ->delete();
+            } else {
+                \App\Models\Presence::updateOrCreate(
+                    [
+                        'id_seance'   => $seance,
+                        'id_adherent' => $idAdherent,
+                    ],
+                    [
+                        'statut' => 'Absent',
+                        'raison' => $data['raison'] ?? null,
+                    ]
+                );
+            }
+        }
+
+        return redirect()->back()->with('success', 'Les présences ont bien été enregistrées.');
+    }
 }
