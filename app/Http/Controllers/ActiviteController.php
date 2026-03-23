@@ -18,7 +18,7 @@ class ActiviteController extends Controller
             ->when($type,   fn($q) => $q->where('type', $type))
             ->when($ville,  fn($q) => $q->where(function ($q2) use ($ville) {
                 $q2->where('ville', 'like', "%{$ville}%")
-                   ->orWhere('adresse', 'like', "%{$ville}%");
+                    ->orWhere('adresse', 'like', "%{$ville}%");
             }))
             ->orderBy('nom')
             ->get();
@@ -92,8 +92,9 @@ class ActiviteController extends Controller
 
     public function show(Activite $activite)
     {
-        $activite->load(['adherentsActifs', 'gestionnaires']);
+        $activite->load(['adherentsActifs', 'gestionnaires', 'adherents']); // Charge tous les adhérents, actifs ou non
 
+        // 1. Uniquement les séances passées
         $seances = $activite->seances()
             ->with('presences')
             ->where('date', '<=', now())
@@ -103,6 +104,7 @@ class ActiviteController extends Controller
         $nbSeancesPassees = $seances->count();
         $adherents = $activite->adherentsActifs;
 
+        // 2. Calcul des statistiques pour les adhérents ACTIFS
         $adherentsStats = $adherents->map(function ($adherent) use ($seances, $nbSeancesPassees) {
             if ($nbSeancesPassees === 0) {
                 $adherent->taux_presence = 0;
@@ -121,10 +123,18 @@ class ActiviteController extends Controller
             return $adherent;
         });
 
+        // 3. Stats globales
         $tauxMoyen = $adherentsStats->count() > 0 ? round($adherentsStats->avg('taux_presence')) : 0;
         $actifs = $adherentsStats->where('taux_presence', '>=', 75)->count();
 
-        $graphiqueSeances = $seances->take(8)->reverse()->map(function($seance) use ($adherents) {
+        // 4. Calcul du taux d'abandon
+        $tousLesAdherents = $activite->adherents;
+        $totalInscritsHistorique = $tousLesAdherents->count();
+        $nbAbandons = $tousLesAdherents->where('pivot.est_un_abandon', true)->count();
+        $tauxAbandon = $totalInscritsHistorique > 0 ? round(($nbAbandons / $totalInscritsHistorique) * 100) : 0;
+
+        // Graphique des présences
+        $graphiqueSeances = $seances->take(8)->reverse()->map(function ($seance) use ($adherents) {
             $nbAbsents = $seance->presences->whereIn('id_adherent', $adherents->pluck('id'))->count();
             $nbPresents = $adherents->count() - $nbAbsents;
 
@@ -136,7 +146,7 @@ class ActiviteController extends Controller
             ];
         });
 
-        return view('activites.show', compact('activite', 'adherentsStats', 'seances', 'tauxMoyen', 'actifs', 'nbSeancesPassees', 'graphiqueSeances'));
+        return view('activites.show', compact('activite', 'adherentsStats', 'seances', 'tauxMoyen', 'actifs', 'nbSeancesPassees', 'graphiqueSeances', 'tauxAbandon', 'nbAbandons'));
     }
 
     public function storePresences(Request $request, Activite $activite, $seance)
@@ -214,5 +224,21 @@ class ActiviteController extends Controller
 
         return redirect()->route('activites.show', $activite)
             ->with('success', 'L\'événement a été modifié avec succès.');
+    }
+
+    public function abandonner(Request $request, Activite $activite, \App\Models\Adherent $adherent)
+    {
+        $request->validate([
+            'motif_sortie' => 'required|string|max:255',
+        ]);
+
+        // Mise à jour de la table pivot
+        $activite->adherents()->updateExistingPivot($adherent->id, [
+            'date_sortie' => now()->toDateString(),
+            'motif_sortie' => $request->motif_sortie,
+            'est_un_abandon' => true,
+        ]);
+
+        return redirect()->back()->with('success', "L'adhérent {$adherent->prenom} a été marqué comme ayant abandonné.");
     }
 }

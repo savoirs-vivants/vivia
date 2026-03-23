@@ -49,4 +49,5 @@ Route::middleware('auth')->group(function () {
     Route::get('/activites/{activite}/edit', [ActiviteController::class, 'edit'])->name('activites.edit');
     Route::put('/activites/{activite}', [ActiviteController::class, 'update'])->name('activites.update');
     Route::post('/activites/{activite}/toggle-archive', [ActiviteController::class, 'toggleArchive'])->name('activites.toggleArchive');
+    Route::post('/activites/{activite}/adherents/{adherent}/abandon', [ActiviteController::class, 'abandonner'])->name('activites.abandonner');
 });

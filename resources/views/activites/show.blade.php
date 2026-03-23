@@ -80,6 +80,7 @@
         </div>
     </div>
 
+    {{-- ONGLET PRÉSENCES --}}
     <div id="content-presences" class="space-y-4">
         <div class="flex items-center justify-between mb-4">
             <h2 class="text-lg font-black text-[#0F143A]">Séances</h2>
@@ -170,9 +171,10 @@
         @endforelse
     </div>
 
+    {{-- ONGLET ADHÉRENTS --}}
     <div id="content-adherents" class="hidden">
         <div class="flex items-center justify-between mb-4">
-            <p class="text-sm font-bold text-gray-500">{{ $adherentsStats->count() }} adhérents inscrits</p>
+            <p class="text-sm font-bold text-gray-500">{{ $adherentsStats->count() }} adhérents actifs</p>
         </div>
 
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
@@ -184,27 +186,52 @@
                         default => 'bg-rose-50 text-rose-500',
                     };
                 @endphp
-                <div
-                    class="p-4 bg-white rounded-2xl border border-gray-100 shadow-[0_2px_8px_rgba(0,0,0,0.02)] flex items-center gap-4">
-                    <div class="w-12 h-12 rounded-xl flex items-center justify-center text-white text-sm font-black shadow-sm"
-                        style="background-color: {{ $adherent->couleur_avatar }}">
-                        {{ $adherent->initiales }}
-                    </div>
-                    <div>
-                        <a href="{{ route('adherents.show', $adherent) }}"
-                            class="font-bold text-sm text-[#0F143A] hover:text-[#16987C] transition-colors">
-                            {{ $adherent->nom_complet }}
-                        </a>
-                        <div
-                            class="mt-1 inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-black {{ $colorClass }}">
-                            {{ $adherent->taux_presence }}% de présence
+
+                {{-- Conteneur de l'adhérent (avec position relative pour l'action d'abandon) --}}
+                <div class="relative p-4 bg-white rounded-2xl border border-gray-100 shadow-[0_2px_8px_rgba(0,0,0,0.02)] flex flex-col gap-3 group">
+                    <div class="flex items-center gap-4">
+                        <div class="w-12 h-12 rounded-xl flex items-center justify-center text-white text-sm font-black shadow-sm"
+                            style="background-color: {{ $adherent->couleur_avatar }}">
+                            {{ $adherent->initiales }}
                         </div>
+                        <div class="flex-1 min-w-0">
+                            <a href="{{ route('adherents.show', $adherent) }}"
+                                class="font-bold text-sm text-[#0F143A] hover:text-[#16987C] transition-colors truncate block">
+                                {{ $adherent->nom_complet }}
+                            </a>
+                            <div class="mt-1 inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-black {{ $colorClass }}">
+                                {{ $adherent->taux_presence }}% de présence
+                            </div>
+                        </div>
+
+                        {{-- Bouton pour afficher le formulaire d'abandon (Croix) --}}
+                        <button type="button" onclick="toggleAbandonForm({{ $adherent->id }})" title="Marquer comme abandon"
+                            class="opacity-0 group-hover:opacity-100 transition-opacity p-2 text-gray-300 hover:text-rose-500 hover:bg-rose-50 rounded-lg">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                        </button>
+                    </div>
+
+                    {{-- Formulaire d'abandon (caché par défaut) --}}
+                    <div id="abandon-form-{{ $adherent->id }}" class="hidden pt-3 border-t border-gray-50 mt-1">
+                        <form action="{{ route('activites.abandonner', ['activite' => $activite->id, 'adherent' => $adherent->id]) }}" method="POST" class="flex flex-col gap-2">
+                            @csrf
+                            <p class="text-[10px] font-bold text-rose-500 uppercase tracking-widest">Confirmer l'abandon</p>
+                            <input type="text" name="motif_sortie" required placeholder="Motif (ex: Blessure, Horaire...)"
+                                   class="text-xs px-3 py-2 border border-gray-200 rounded-lg bg-gray-50 text-gray-600 focus:outline-none focus:border-rose-300 w-full">
+                            <div class="flex justify-end gap-2 mt-1">
+                                <button type="button" onclick="toggleAbandonForm({{ $adherent->id }})" class="text-xs font-bold text-gray-400 hover:text-gray-600">Annuler</button>
+                                <button type="submit" class="px-3 py-1.5 bg-rose-500 hover:bg-rose-600 text-white text-xs font-bold rounded-lg transition-colors">Valider</button>
+                            </div>
+                        </form>
                     </div>
                 </div>
             @endforeach
         </div>
     </div>
 
+    {{-- ONGLET STATISTIQUES --}}
     <div id="content-statistiques" class="hidden space-y-6">
 
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -220,9 +247,9 @@
                 <p class="text-xs text-gray-400 mt-1">présents ≥ 75%</p>
             </div>
             <div class="p-6 bg-white rounded-2xl border border-gray-100 shadow-[0_2px_8px_rgba(0,0,0,0.02)]">
-                <p class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1">Séances réalisées</p>
-                <p class="font-grotesk text-3xl font-black text-[#0F143A]">{{ $nbSeancesPassees }}</p>
-                <p class="text-xs text-gray-400 mt-1">sur {{ $seances->count() }} planifiées</p>
+                <p class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1">Taux d'abandon</p>
+                <p class="font-grotesk text-3xl font-black text-rose-500">{{ $tauxAbandon }}%</p>
+                <p class="text-xs text-gray-400 mt-1">{{ $nbAbandons }} abandon(s) cette saison</p>
             </div>
         </div>
 
@@ -306,6 +333,15 @@
                 label.classList.add('text-rose-500');
             }
         }
+
+        function toggleAbandonForm(adherentId) {
+            const form = document.getElementById('abandon-form-' + adherentId);
+            if (form.classList.contains('hidden')) {
+                form.classList.remove('hidden');
+            } else {
+                form.classList.add('hidden');
+            }
+        }
     </script>
 
-@endsection
+@endsection 
