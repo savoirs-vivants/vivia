@@ -43,5 +43,6 @@ Route::middleware('auth')->group(function () {
 
     Route::get('/activites', [ActiviteController::class, 'index'])->name('activites.index');
     Route::get('/activites/create', [ActiviteController::class, 'create'])->name('activites.create');
+    Route::post('/activites', [ActiviteController::class, 'store'])->name('activites.store');
     Route::get('/activites/{activite}', [ActiviteController::class, 'show'])->name('activites.show');
 });
