@@ -108,4 +108,19 @@ class AdherentController extends Controller
             'saisons',
         ));
     }
+
+    public function commentaire(Request $request, Adherent $adherent)
+    {
+        $request->validate([
+            'commentaire' => ['required', 'string', 'max:2000'],
+        ]);
+
+        $adherent->update([
+            'commentaire' => $request->commentaire,
+        ]);
+
+        return redirect()
+            ->route('adherents.show', $adherent)
+            ->with('success', 'Note enregistrée avec succès.');
+    }
 }
