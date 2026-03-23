@@ -31,15 +31,6 @@
                                 </a>
                             @endif
                         </div>
-
-                        <select name="per_page" onchange="this.form.submit()"
-                            class="bg-white border border-gray-200 rounded-xl px-4 py-2.5 text-sm font-bold text-gray-500 outline-none focus:ring-2 focus:ring-sv-blue/10 cursor-pointer shadow-sm">
-                            @foreach ([5, 10, 25, 50] as $val)
-                                <option value="{{ $val }}"
-                                    {{ isset($perPage) && $perPage == $val ? 'selected' : '' }}>{{ $val }} / page
-                                </option>
-                            @endforeach
-                        </select>
                     </form>
                 </div>
 
