@@ -15,19 +15,22 @@ class Inscription extends Model
         'date_inscription',
         'type_adhesion',
         'a_paye',
+        'montant',
         'renouvellement',
     ];
 
     protected $casts = [
         'date_inscription' => 'date',
         'renouvellement'   => 'boolean',
+        'montant'          => 'float',
     ];
 
     /**
      * Valeurs possibles de a_paye.
      */
-    const PAYE      = 'Payé';
+    const PAYE       = 'Payé';
     const EN_ATTENTE = 'En attente';
+    const PARTIEL    = 'Partiel';
 
     public function adherent(): BelongsTo
     {
@@ -72,6 +75,15 @@ class Inscription extends Model
             self::EN_ATTENTE => 'bg-amber-50 text-amber-600',
             default          => 'bg-gray-100 text-gray-400',
         };
+    }
+    
+    /**
+     * Montant restant à payer = montant attendu - somme des paiements reçus.
+     */
+    public function getResteduAttribute(): float
+    {
+        $verse = (float) $this->adherent?->paiements()->sum('montant');
+        return max(0, (float) $this->montant - $verse);
     }
 
     /**
