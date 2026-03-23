@@ -46,4 +46,6 @@ Route::middleware('auth')->group(function () {
     Route::post('/activites', [ActiviteController::class, 'store'])->name('activites.store');
     Route::get('/activites/{activite}', [ActiviteController::class, 'show'])->name('activites.show');
     Route::post('/activites/{activite}/seances/{seance}/presences', [ActiviteController::class, 'storePresences'])->name('activites.presences.store');
+    Route::get('/activites/{activite}/edit', [ActiviteController::class, 'edit'])->name('activites.edit');
+    Route::put('/activites/{activite}', [ActiviteController::class, 'update'])->name('activites.update');
 });

@@ -50,11 +50,21 @@
                         </div>
                     </div>
 
-                    <div class="text-right">
-                        <p class="text-sm text-gray-400">Responsable</p>
-                        <p class="font-bold text-[#0F143A]">
-                            {{ $activite->gestionnaires->first()?->name ?? 'Non assigné' }}
-                        </p>
+                    <div class="flex flex-col items-end gap-3 shrink-0">
+                        <div class="text-right">
+                            <p class="text-sm text-gray-400">Responsable</p>
+                            <p class="font-bold text-[#0F143A]">
+                                {{ $activite->gestionnaires->first()?->name ?? 'Non assigné' }}
+                            </p>
+                        </div>
+                        <a href="{{ route('activites.edit', $activite) }}"
+                            class="inline-flex items-center gap-2 px-4 py-2 bg-gray-50 hover:bg-gray-100 border border-gray-200 text-gray-600 text-xs font-bold rounded-xl transition-all shadow-sm">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                            </svg>
+                            Modifier l'activité
+                        </a>
                     </div>
                 </div>
             </div>
@@ -72,7 +82,7 @@
 
     <div id="content-presences" class="space-y-4">
         <div class="flex items-center justify-between mb-4">
-            <h2 class="text-lg font-black text-[#0F143A]">Séances prévues</h2>
+            <h2 class="text-lg font-black text-[#0F143A]">Séances</h2>
         </div>
 
         @forelse($seances as $seance)

@@ -154,4 +154,51 @@ class ActiviteController extends Controller
 
         return redirect()->back()->with('success', 'Les présences ont bien été enregistrées.');
     }
+
+    public function edit(Activite $activite)
+    {
+        return view('activites.edit', compact('activite'));
+    }
+
+    public function update(Request $request, Activite $activite)
+    {
+        $validated = $request->validate([
+            'type'     => 'required|in:activite,stage',
+            'nom'      => 'required|string|max:255',
+            'tarif'    => 'nullable|numeric|min:0',
+            'adresse'  => 'nullable|string|max:255',
+            'ville'    => 'nullable|string|max:255',
+            'jours.*'  => 'nullable|string',
+            'debuts.*' => 'nullable|date_format:H:i',
+            'fins.*'   => 'nullable|date_format:H:i',
+        ]);
+
+        $horaires = [];
+        $jours = $request->input('jours', []);
+        $debuts = $request->input('debuts', []);
+        $fins = $request->input('fins', []);
+
+        foreach ($jours as $index => $jour) {
+            if (!empty($jour) && !empty($debuts[$index]) && !empty($fins[$index])) {
+                $plage = $debuts[$index] . '-' . $fins[$index];
+                if (isset($horaires[$jour])) {
+                    $horaires[$jour] .= ', ' . $plage;
+                } else {
+                    $horaires[$jour] = $plage;
+                }
+            }
+        }
+
+        $activite->update([
+            'type'     => $validated['type'],
+            'nom'      => $validated['nom'],
+            'tarif'    => $validated['tarif'],
+            'adresse'  => $validated['adresse'],
+            'ville'    => $validated['ville'],
+            'horaires' => empty($horaires) ? null : $horaires,
+        ]);
+
+        return redirect()->route('activites.show', $activite)
+            ->with('success', 'L\'événement a été modifié avec succès.');
+    }
 }
