@@ -245,7 +245,7 @@
         <div class="flex items-center gap-1 bg-gray-100/80 p-1 rounded-xl w-fit">
             <a href="{{ route('adherents.index', ['tab' => 'payes'] + request()->except('tab', 'page')) }}"
                class="flex items-center gap-2 px-5 py-2 rounded-lg text-sm font-bold transition-all duration-200 {{ $tab === 'payes' ? 'bg-white text-[#222A60] shadow-sm' : 'text-gray-500 hover:text-gray-700' }}">
-                Adhérents payés
+                Adhérents
                 <span class="px-2 py-0.5 rounded-full text-xs font-black {{ $tab === 'payes' ? 'bg-[#16987C]/10 text-[#16987C]' : 'bg-gray-200 text-gray-500' }}">{{ $countPayes }}</span>
             </a>
             <a href="{{ route('adherents.index', ['tab' => 'partiel'] + request()->except('tab', 'page')) }}"
@@ -336,9 +336,6 @@
                                     </div>
                                     <div>
                                         <p class="font-bold text-sm text-[#0F143A]">{{ $adherent->prenom }} {{ $adherent->nom }}</p>
-                                        @if($adherent->mail)
-                                            <p class="text-xs text-gray-400">{{ $adherent->mail }}</p>
-                                        @endif
                                     </div>
                                 </div>
                             </td>

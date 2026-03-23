@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\ActiviteController;
 use App\Http\Controllers\AdherentController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\BackOfficeController;
@@ -39,4 +40,8 @@ Route::middleware('auth')->group(function () {
     Route::get('/adherents/{adherent}', [AdherentController::class, 'show'])->name('adherents.show');
     Route::post('/adherents/{adherent}/commentaire', [AdherentController::class, 'commentaire'])->name('adherents.commentaire');
     Route::post('/adherents/{adherent}/valider', [AdherentController::class, 'valider'])->name('adherents.valider');
+
+    Route::get('/activites', [ActiviteController::class, 'index'])->name('activites.index');
+    Route::get('/activites/create', [ActiviteController::class, 'create'])->name('activites.create');
+    Route::get('/activites/{activite}', [ActiviteController::class, 'show'])->name('activites.show');
 });

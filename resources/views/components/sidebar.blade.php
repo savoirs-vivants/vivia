@@ -43,15 +43,15 @@
             <span class="text-sm">Adhérents</span>
         </a>
 
-        <a href="#"
+        <a href="{{ route('activites.index') }}"
             class="group flex items-center gap-3.5 px-4 py-3 rounded-xl transition-all duration-200 relative
-            {{ Route::is('passations')
+            {{ Route::is('activites.index')
                 ? 'bg-[#16A37A]/15 text-white font-bold'
                 : 'text-white/60 hover:bg-white/5 hover:text-white font-medium' }}">
-            @if (Route::is('passations'))
+            @if (Route::is('activites.index'))
                 <span class="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 rounded-r-full bg-[#16A37A]"></span>
             @endif
-            <svg class="w-5 h-5 shrink-0 {{ Route::is('passations') ? 'text-[#16A37A]' : 'text-white/40 group-hover:text-white/80' }}"
+            <svg class="w-5 h-5 shrink-0 {{ Route::is('activites.index') ? 'text-[#16A37A]' : 'text-white/40 group-hover:text-white/80' }}"
                 fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                     d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
