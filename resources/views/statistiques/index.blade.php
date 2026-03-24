@@ -8,13 +8,19 @@
 
         <div class="max-w-[1600px] mx-auto space-y-6">
 
-            <div class="md:flex-row md:items-center justify-between gap-4 mb-8">
-                <div>
-                    <p class="text-xl text-gray-500 font-medium mt-1">
-                        {{ $totalAdherents }} adhérents · Saison {{ $saisonCourante }}
-                    </p>
-                </div>
+            <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
+            <div>
+                <p class="text-xl text-gray-500 font-medium mt-1">
+                    {{ $totalAdherents }} participants · Saison {{ $saisonCourante }}
+                </p>
             </div>
+
+            <div class="flex flex-wrap items-center gap-3">
+
+                <livewire:export-statistiques :saison="$saisonCourante" />
+
+            </div>
+        </div>
 
             <div class="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-4">
 
