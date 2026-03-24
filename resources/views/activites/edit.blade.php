@@ -17,6 +17,10 @@
             }
         }
     }
+
+    // Récupération des IDs des gestionnaires déjà associés à cette activité
+    // (Suppose que tu as défini la relation 'gestionnaires()' dans ton modèle Activite)
+    $currentGestionnairesIds = $activite->gestionnaires ? $activite->gestionnaires->pluck('id')->toArray() : [];
 @endphp
 
 <div class="max-w-3xl mx-auto">
@@ -78,6 +82,23 @@
                     <div class="md:col-span-2">
                         <label class="block text-xs font-black text-gray-400 uppercase tracking-widest mb-2">Nom de l'événement <span class="text-rose-500">*</span></label>
                         <input type="text" name="nom" value="{{ old('nom', $activite->nom) }}" required class="w-full px-4 py-3 bg-gray-50 border border-gray-100 rounded-xl text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-[#16987C]/30 focus:border-[#16987C]/40">
+                    </div>
+
+                    {{-- NOUVEAU BLOC : Gestionnaires (Pré-rempli) --}}
+                    <div class="md:col-span-2">
+                        <label class="block text-xs font-black text-gray-400 uppercase tracking-widest mb-2">Gestionnaire(s) associé(s)</label>
+                        <select name="gestionnaires[]" multiple
+                            class="w-full px-4 py-3 bg-gray-50 border border-gray-100 rounded-xl text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-[#16987C]/30 focus:border-[#16987C]/40 transition-all min-h-[100px]">
+                            @foreach($users as $user)
+                                <option value="{{ $user->id }}" {{ in_array($user->id, old('gestionnaires', $currentGestionnairesIds)) ? 'selected' : '' }}>
+                                    {{ $user->firstname }} {{ $user->name }} ({{ $user->role ?? 'Utilisateur' }})
+                                </option>
+                            @endforeach
+                        </select>
+                        <p class="text-[10px] text-gray-400 mt-1">Maintenez <kbd class="font-sans bg-gray-100 px-1 py-0.5 rounded">Ctrl</kbd> ou <kbd class="font-sans bg-gray-100 px-1 py-0.5 rounded">Cmd</kbd> pour en sélectionner plusieurs.</p>
+                        @error('gestionnaires')
+                            <span class="text-xs text-rose-500 mt-1">{{ $message }}</span>
+                        @enderror
                     </div>
 
                     <div>

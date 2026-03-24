@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Activite;
+use App\Models\User; // Ne pas oublier d'importer le modèle User
 use Illuminate\Http\Request;
 
 class ActiviteController extends Controller
@@ -44,20 +45,24 @@ class ActiviteController extends Controller
 
     public function create()
     {
-        return view('activites.create');
+        // On récupère tous les utilisateurs pour le menu déroulant
+        $users = User::orderBy('name')->get();
+        return view('activites.create', compact('users'));
     }
 
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'type'     => 'required|in:activite,stage',
-            'nom'      => 'required|string|max:255',
-            'tarif'    => 'nullable|numeric|min:0',
-            'adresse'  => 'nullable|string|max:255',
-            'ville'    => 'nullable|string|max:255',
-            'jours.*'  => 'nullable|string',
-            'debuts.*' => 'nullable|date_format:H:i',
-            'fins.*'   => 'nullable|date_format:H:i',
+            'type'            => 'required|in:activite,stage',
+            'nom'             => 'required|string|max:255',
+            'tarif'           => 'nullable|numeric|min:0',
+            'adresse'         => 'nullable|string|max:255',
+            'ville'           => 'nullable|string|max:255',
+            'jours.*'         => 'nullable|string',
+            'debuts.*'        => 'nullable|date_format:H:i',
+            'fins.*'          => 'nullable|date_format:H:i',
+            'gestionnaires'   => 'nullable|array', // Validation du champ gestionnaires
+            'gestionnaires.*' => 'exists:users,id', // On vérifie que les IDs existent
         ]);
 
         $horaires = [];
@@ -77,7 +82,8 @@ class ActiviteController extends Controller
             }
         }
 
-        Activite::create([
+        // 1. Création de l'activité
+        $activite = Activite::create([
             'type'     => $validated['type'],
             'nom'      => $validated['nom'],
             'tarif'    => $validated['tarif'],
@@ -85,6 +91,11 @@ class ActiviteController extends Controller
             'ville'    => $validated['ville'],
             'horaires' => empty($horaires) ? null : $horaires,
         ]);
+
+        // 2. Association des gestionnaires (table pivot)
+        if (!empty($validated['gestionnaires'])) {
+            $activite->gestionnaires()->sync($validated['gestionnaires']);
+        }
 
         return redirect()->route('activites.index')
             ->with('success', 'L\'événement a été créé avec succès.');
@@ -138,9 +149,7 @@ class ActiviteController extends Controller
             $idsCourants = $tousLesAdherents->where('pivot.saison', $saisonCourante)->pluck('id')->unique();
 
             $nbCourants = $idsCourants->count();
-
             $nbReconduits = $idsCourants->intersect($idsPrecedents)->count();
-
             $tauxReconduction = $nbCourants > 0 ? round(($nbReconduits / $nbCourants) * 100) : 0;
         }
 
@@ -171,7 +180,7 @@ class ActiviteController extends Controller
             'nbAbandons',
             'tauxReconduction',
             'nbReconduits',
-            'saisonPrecedente' 
+            'saisonPrecedente'
         ));
     }
 
@@ -207,20 +216,26 @@ class ActiviteController extends Controller
 
     public function edit(Activite $activite)
     {
-        return view('activites.edit', compact('activite'));
+        // On récupère les utilisateurs pour l'édition et on pré-charge les gestionnaires actuels
+        $users = User::orderBy('name')->get();
+        $activite->load('gestionnaires');
+
+        return view('activites.edit', compact('activite', 'users'));
     }
 
     public function update(Request $request, Activite $activite)
     {
         $validated = $request->validate([
-            'type'     => 'required|in:activite,stage',
-            'nom'      => 'required|string|max:255',
-            'tarif'    => 'nullable|numeric|min:0',
-            'adresse'  => 'nullable|string|max:255',
-            'ville'    => 'nullable|string|max:255',
-            'jours.*'  => 'nullable|string',
-            'debuts.*' => 'nullable|date_format:H:i',
-            'fins.*'   => 'nullable|date_format:H:i',
+            'type'            => 'required|in:activite,stage',
+            'nom'             => 'required|string|max:255',
+            'tarif'           => 'nullable|numeric|min:0',
+            'adresse'         => 'nullable|string|max:255',
+            'ville'           => 'nullable|string|max:255',
+            'jours.*'         => 'nullable|string',
+            'debuts.*'        => 'nullable|date_format:H:i',
+            'fins.*'          => 'nullable|date_format:H:i',
+            'gestionnaires'   => 'nullable|array',
+            'gestionnaires.*' => 'exists:users,id',
         ]);
 
         $horaires = [];
@@ -239,6 +254,7 @@ class ActiviteController extends Controller
             }
         }
 
+        // 1. Mise à jour de l'activité
         $activite->update([
             'type'     => $validated['type'],
             'nom'      => $validated['nom'],
@@ -247,6 +263,10 @@ class ActiviteController extends Controller
             'ville'    => $validated['ville'],
             'horaires' => empty($horaires) ? null : $horaires,
         ]);
+
+        // 2. Synchronisation de la table pivot des gestionnaires
+        // 'sync' va supprimer ceux qui ont été décochés et ajouter les nouveaux
+        $activite->gestionnaires()->sync($validated['gestionnaires'] ?? []);
 
         return redirect()->route('activites.show', $activite)
             ->with('success', 'L\'événement a été modifié avec succès.');
@@ -258,7 +278,6 @@ class ActiviteController extends Controller
             'motif_sortie' => 'required|string|max:255',
         ]);
 
-        // Mise à jour de la table pivot
         $activite->adherents()->updateExistingPivot($adherent->id, [
             'date_sortie' => now()->toDateString(),
             'motif_sortie' => $request->motif_sortie,
