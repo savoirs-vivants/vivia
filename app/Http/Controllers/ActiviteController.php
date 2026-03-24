@@ -92,9 +92,8 @@ class ActiviteController extends Controller
 
     public function show(Activite $activite)
     {
-        $activite->load(['adherentsActifs', 'gestionnaires', 'adherents']); // Charge tous les adhérents, actifs ou non
+        $activite->load(['adherentsActifs', 'gestionnaires', 'adherents']);
 
-        // 1. Uniquement les séances passées
         $seances = $activite->seances()
             ->with('presences')
             ->where('date', '<=', now())
@@ -102,10 +101,9 @@ class ActiviteController extends Controller
             ->get();
 
         $nbSeancesPassees = $seances->count();
-        $adherents = $activite->adherentsActifs;
+        $adherentsActifs = $activite->adherentsActifs;
 
-        // 2. Calcul des statistiques pour les adhérents ACTIFS
-        $adherentsStats = $adherents->map(function ($adherent) use ($seances, $nbSeancesPassees) {
+        $adherentsStats = $adherentsActifs->map(function ($adherent) use ($seances, $nbSeancesPassees) {
             if ($nbSeancesPassees === 0) {
                 $adherent->taux_presence = 0;
                 return $adherent;
@@ -123,30 +121,58 @@ class ActiviteController extends Controller
             return $adherent;
         });
 
-        // 3. Stats globales
         $tauxMoyen = $adherentsStats->count() > 0 ? round($adherentsStats->avg('taux_presence')) : 0;
-        $actifs = $adherentsStats->where('taux_presence', '>=', 75)->count();
 
-        // 4. Calcul du taux d'abandon
         $tousLesAdherents = $activite->adherents;
+        $saisons = $tousLesAdherents->pluck('pivot.saison')->unique()->sortDesc()->values();
+
+        $tauxReconduction = 0;
+        $nbReconduits = 0;
+        $saisonPrecedente = null;
+
+        if ($saisons->count() >= 2) {
+            $saisonCourante = $saisons[0];
+            $saisonPrecedente = $saisons[1];
+
+            $idsPrecedents = $tousLesAdherents->where('pivot.saison', $saisonPrecedente)->pluck('id')->unique();
+            $idsCourants = $tousLesAdherents->where('pivot.saison', $saisonCourante)->pluck('id')->unique();
+
+            $nbCourants = $idsCourants->count();
+
+            $nbReconduits = $idsCourants->intersect($idsPrecedents)->count();
+
+            $tauxReconduction = $nbCourants > 0 ? round(($nbReconduits / $nbCourants) * 100) : 0;
+        }
+
         $totalInscritsHistorique = $tousLesAdherents->count();
         $nbAbandons = $tousLesAdherents->where('pivot.est_un_abandon', true)->count();
         $tauxAbandon = $totalInscritsHistorique > 0 ? round(($nbAbandons / $totalInscritsHistorique) * 100) : 0;
 
-        // Graphique des présences
-        $graphiqueSeances = $seances->take(8)->reverse()->map(function ($seance) use ($adherents) {
-            $nbAbsents = $seance->presences->whereIn('id_adherent', $adherents->pluck('id'))->count();
-            $nbPresents = $adherents->count() - $nbAbsents;
+        $graphiqueSeances = $seances->take(8)->reverse()->map(function ($seance) use ($adherentsActifs) {
+            $nbAbsents = $seance->presences->whereIn('id_adherent', $adherentsActifs->pluck('id'))->count();
+            $nbPresents = $adherentsActifs->count() - $nbAbsents;
 
             return [
                 'date' => $seance->date->isoFormat('D MMM'),
                 'presents' => $nbPresents,
-                'total' => $adherents->count(),
-                'pourcentage' => $adherents->count() > 0 ? ($nbPresents / $adherents->count()) * 100 : 0
+                'total' => $adherentsActifs->count(),
+                'pourcentage' => $adherentsActifs->count() > 0 ? ($nbPresents / $adherentsActifs->count()) * 100 : 0
             ];
         });
 
-        return view('activites.show', compact('activite', 'adherentsStats', 'seances', 'tauxMoyen', 'actifs', 'nbSeancesPassees', 'graphiqueSeances', 'tauxAbandon', 'nbAbandons'));
+        return view('activites.show', compact(
+            'activite',
+            'adherentsStats',
+            'seances',
+            'tauxMoyen',
+            'nbSeancesPassees',
+            'graphiqueSeances',
+            'tauxAbandon',
+            'nbAbandons',
+            'tauxReconduction',
+            'nbReconduits',
+            'saisonPrecedente' 
+        ));
     }
 
     public function storePresences(Request $request, Activite $activite, $seance)

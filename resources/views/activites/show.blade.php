@@ -80,7 +80,6 @@
         </div>
     </div>
 
-    {{-- ONGLET PRÉSENCES --}}
     <div id="content-presences" class="space-y-4">
         <div class="flex items-center justify-between mb-4">
             <h2 class="text-lg font-black text-[#0F143A]">Séances</h2>
@@ -171,7 +170,6 @@
         @endforelse
     </div>
 
-    {{-- ONGLET ADHÉRENTS --}}
     <div id="content-adherents" class="hidden">
         <div class="flex items-center justify-between mb-4">
             <p class="text-sm font-bold text-gray-500">{{ $adherentsStats->count() }} adhérents actifs</p>
@@ -187,7 +185,6 @@
                     };
                 @endphp
 
-                {{-- Conteneur de l'adhérent (avec position relative pour l'action d'abandon) --}}
                 <div class="relative p-4 bg-white rounded-2xl border border-gray-100 shadow-[0_2px_8px_rgba(0,0,0,0.02)] flex flex-col gap-3 group">
                     <div class="flex items-center gap-4">
                         <div class="w-12 h-12 rounded-xl flex items-center justify-center text-white text-sm font-black shadow-sm"
@@ -204,25 +201,31 @@
                             </div>
                         </div>
 
-                        {{-- Bouton pour afficher le formulaire d'abandon (Croix) --}}
-                        <button type="button" onclick="toggleAbandonForm({{ $adherent->id }})" title="Marquer comme abandon"
+                        <button type="button" onclick="toggleAbandonForm({{ $adherent->id }})"
+                            title="Marquer comme abandon"
                             class="opacity-0 group-hover:opacity-100 transition-opacity p-2 text-gray-300 hover:text-rose-500 hover:bg-rose-50 rounded-lg">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M6 18L18 6M6 6l12 12" />
                             </svg>
                         </button>
                     </div>
 
-                    {{-- Formulaire d'abandon (caché par défaut) --}}
                     <div id="abandon-form-{{ $adherent->id }}" class="hidden pt-3 border-t border-gray-50 mt-1">
-                        <form action="{{ route('activites.abandonner', ['activite' => $activite->id, 'adherent' => $adherent->id]) }}" method="POST" class="flex flex-col gap-2">
+                        <form
+                            action="{{ route('activites.abandonner', ['activite' => $activite->id, 'adherent' => $adherent->id]) }}"
+                            method="POST" class="flex flex-col gap-2">
                             @csrf
-                            <p class="text-[10px] font-bold text-rose-500 uppercase tracking-widest">Confirmer l'abandon</p>
-                            <input type="text" name="motif_sortie" required placeholder="Motif (ex: Blessure, Horaire...)"
-                                   class="text-xs px-3 py-2 border border-gray-200 rounded-lg bg-gray-50 text-gray-600 focus:outline-none focus:border-rose-300 w-full">
+                            <p class="text-[10px] font-bold text-rose-500 uppercase tracking-widest">Confirmer l'abandon
+                            </p>
+                            <input type="text" name="motif_sortie" required
+                                placeholder="Motif (ex: Blessure, Horaire...)"
+                                class="text-xs px-3 py-2 border border-gray-200 rounded-lg bg-gray-50 text-gray-600 focus:outline-none focus:border-rose-300 w-full">
                             <div class="flex justify-end gap-2 mt-1">
-                                <button type="button" onclick="toggleAbandonForm({{ $adherent->id }})" class="text-xs font-bold text-gray-400 hover:text-gray-600">Annuler</button>
-                                <button type="submit" class="px-3 py-1.5 bg-rose-500 hover:bg-rose-600 text-white text-xs font-bold rounded-lg transition-colors">Valider</button>
+                                <button type="button" onclick="toggleAbandonForm({{ $adherent->id }})"
+                                    class="text-xs font-bold text-gray-400 hover:text-gray-600">Annuler</button>
+                                <button type="submit"
+                                    class="px-3 py-1.5 bg-rose-500 hover:bg-rose-600 text-white text-xs font-bold rounded-lg transition-colors">Valider</button>
                             </div>
                         </form>
                     </div>
@@ -231,25 +234,31 @@
         </div>
     </div>
 
-    {{-- ONGLET STATISTIQUES --}}
     <div id="content-statistiques" class="hidden space-y-6">
 
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+
             <div class="p-6 bg-white rounded-2xl border border-gray-100 shadow-[0_2px_8px_rgba(0,0,0,0.02)]">
                 <p class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1">Taux de présence moyen</p>
                 <p class="font-grotesk text-3xl font-black text-[#0F143A]">{{ $tauxMoyen }}%</p>
                 <p class="text-xs text-gray-400 mt-1">sur les {{ $nbSeancesPassees }} dernières séances</p>
             </div>
+
             <div class="p-6 bg-white rounded-2xl border border-gray-100 shadow-[0_2px_8px_rgba(0,0,0,0.02)]">
-                <p class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1">Adhérents actifs</p>
-                <p class="font-grotesk text-3xl font-black text-[#0F143A]">{{ $actifs }} <span
-                        class="text-lg text-gray-300">/ {{ $adherentsStats->count() }}</span></p>
-                <p class="text-xs text-gray-400 mt-1">présents ≥ 75%</p>
+                <p class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1">Taux de reconduction</p>
+                <p class="font-grotesk text-3xl font-black text-[#0F143A]">{{ $tauxReconduction }}%</p>
+                <p class="text-xs text-gray-400 mt-1">
+                    @if ($saisonPrecedente)
+                        {{ $nbReconduits }} réinscrit(s) depuis {{ $saisonPrecedente }}
+                    @else
+                        1ère saison (pas d'historique)
+                    @endif
+                </p>
             </div>
             <div class="p-6 bg-white rounded-2xl border border-gray-100 shadow-[0_2px_8px_rgba(0,0,0,0.02)]">
                 <p class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1">Taux d'abandon</p>
                 <p class="font-grotesk text-3xl font-black text-rose-500">{{ $tauxAbandon }}%</p>
-                <p class="text-xs text-gray-400 mt-1">{{ $nbAbandons }} abandon(s) cette saison</p>
+                <p class="text-xs text-gray-400 mt-1">{{ $nbAbandons }} abandon(s) cumulé(s)</p>
             </div>
         </div>
 
@@ -344,4 +353,4 @@
         }
     </script>
 
-@endsection 
+@endsection
