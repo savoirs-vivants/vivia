@@ -54,4 +54,5 @@ Route::middleware('auth')->group(function () {
 
     Route::get('/profil/modifier', [App\Http\Controllers\ProfileController::class, 'edit'])->name('profile.edit');
     Route::put('/profil', [App\Http\Controllers\ProfileController::class, 'update'])->name('profile.update');
+    Route::get('/profil/logs-synchronisation', [App\Http\Controllers\ProfileController::class, 'logs'])->name('profile.logs');
 });

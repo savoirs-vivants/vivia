@@ -41,4 +41,10 @@ class ProfileController extends Controller
         return redirect()->route('profile.edit')->with('success', 'Votre profil a été mis à jour avec succès.');
     }
 
+    public function logs()
+    {
+        $logs = [];
+        return view('profile.logs', compact('logs'));
+    }
+
 }
