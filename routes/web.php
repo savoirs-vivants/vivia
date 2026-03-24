@@ -8,6 +8,7 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\InscriptionController;
 use App\Http\Controllers\PasswordResetController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\StatistiqueController;
 use App\Livewire\EditUser;
 use Illuminate\Support\Facades\Route;
 
@@ -55,4 +56,6 @@ Route::middleware('auth')->group(function () {
     Route::get('/profil/modifier', [App\Http\Controllers\ProfileController::class, 'edit'])->name('profile.edit');
     Route::put('/profil', [App\Http\Controllers\ProfileController::class, 'update'])->name('profile.update');
     Route::get('/profil/logs-synchronisation', [App\Http\Controllers\ProfileController::class, 'logs'])->name('profile.logs');
+
+    Route::get('/statistiques', [StatistiqueController::class, 'index'])->name('statistiques.index');
 });
