@@ -7,6 +7,7 @@ use App\Http\Controllers\BackOfficeController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\InscriptionController;
 use App\Http\Controllers\PasswordResetController;
+use App\Http\Controllers\ProfileController;
 use App\Livewire\EditUser;
 use Illuminate\Support\Facades\Route;
 
@@ -50,4 +51,7 @@ Route::middleware('auth')->group(function () {
     Route::put('/activites/{activite}', [ActiviteController::class, 'update'])->name('activites.update');
     Route::post('/activites/{activite}/toggle-archive', [ActiviteController::class, 'toggleArchive'])->name('activites.toggleArchive');
     Route::post('/activites/{activite}/adherents/{adherent}/abandon', [ActiviteController::class, 'abandonner'])->name('activites.abandonner');
+
+    Route::get('/profil/modifier', [App\Http\Controllers\ProfileController::class, 'edit'])->name('profile.edit');
+    Route::put('/profil', [App\Http\Controllers\ProfileController::class, 'update'])->name('profile.update');
 });
