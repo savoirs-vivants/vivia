@@ -1,4 +1,4 @@
-@import 'tailwindcss';
+@import "tailwindcss";
 
 @source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
 @source '../../storage/framework/views/*.php';
@@ -8,9 +8,62 @@
 
 /* 3. Ton thème sur-mesure (Couleurs et Polices) */
 @theme {
-  --color-sv-blue: #222A60;
-  --color-sv-green: #16987C;
+    --color-sv-blue: #222a60;
+    --color-sv-green: #16987c;
 
-  --font-grotesk: "Space Grotesk", sans-serif;
-  --font-mono: "Space Mono", monospace;
+    --font-grotesk: "Space Grotesk", sans-serif;
+    --font-mono: "Space Mono", monospace;
+}
+
+.animate-fade-in {
+    animation: fadeUp 0.22s ease;
+}
+
+@keyframes fadeUp {
+    from {
+        opacity: 0;
+        transform: translateY(6px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.tab-hero-btn {
+    color: rgba(255, 255, 255, 0.4);
+    background: transparent;
+    transition: all 0.2s;
+    font-size: 0.875rem;
+    font-weight: 700;
+}
+
+.tab-hero-btn:hover:not(.active) {
+    background: rgba(255, 255, 255, 0.07);
+    color: rgba(255, 255, 255, 0.7);
+}
+
+.tab-hero-btn.active {
+    background: #f0f2f5;
+    color: #0f143a;
+}
+
+.section-label {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 11px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: #9ca3af;
+    margin-bottom: 18px;
+}
+
+.section-label::after {
+    content: "";
+    flex: 1;
+    height: 1px;
+    background: #e5e7eb;
 }
