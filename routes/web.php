@@ -66,4 +66,6 @@ Route::middleware('auth')->group(function () {
 
     Route::get('/statistiques', [StatistiqueController::class, 'index'])->name('statistiques.index');
 
+    Route::get('/users/search', [App\Http\Controllers\ActiviteController::class, 'searchUsers'])->name('users.search');
+
 });

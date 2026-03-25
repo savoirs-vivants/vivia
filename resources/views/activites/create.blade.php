@@ -87,28 +87,69 @@
                             @enderror
                         </div>
 
-                        {{-- NOUVEAU BLOC : Gestionnaires --}}
-                        <div class="md:col-span-2">
-                            <label class="block text-xs font-black text-gray-400 uppercase tracking-widest mb-2">Gestionnaire(s) associé(s)</label>
-                            <select name="gestionnaires[]" multiple
-                                class="w-full px-4 py-3 bg-gray-50 border border-gray-100 rounded-xl text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-[#16987C]/30 focus:border-[#16987C]/40 transition-all min-h-[100px]">
-                                @foreach($users as $user)
-                                    <option value="{{ $user->id }}" {{ in_array($user->id, old('gestionnaires', [])) ? 'selected' : '' }}>
-                                        {{ $user->firstname }} {{ $user->name }} ({{ $user->role ?? 'Utilisateur' }})
-                                    </option>
-                                @endforeach
-                            </select>
-                            <p class="text-[10px] text-gray-400 mt-1">Maintenez <kbd class="font-sans bg-gray-100 px-1 py-0.5 rounded">Ctrl</kbd> ou <kbd class="font-sans bg-gray-100 px-1 py-0.5 rounded">Cmd</kbd> pour en sélectionner plusieurs.</p>
+                        <div class="md:col-span-2" x-data="gestionnaireSearch()">
+                            <label class="block text-xs font-black text-gray-400 uppercase tracking-widest mb-2">
+                                Gestionnaire(s) associé(s) <span class="text-rose-500">*</span>
+                            </label>
+
+                            <div class="flex flex-wrap gap-2 mb-3">
+                                <template x-for="user in selectedUsers" :key="user.id">
+                                    <div
+                                        class="inline-flex items-center gap-2 px-3 py-1.5 bg-[#222A60] text-white text-xs font-bold rounded-lg shadow-sm">
+                                        <span x-text="user.firstname + ' ' + user.name"></span>
+                                        <button type="button" @click="removeUser(user.id)"
+                                            class="hover:text-rose-400 transition-colors">
+                                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor"
+                                                viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3"
+                                                    d="M6 18L18 6M6 6l12 12" />
+                                            </svg>
+                                        </button>
+                                        <input type="hidden" name="gestionnaires[]" :value="user.id">
+                                    </div>
+                                </template>
+                            </div>
+
+                            <div class="relative">
+                                <div
+                                    class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-400">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
+                                            d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                                    </svg>
+                                </div>
+                                <input type="text" x-model="query" @input.debounce.300ms="search()"
+                                    @keydown.escape="results = []" placeholder="Taper un nom ou un prénom..."
+                                    class="w-full pl-11 pr-4 py-3 bg-gray-50 border border-gray-100 rounded-xl text-sm text-gray-700 placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-[#16987C]/30 focus:border-[#16987C]/40 transition-all">
+
+                                <div x-show="results.length > 0" @click.away="results = []"
+                                    class="absolute z-50 w-full mt-2 bg-white border border-gray-100 rounded-xl shadow-xl overflow-hidden">
+                                    <template x-for="user in results" :key="user.id">
+                                        <button type="button" @click="addUser(user)"
+                                            class="w-full px-4 py-3 text-left text-sm hover:bg-gray-50 flex items-center justify-between group transition-colors">
+                                            <div>
+                                                <span class="font-bold text-[#0F143A]"
+                                                    x-text="user.firstname + ' ' + user.name"></span>
+                                            </div>
+                                            <svg class="w-4 h-4 text-gray-300 group-hover:text-[#16987C] transition-colors"
+                                                fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3"
+                                                    d="M12 4v16m8-8H4" />
+                                            </svg>
+                                        </button>
+                                    </template>
+                                </div>
+                            </div>
+
                             @error('gestionnaires')
                                 <span class="text-xs text-rose-500 mt-1">{{ $message }}</span>
                             @enderror
                         </div>
-
                         <div>
                             <label class="block text-xs font-black text-gray-400 uppercase tracking-widest mb-2">Tarif
                                 (€)</label>
-                            <input type="number" step="0.01" min="0" name="tarif" value="{{ old('tarif') }}"
-                                placeholder="Ex: 150.00"
+                            <input type="number" step="0.01" min="0" name="tarif"
+                                value="{{ old('tarif') }}" placeholder="Ex: 150.00"
                                 class="w-full px-4 py-3 bg-gray-50 border border-gray-100 rounded-xl text-sm text-gray-700 placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-[#16987C]/30 focus:border-[#16987C]/40 transition-all">
                             @error('tarif')
                                 <span class="text-xs text-rose-500 mt-1">{{ $message }}</span>
@@ -118,7 +159,8 @@
                         <div>
                             <label
                                 class="block text-xs font-black text-gray-400 uppercase tracking-widest mb-2">Ville</label>
-                            <input type="text" name="ville" value="{{ old('ville') }}" placeholder="Ex: Strasbourg"
+                            <input type="text" name="ville" value="{{ old('ville') }}"
+                                placeholder="Ex: Strasbourg"
                                 class="w-full px-4 py-3 bg-gray-50 border border-gray-100 rounded-xl text-sm text-gray-700 placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-[#16987C]/30 focus:border-[#16987C]/40 transition-all">
                             @error('ville')
                                 <span class="text-xs text-rose-500 mt-1">{{ $message }}</span>
@@ -252,6 +294,36 @@
                 container.appendChild(newRow);
             });
         });
+
+        function gestionnaireSearch() {
+            return {
+                query: '',
+                results: [],
+                selectedUsers: @json(old('gestionnaires_full', [])),
+
+                search() {
+                    if (this.query.length < 2) {
+                        this.results = [];
+                        return;
+                    }
+                    fetch(`{{ route('users.search') }}?q=${this.query}`)
+                        .then(response => response.json())
+                        .then(data => {
+                            this.results = data.filter(user => !this.selectedUsers.find(s => s.id === user.id));
+                        });
+                },
+
+                addUser(user) {
+                    this.selectedUsers.push(user);
+                    this.query = '';
+                    this.results = [];
+                },
+
+                removeUser(id) {
+                    this.selectedUsers = this.selectedUsers.filter(user => user.id !== id);
+                }
+            }
+        }
     </script>
 
 @endsection

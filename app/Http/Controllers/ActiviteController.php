@@ -3,7 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Activite;
-use App\Models\User; // Ne pas oublier d'importer le modèle User
+use App\Models\User; 
 use Illuminate\Http\Request;
 
 class ActiviteController extends Controller
@@ -45,7 +45,6 @@ class ActiviteController extends Controller
 
     public function create()
     {
-        // On récupère tous les utilisateurs pour le menu déroulant
         $users = User::orderBy('name')->get();
         return view('activites.create', compact('users'));
     }
@@ -61,8 +60,8 @@ class ActiviteController extends Controller
             'jours.*'         => 'nullable|string',
             'debuts.*'        => 'nullable|date_format:H:i',
             'fins.*'          => 'nullable|date_format:H:i',
-            'gestionnaires'   => 'nullable|array', // Validation du champ gestionnaires
-            'gestionnaires.*' => 'exists:users,id', // On vérifie que les IDs existent
+            'gestionnaires'   => 'nullable|array',
+            'gestionnaires.*' => 'exists:users,id',
         ]);
 
         $horaires = [];
@@ -82,7 +81,6 @@ class ActiviteController extends Controller
             }
         }
 
-        // 1. Création de l'activité
         $activite = Activite::create([
             'type'     => $validated['type'],
             'nom'      => $validated['nom'],
@@ -92,7 +90,6 @@ class ActiviteController extends Controller
             'horaires' => empty($horaires) ? null : $horaires,
         ]);
 
-        // 2. Association des gestionnaires (table pivot)
         if (!empty($validated['gestionnaires'])) {
             $activite->gestionnaires()->sync($validated['gestionnaires']);
         }
@@ -216,7 +213,6 @@ class ActiviteController extends Controller
 
     public function edit(Activite $activite)
     {
-        // On récupère les utilisateurs pour l'édition et on pré-charge les gestionnaires actuels
         $users = User::orderBy('name')->get();
         $activite->load('gestionnaires');
 
@@ -254,7 +250,6 @@ class ActiviteController extends Controller
             }
         }
 
-        // 1. Mise à jour de l'activité
         $activite->update([
             'type'     => $validated['type'],
             'nom'      => $validated['nom'],
@@ -264,8 +259,6 @@ class ActiviteController extends Controller
             'horaires' => empty($horaires) ? null : $horaires,
         ]);
 
-        // 2. Synchronisation de la table pivot des gestionnaires
-        // 'sync' va supprimer ceux qui ont été décochés et ajouter les nouveaux
         $activite->gestionnaires()->sync($validated['gestionnaires'] ?? []);
 
         return redirect()->route('activites.show', $activite)
@@ -286,4 +279,18 @@ class ActiviteController extends Controller
 
         return redirect()->back()->with('success', "L'adhérent {$adherent->prenom} a été marqué comme ayant abandonné.");
     }
+
+    public function searchUsers(Request $request)
+{
+    $search = $request->get('q');
+
+    $users = User::where(function($q) use ($search) {
+            $q->where('name', 'like', "%{$search}%")
+              ->orWhere('firstname', 'like', "%{$search}%");
+        })
+        ->limit(10)
+        ->get(['id', 'firstname', 'name']);
+
+    return response()->json($users);
+}
 }
