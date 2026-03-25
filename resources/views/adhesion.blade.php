@@ -490,42 +490,72 @@
                         <p class="text-gray-500 text-sm mt-2">Contactez-nous pour plus d'informations.</p>
                     </div>
                     @else
-                    <div class="space-y-3 mb-6">
+                    <div class="space-y-4 mb-6">
                         @foreach($liste as $activite)
                         @php
                             $horaires = is_string($activite->horaires) ? json_decode($activite->horaires, true) : ($activite->horaires ?? []);
+                            $hasMultipleSlots = ($typeActivite === 'atelier' && is_array($horaires) && count($horaires) > 1);
                         @endphp
-                        <label class="cursor-pointer block group">
-                            <input type="checkbox" name="activites_selectionnees[]" value="{{ $activite->id }}" {{ in_array($activite->id, $selectedActivites) ? 'checked' : '' }} class="sr-only peer">
-                            <div class="border-2 rounded-2xl p-5 transition-all peer-checked:border-teal-600 peer-checked:bg-teal-50 peer-checked:ring-2 ring-teal-600/20 border-gray-200 group-hover:border-slate-900 flex items-start gap-4">
-                                <div class="w-12 h-12 rounded-xl flex items-center justify-center shrink-0 text-2xl bg-slate-900 text-white shadow-sm">
-                                    {{ $typeActivite === 'stage' ? '🎭' : '🔧' }}
+                        <div x-data="{ checked: {{ in_array($activite->id, $selectedActivites) ? 'true' : 'false' }} }">
+                            <input type="checkbox" name="activites_selectionnees[]" value="{{ $activite->id }}" x-model="checked" class="hidden">
+                            <div :class="checked ? 'border-teal-600 bg-teal-50 ring-2 ring-teal-600/20' : 'border-gray-200 hover:border-slate-900 bg-white'"
+                                 class="border-2 rounded-2xl p-5 transition-all flex flex-col gap-4 shadow-sm hover:shadow-md">
+                                <div @click="checked = !checked" class="flex items-start gap-4 cursor-pointer w-full">
+                                    <div class="w-12 h-12 rounded-xl flex items-center justify-center shrink-0 text-2xl bg-slate-900 text-white shadow-sm">
+                                        {{ $typeActivite === 'stage' ? '🎭' : '🔧' }}
+                                    </div>
+                                    <div class="flex-1">
+                                        <h4 class="font-bold text-slate-900 text-lg">{{ $activite->nom }}</h4>
+                                        @if($activite->adresse)
+                                        <p class="text-sm text-gray-500 font-medium mt-1">📍 {{ $activite->adresse }}, {{ $activite->ville }}</p>
+                                        @endif
+
+                                        @if($horaires && count($horaires) > 0)
+                                        <div class="flex flex-wrap gap-2 mt-3">
+                                            @foreach($horaires as $jour => $heure)
+                                            <span class="inline-block bg-white border border-gray-200 text-slate-700 font-semibold text-xs px-2.5 py-1 rounded-lg shadow-sm">
+                                                🕐 {{ $jour }} {{ $heure }}
+                                            </span>
+                                            @endforeach
+                                        </div>
+                                        @endif
+
+                                        @if($activite->tarif !== null)
+                                        <p class="text-sm font-black text-teal-600 mt-3">
+                                            {{ $activite->tarif > 0 ? number_format($activite->tarif, 2, ',', ' ') . ' €' : 'Gratuit' }}
+                                        </p>
+                                        @endif
+                                    </div>
+                                    <div class="w-6 h-6 rounded-full border-2 flex items-center justify-center shrink-0 transition-colors mt-1"
+                                         :class="checked ? 'border-teal-600 bg-teal-600' : 'border-gray-300'">
+                                        <svg x-show="checked" class="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
+                                    </div>
                                 </div>
-                                <div class="flex-1">
-                                    <h4 class="font-bold text-slate-900 text-lg">{{ $activite->nom }}</h4>
-                                    @if($activite->adresse)
-                                    <p class="text-sm text-gray-500 font-medium mt-1">📍 {{ $activite->adresse }}, {{ $activite->ville }}</p>
-                                    @endif
-                                    @if($horaires && count($horaires) > 0)
-                                    <div class="flex flex-wrap gap-2 mt-3">
+
+                                @if($hasMultipleSlots)
+                                <div x-show="checked" x-transition class="w-full pt-4 border-t border-teal-200/60 mt-1">
+                                    <p class="text-sm font-bold text-slate-800 mb-3">📅 Choisissez votre créneau pour cet atelier :</p>
+                                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                         @foreach($horaires as $jour => $heure)
-                                        <span class="inline-block bg-white border border-gray-200 text-slate-700 font-semibold text-xs px-2.5 py-1 rounded-lg shadow-sm">
-                                            🕐 {{ $jour }} {{ $heure }}
-                                        </span>
+                                        <label class="flex items-center gap-3 p-3 bg-white border border-gray-200 rounded-xl cursor-pointer hover:border-teal-600 transition-all has-[:checked]:border-teal-600 has-[:checked]:ring-1 has-[:checked]:ring-teal-600">
+                                            <input type="radio" name="horaires_selectionnes[{{ $activite->id }}]" value="{{ $jour }} - {{ $heure }}"
+                                                   {{ ($formData['horaires_selectionnes'][$activite->id] ?? '') === "$jour - $heure" ? 'checked' : '' }}
+                                                   class="{{ $radio }}"
+                                                   :disabled="!checked" required>
+                                            <span class="text-sm font-semibold text-slate-700">
+                                                {{ $jour }} <span class="text-teal-600">{{ $heure }}</span>
+                                            </span>
+                                        </label>
                                         @endforeach
                                     </div>
-                                    @endif
-                                    @if($activite->tarif !== null)
-                                    <p class="text-sm font-black text-teal-600 mt-3">
-                                        {{ $activite->tarif > 0 ? number_format($activite->tarif, 2, ',', ' ') . ' €' : 'Gratuit' }}
-                                    </p>
-                                    @endif
                                 </div>
-                                <div class="w-6 h-6 rounded-full border-2 flex items-center justify-center shrink-0 peer-checked:border-teal-600 peer-checked:bg-teal-600 border-gray-300 mt-1 transition-colors">
-                                    <svg class="w-3 h-3 text-white opacity-0 peer-checked:opacity-100" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
-                                </div>
+                                @elseif($typeActivite === 'atelier' && count($horaires) === 1)
+                                    @php $uniqueSlot = array_key_first($horaires) . ' - ' . $horaires[array_key_first($horaires)]; @endphp
+                                    <input type="hidden" name="horaires_selectionnes[{{ $activite->id }}]" value="{{ $uniqueSlot }}" :disabled="!checked">
+                                @endif
+
                             </div>
-                        </label>
+                        </div>
                         @endforeach
                     </div>
                     @endif
