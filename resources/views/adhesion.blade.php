@@ -44,43 +44,45 @@
                         <div class="h-2 rounded-full transition-all duration-500 bg-teal-600"
                             style="width: {{ ($currentNum / $totalSteps) * 100 }}%;"></div>
                     </div>
+                    <div class="hidden md:block mt-8 mb-12 px-4">
+                        <div class="relative flex items-center justify-between w-full">
+                            <div class="absolute top-4 left-0 w-full h-0.5 bg-gray-200 -z-10"></div>
+                            <div class="absolute top-4 left-0 h-0.5 bg-teal-600 transition-all duration-500 -z-10"
+                                style="width: {{ (array_search($step, $path) / (count($path) - 1)) * 100 }}%">
+                            </div>
+                            @foreach ($path as $i => $s)
+                                @php
+                                    $pathIdx = array_search($step, $path);
+                                    $isDone = $i < $pathIdx;
+                                    $isCurrent = $s === $step;
+                                @endphp
 
-                    <div class="hidden md:flex items-center mt-5 overflow-x-auto gap-0">
-                        @foreach ($path as $i => $s)
-                            @php
-                                $pathIdx = array_search($step, $path);
-                                $isDone = $i < $pathIdx;
-                                $isCurrent = $s === $step;
-                                $isLast = $i === count($path) - 1;
-                            @endphp
-                            <div class="flex items-center {{ !$isLast ? 'flex-1 min-w-0' : '' }}">
-                                <div class="flex flex-col items-center shrink-0">
+                                <div class="relative flex flex-col items-center">
                                     <div
-                                        class="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold border-2 transition-all
-                                @if ($isCurrent) border-slate-900 bg-slate-900 text-white shadow-md
-                                @elseif($isDone) border-teal-600 bg-teal-600 text-white
-                                @else border-gray-200 bg-white text-gray-400 @endif">
+                                        class="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-all duration-300 border-2
+                    {{ $isCurrent ? 'border-slate-900 bg-white text-slate-900 scale-125 z-10 shadow-lg' : '' }}
+                    {{ $isDone ? 'border-teal-600 bg-teal-600 text-white' : '' }}
+                    {{ !$isCurrent && !$isDone ? 'border-gray-300 bg-white text-gray-400' : '' }}">
                                         @if ($isDone)
-                                            ✓
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3"
+                                                    d="M5 13l4 4L19 7" />
+                                            </svg>
                                         @else
                                             {{ $i + 1 }}
                                         @endif
                                     </div>
-                                    <span
-                                        class="text-[10px] mt-1.5 text-center uppercase tracking-wide max-w-[60px]
-                                @if ($isCurrent) text-slate-900 font-bold
-                                @elseif($isDone) text-teal-600 font-bold
-                                @else text-gray-400 font-semibold @endif">
-                                        {{ $stepMeta[$s]['label'] }}
-                                    </span>
-                                </div>
-                                @if (!$isLast)
-                                    <div
-                                        class="flex-1 h-0.5 mx-2 transition-all {{ $isDone ? 'bg-teal-600' : 'bg-gray-200' }}">
+                                    <div class="absolute top-10 whitespace-nowrap flex flex-col items-center">
+                                        <span
+                                            class="text-[10px] uppercase tracking-tighter transition-all duration-300
+                        {{ $isCurrent ? 'text-slate-900 font-bold opacity-100' : 'text-gray-400 font-medium opacity-60' }}
+                        {{ count($path) > 7 && !$isCurrent ? 'hidden lg:block' : '' }}">
+                                            {{ $stepMeta[$s]['label'] }}
+                                        </span>
                                     </div>
-                                @endif
-                            </div>
-                        @endforeach
+                                </div>
+                            @endforeach
+                        </div>
                     </div>
                 </div>
             @endif
@@ -1137,97 +1139,104 @@
                         </form>
                     </div>
                 @elseif($step === 10)
-            <div class="p-6 md:p-8">
-                <div class="mb-6">
-                    <h2 class="text-2xl font-bold text-slate-900">Choix du paiement 💳</h2>
-                    <p class="text-gray-500 mt-1">Comment souhaitez-vous régler votre adhésion ?</p>
-                </div>
+                    <div class="p-6 md:p-8">
+                        <div class="mb-6">
+                            <h2 class="text-2xl font-bold text-slate-900">Choix du paiement 💳</h2>
+                            <p class="text-gray-500 mt-1">Comment souhaitez-vous régler votre adhésion ?</p>
+                        </div>
 
-                @error('helloasso')
-                <div class="mb-6 p-4 bg-red-50 border border-red-200 rounded-2xl flex items-start gap-3">
-                    <span class="text-xl">❌</span>
-                    <p class="text-sm font-bold text-red-800">{{ $message }}</p>
-                </div>
-                @enderror
+                        @error('helloasso')
+                            <div class="mb-6 p-4 bg-red-50 border border-red-200 rounded-2xl flex items-start gap-3">
+                                <span class="text-xl">❌</span>
+                                <p class="text-sm font-bold text-red-800">{{ $message }}</p>
+                            </div>
+                        @enderror
 
-                <form action="{{ route('adhesion.next', $token) }}" method="POST">
-                    @csrf
-                    <input type="hidden" name="current_step" value="10">
+                        <form action="{{ route('adhesion.next', $token) }}" method="POST">
+                            @csrf
+                            <input type="hidden" name="current_step" value="10">
 
-                    <div x-data="{ modePaiement: '{{ $formData['mode_paiement'] ?? 'helloasso' }}' }">
-                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
+                            <div x-data="{ modePaiement: '{{ $formData['mode_paiement'] ?? 'helloasso' }}' }">
+                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
 
-                            <label class="cursor-pointer block group">
-                                <input type="radio" name="mode_paiement" value="helloasso"
-                                    x-model="modePaiement" class="sr-only">
-                                <div :class="modePaiement === 'helloasso' ?
-                                    'border-teal-600 bg-teal-50 ring-2 ring-teal-600/20' :
-                                    'border-gray-200 group-hover:border-slate-900'"
-                                    class="{{ $card }} items-center text-center">
-                                    <div class="text-4xl mb-3">🌐</div>
-                                    <h3 class="text-lg font-bold text-slate-900">HelloAsso</h3>
-                                    <p class="text-gray-500 text-sm mt-2">Paiement en ligne sécurisé</p>
-                                    <span class="inline-block mt-4 text-xs font-bold bg-teal-100 text-teal-700 px-3 py-1.5 rounded-full uppercase tracking-wider">Recommandé</span>
+                                    <label class="cursor-pointer block group">
+                                        <input type="radio" name="mode_paiement" value="helloasso"
+                                            x-model="modePaiement" class="sr-only">
+                                        <div :class="modePaiement === 'helloasso' ?
+                                            'border-teal-600 bg-teal-50 ring-2 ring-teal-600/20' :
+                                            'border-gray-200 group-hover:border-slate-900'"
+                                            class="{{ $card }} items-center text-center">
+                                            <div class="text-4xl mb-3">🌐</div>
+                                            <h3 class="text-lg font-bold text-slate-900">HelloAsso</h3>
+                                            <p class="text-gray-500 text-sm mt-2">Paiement en ligne sécurisé</p>
+                                            <span
+                                                class="inline-block mt-4 text-xs font-bold bg-teal-100 text-teal-700 px-3 py-1.5 rounded-full uppercase tracking-wider">Recommandé</span>
+                                        </div>
+                                    </label>
+
+                                    <label class="cursor-pointer block group">
+                                        <input type="radio" name="mode_paiement" value="interne"
+                                            x-model="modePaiement" class="sr-only">
+                                        <div :class="modePaiement === 'interne' ?
+                                            'border-teal-600 bg-teal-50 ring-2 ring-teal-600/20' :
+                                            'border-gray-200 group-hover:border-slate-900'"
+                                            class="{{ $card }} items-center text-center">
+                                            <div class="text-4xl mb-3">🤝</div>
+                                            <h3 class="text-lg font-bold text-slate-900">Paiement en personne</h3>
+                                            <p class="text-gray-500 text-sm mt-2">Chèque, espèces ou virement</p>
+                                        </div>
+                                    </label>
                                 </div>
-                            </label>
 
-                            <label class="cursor-pointer block group">
-                                <input type="radio" name="mode_paiement" value="interne"
-                                    x-model="modePaiement" class="sr-only">
-                                <div :class="modePaiement === 'interne' ?
-                                    'border-teal-600 bg-teal-50 ring-2 ring-teal-600/20' :
-                                    'border-gray-200 group-hover:border-slate-900'"
-                                    class="{{ $card }} items-center text-center">
-                                    <div class="text-4xl mb-3">🤝</div>
-                                    <h3 class="text-lg font-bold text-slate-900">Paiement en personne</h3>
-                                    <p class="text-gray-500 text-sm mt-2">Chèque, espèces ou virement</p>
+                                <div x-show="modePaiement === 'interne'" x-transition style="display: none;"
+                                    class="p-6 bg-slate-50 border border-slate-200 rounded-2xl mb-6">
+                                    <h4 class="font-bold text-slate-900 mb-3 flex items-center gap-2 text-lg">
+                                        <span>📬</span> Comment procéder ?
+                                    </h4>
+                                    <p class="text-sm font-medium text-slate-700 mb-4 leading-relaxed">
+                                        Pour finaliser votre adhésion, merci de contacter notre équipe afin de convenir d'un
+                                        rendez-vous :
+                                    </p>
+                                    <a href="mailto:contact@savoirsvivants.fr"
+                                        class="inline-flex items-center gap-2 bg-slate-900 text-white text-sm font-bold px-5 py-3 rounded-xl hover:bg-teal-600 shadow-md transition-colors">
+                                        ✉️ contact@savoirsvivants.fr
+                                    </a>
+                                    <p class="text-xs text-gray-500 mt-4 font-semibold">Modes acceptés : chèque, espèces,
+                                        ou virement bancaire.</p>
                                 </div>
-                            </label>
-                        </div>
 
-                        <div x-show="modePaiement === 'interne'" x-transition style="display: none;"
-                            class="p-6 bg-slate-50 border border-slate-200 rounded-2xl mb-6">
-                            <h4 class="font-bold text-slate-900 mb-3 flex items-center gap-2 text-lg">
-                                <span>📬</span> Comment procéder ?
-                            </h4>
-                            <p class="text-sm font-medium text-slate-700 mb-4 leading-relaxed">
-                                Pour finaliser votre adhésion, merci de contacter notre équipe afin de convenir d'un rendez-vous :
-                            </p>
-                            <a href="mailto:contact@savoirsvivants.fr"
-                                class="inline-flex items-center gap-2 bg-slate-900 text-white text-sm font-bold px-5 py-3 rounded-xl hover:bg-teal-600 shadow-md transition-colors">
-                                ✉️ contact@savoirsvivants.fr
-                            </a>
-                            <p class="text-xs text-gray-500 mt-4 font-semibold">Modes acceptés : chèque, espèces, ou virement bancaire.</p>
-                        </div>
+                                <div x-show="modePaiement === 'helloasso'" x-transition style="display: none;"
+                                    class="p-5 bg-teal-50 border border-teal-200 rounded-2xl mb-6">
+                                    <p class="text-sm font-bold text-slate-900 flex items-center gap-3 leading-relaxed">
+                                        <span class="text-xl">🔒</span>
+                                        Vous allez être redirigé·e vers la plateforme sécurisée HelloAsso pour procéder au
+                                        paiement.
+                                    </p>
+                                </div>
 
-                        <div x-show="modePaiement === 'helloasso'" x-transition style="display: none;"
-                            class="p-5 bg-teal-50 border border-teal-200 rounded-2xl mb-6">
-                            <p class="text-sm font-bold text-slate-900 flex items-center gap-3 leading-relaxed">
-                                <span class="text-xl">🔒</span>
-                                Vous allez être redirigé·e vers la plateforme sécurisée HelloAsso pour procéder au paiement.
-                            </p>
-                        </div>
+                                <div class="flex items-center justify-between pt-5 border-t border-gray-100">
+                                    @if ($hasPrev)
+                                        <a href="{{ route('adhesion.show', ['token' => $token, 'step' => $prevStep]) }}"
+                                            class="{{ $btnBack }}">
+                                            <svg class="w-5 h-5" fill="none" stroke="currentColor"
+                                                viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
+                                                    d="M15 19l-7-7 7-7" />
+                                            </svg>
+                                            Précédent
+                                        </a>
+                                    @else
+                                        <div></div>
+                                    @endif
 
-                        <div class="flex items-center justify-between pt-5 border-t border-gray-100">
-                            @if ($hasPrev)
-                                <a href="{{ route('adhesion.show', ['token' => $token, 'step' => $prevStep]) }}" class="{{ $btnBack }}">
-                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7" />
-                                    </svg>
-                                    Précédent
-                                </a>
-                            @else
-                                <div></div>
-                            @endif
-
-                            <button type="submit" class="{{ $btn }}">
-                                <span x-show="modePaiement === 'helloasso'">Continuer vers HelloAsso 🔒</span>
-                                <span x-show="modePaiement === 'interne'">Valider mon inscription ✓</span>
-                            </button>
-                        </div>
+                                    <button type="submit" class="{{ $btn }}">
+                                        <span x-show="modePaiement === 'helloasso'">Continuer vers HelloAsso 🔒</span>
+                                        <span x-show="modePaiement === 'interne'">Valider mon inscription ✓</span>
+                                    </button>
+                                </div>
+                            </div>
+                        </form>
                     </div>
-                </form>
-            </div>
                 @elseif($step === 11)
                     <div class="p-8 md:p-12 text-center">
                         <div
