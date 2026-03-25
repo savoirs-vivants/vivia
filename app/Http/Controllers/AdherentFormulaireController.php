@@ -5,6 +5,12 @@ namespace App\Http\Controllers;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use App\Models\Activite;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Str;
+use App\Mail\RecupNumeroMail;
+use App\Models\Adherent;
+use Illuminate\Support\Facades\Log;
 
 class AdherentFormulaireController extends Controller
 {
@@ -40,7 +46,7 @@ class AdherentFormulaireController extends Controller
         $needsActivite = in_array($activite, ['atelier', 'stage']);
 
         if ($isAdherent) {
-            $path = [1, 2]; 
+            $path = [1, 2];
 
             if ($needsActivite) {
                 $path[] = 6;
@@ -55,13 +61,21 @@ class AdherentFormulaireController extends Controller
         }
 
         $path = [1, 2, 3];
-        if ($isMineur) { $path[] = 4; }
+        if ($isMineur) {
+            $path[] = 4;
+        }
         $path[] = 5;
-        if ($needsActivite) { $path[] = 6; }
+        if ($needsActivite) {
+            $path[] = 6;
+        }
         $path[] = 7;
-        if ($isMineur) { $path[] = 8; }
+        if ($isMineur) {
+            $path[] = 8;
+        }
         $path[] = 9;
-        if (! $isClubMaker) { $path[] = 10; }
+        if (! $isClubMaker) {
+            $path[] = 10;
+        }
         $path[] = 11;
 
         return $path;
@@ -140,10 +154,46 @@ class AdherentFormulaireController extends Controller
         $hasPrev    = ($step !== 1);
 
         return view('adhesion', compact(
-            'step', 'formData', 'token', 'ateliers', 'stages',
-            'path', 'stepMeta', 'isMineur', 'currentNum', 'totalSteps',
-            'prevStep', 'hasPrev'
+            'step',
+            'formData',
+            'token',
+            'ateliers',
+            'stages',
+            'path',
+            'stepMeta',
+            'isMineur',
+            'currentNum',
+            'totalSteps',
+            'prevStep',
+            'hasPrev'
         ));
+    }
+
+    public function envoyerCodeRecup(Request $request)
+    {
+        $request->validate(['email' => 'required|email']);
+
+        try {
+            $adherent = Adherent::where('mail', $request->email)->first();
+
+            if ($adherent) {
+                $code = strtoupper(Str::random(6));
+                Cache::put("recup_adherent_{$code}", $adherent->numero_adherent, now()->addMinutes(30));
+                Mail::to($adherent->mail)->send(new RecupNumeroMail($adherent, $code));
+            }
+
+            return response()->json([
+                'message' => 'Si cet email est associé à un compte, un code a été envoyé.',
+                'status'  => 'success'
+            ]);
+        } catch (\Exception $e) {
+            Log::error('envoyerCodeRecup error: ' . $e->getMessage());
+
+            return response()->json([
+                'message' => 'Une erreur serveur est survenue. Veuillez réessayer.',
+                'status'  => 'error'
+            ], 500);
+        }
     }
 
     public function next(Request $request, string $token)
@@ -152,6 +202,26 @@ class AdherentFormulaireController extends Controller
 
         $step     = (int) $request->input('current_step', 1);
         $formData = $request->session()->get("adhesion_{$token}", []);
+
+        if ($step === 1 && $request->input('is_adherent') === 'oui') {
+            $inputNumero = trim($request->input('numero_adherent'));
+
+            $vraiNumero = Cache::get("recup_adherent_{$inputNumero}");
+
+            $numeroRecherche = $vraiNumero ? $vraiNumero : $inputNumero;
+
+            $adherentExistant = Adherent::where('numero_adherent', $numeroRecherche)->first();
+
+            if (!$adherentExistant) {
+                return back()->withErrors(['numero_adherent' => 'Ce numéro ou code temporaire est introuvable.']);
+            }
+
+            $request->merge(['numero_adherent' => $adherentExistant->numero_adherent]);
+
+            $formData['nom'] = $adherentExistant->nom;
+            $formData['prenom'] = $adherentExistant->prenom;
+            $formData['mail'] = $adherentExistant->mail;
+        }
 
         if ($request->hasFile('carnet_sante')) {
             $filePath = $request->file('carnet_sante')->store('carnets', 'public');
