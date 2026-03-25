@@ -1137,94 +1137,97 @@
                         </form>
                     </div>
                 @elseif($step === 10)
-                    <div class="p-6 md:p-8">
-                        <div class="mb-6">
-                            <h2 class="text-2xl font-bold text-slate-900">Choix du paiement 💳</h2>
-                            <p class="text-gray-500 mt-1">Comment souhaitez-vous régler votre adhésion ?</p>
+            <div class="p-6 md:p-8">
+                <div class="mb-6">
+                    <h2 class="text-2xl font-bold text-slate-900">Choix du paiement 💳</h2>
+                    <p class="text-gray-500 mt-1">Comment souhaitez-vous régler votre adhésion ?</p>
+                </div>
+
+                @error('helloasso')
+                <div class="mb-6 p-4 bg-red-50 border border-red-200 rounded-2xl flex items-start gap-3">
+                    <span class="text-xl">❌</span>
+                    <p class="text-sm font-bold text-red-800">{{ $message }}</p>
+                </div>
+                @enderror
+
+                <form action="{{ route('adhesion.next', $token) }}" method="POST">
+                    @csrf
+                    <input type="hidden" name="current_step" value="10">
+
+                    <div x-data="{ modePaiement: '{{ $formData['mode_paiement'] ?? 'helloasso' }}' }">
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
+
+                            <label class="cursor-pointer block group">
+                                <input type="radio" name="mode_paiement" value="helloasso"
+                                    x-model="modePaiement" class="sr-only">
+                                <div :class="modePaiement === 'helloasso' ?
+                                    'border-teal-600 bg-teal-50 ring-2 ring-teal-600/20' :
+                                    'border-gray-200 group-hover:border-slate-900'"
+                                    class="{{ $card }} items-center text-center">
+                                    <div class="text-4xl mb-3">🌐</div>
+                                    <h3 class="text-lg font-bold text-slate-900">HelloAsso</h3>
+                                    <p class="text-gray-500 text-sm mt-2">Paiement en ligne sécurisé</p>
+                                    <span class="inline-block mt-4 text-xs font-bold bg-teal-100 text-teal-700 px-3 py-1.5 rounded-full uppercase tracking-wider">Recommandé</span>
+                                </div>
+                            </label>
+
+                            <label class="cursor-pointer block group">
+                                <input type="radio" name="mode_paiement" value="interne"
+                                    x-model="modePaiement" class="sr-only">
+                                <div :class="modePaiement === 'interne' ?
+                                    'border-teal-600 bg-teal-50 ring-2 ring-teal-600/20' :
+                                    'border-gray-200 group-hover:border-slate-900'"
+                                    class="{{ $card }} items-center text-center">
+                                    <div class="text-4xl mb-3">🤝</div>
+                                    <h3 class="text-lg font-bold text-slate-900">Paiement en personne</h3>
+                                    <p class="text-gray-500 text-sm mt-2">Chèque, espèces ou virement</p>
+                                </div>
+                            </label>
                         </div>
 
-                        <form action="{{ route('adhesion.next', $token) }}" method="POST">
-                            @csrf
-                            <input type="hidden" name="current_step" value="10">
+                        <div x-show="modePaiement === 'interne'" x-transition style="display: none;"
+                            class="p-6 bg-slate-50 border border-slate-200 rounded-2xl mb-6">
+                            <h4 class="font-bold text-slate-900 mb-3 flex items-center gap-2 text-lg">
+                                <span>📬</span> Comment procéder ?
+                            </h4>
+                            <p class="text-sm font-medium text-slate-700 mb-4 leading-relaxed">
+                                Pour finaliser votre adhésion, merci de contacter notre équipe afin de convenir d'un rendez-vous :
+                            </p>
+                            <a href="mailto:contact@savoirsvivants.fr"
+                                class="inline-flex items-center gap-2 bg-slate-900 text-white text-sm font-bold px-5 py-3 rounded-xl hover:bg-teal-600 shadow-md transition-colors">
+                                ✉️ contact@savoirsvivants.fr
+                            </a>
+                            <p class="text-xs text-gray-500 mt-4 font-semibold">Modes acceptés : chèque, espèces, ou virement bancaire.</p>
+                        </div>
 
-                            <div x-data="{ modePaiement: '{{ $formData['mode_paiement'] ?? '' }}' }">
-                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
-                                    <label class="cursor-pointer block group">
-                                        <input type="radio" name="mode_paiement" value="helloasso"
-                                            x-model="modePaiement" class="sr-only">
-                                        <div :class="modePaiement === 'helloasso' ?
-                                            'border-teal-600 bg-teal-50 ring-2 ring-teal-600/20' :
-                                            'border-gray-200 group-hover:border-slate-900'"
-                                            class="{{ $card }} items-center text-center">
-                                            <div class="text-4xl mb-3">🌐</div>
-                                            <h3 class="text-lg font-bold text-slate-900">HelloAsso</h3>
-                                            <p class="text-gray-500 text-sm mt-2">Paiement en ligne sécurisé</p>
-                                            <span
-                                                class="inline-block mt-4 text-xs font-bold bg-slate-100 text-slate-500 px-3 py-1.5 rounded-full uppercase tracking-wider">Bientôt
-                                                disponible</span>
-                                        </div>
-                                    </label>
+                        <div x-show="modePaiement === 'helloasso'" x-transition style="display: none;"
+                            class="p-5 bg-teal-50 border border-teal-200 rounded-2xl mb-6">
+                            <p class="text-sm font-bold text-slate-900 flex items-center gap-3 leading-relaxed">
+                                <span class="text-xl">🔒</span>
+                                Vous allez être redirigé·e vers la plateforme sécurisée HelloAsso pour procéder au paiement.
+                            </p>
+                        </div>
 
-                                    <label class="cursor-pointer block group">
-                                        <input type="radio" name="mode_paiement" value="interne"
-                                            x-model="modePaiement" class="sr-only">
-                                        <div :class="modePaiement === 'interne' ?
-                                            'border-teal-600 bg-teal-50 ring-2 ring-teal-600/20' :
-                                            'border-gray-200 group-hover:border-slate-900'"
-                                            class="{{ $card }} items-center text-center">
-                                            <div class="text-4xl mb-3">🤝</div>
-                                            <h3 class="text-lg font-bold text-slate-900">Paiement en personne</h3>
-                                            <p class="text-gray-500 text-sm mt-2">Chèque, espèces ou virement</p>
-                                        </div>
-                                    </label>
-                                </div>
+                        <div class="flex items-center justify-between pt-5 border-t border-gray-100">
+                            @if ($hasPrev)
+                                <a href="{{ route('adhesion.show', ['token' => $token, 'step' => $prevStep]) }}" class="{{ $btnBack }}">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7" />
+                                    </svg>
+                                    Précédent
+                                </a>
+                            @else
+                                <div></div>
+                            @endif
 
-                                <div x-show="modePaiement === 'interne'" x-transition
-                                    class="p-6 bg-slate-50 border border-slate-200 rounded-2xl mb-6">
-                                    <h4 class="font-bold text-slate-900 mb-3 flex items-center gap-2 text-lg">
-                                        <span>📬</span> Comment procéder ?
-                                    </h4>
-                                    <p class="text-sm font-medium text-slate-700 mb-4 leading-relaxed">
-                                        Pour finaliser votre adhésion, merci de contacter notre équipe afin de convenir d'un
-                                        rendez-vous :
-                                    </p>
-                                    <a href="mailto:contact@savoirsvivants.fr"
-                                        class="inline-flex items-center gap-2 bg-slate-900 text-white text-sm font-bold px-5 py-3 rounded-xl hover:bg-teal-600 shadow-md transition-colors">
-                                        ✉️ contact@savoirsvivants.fr
-                                    </a>
-                                    <p class="text-xs text-gray-500 mt-4 font-semibold">Modes acceptés : chèque, espèces,
-                                        ou virement bancaire.</p>
-                                </div>
-
-                                <div x-show="modePaiement === 'helloasso'" x-transition
-                                    class="p-5 bg-gray-50 border border-gray-200 rounded-2xl mb-6">
-                                    <p class="text-sm font-bold text-slate-600 flex items-center gap-3 leading-relaxed">
-                                        <span class="text-xl">ℹ️</span>
-                                        Le paiement en ligne via HelloAsso sera disponible prochainement.
-                                    </p>
-                                </div>
-
-                                <div class="flex items-center justify-between pt-5 border-t border-gray-100">
-                                    @if ($hasPrev)
-                                        <a href="{{ route('adhesion.show', ['token' => $token, 'step' => $prevStep]) }}"
-                                            class="{{ $btnBack }}">
-                                            <svg class="w-5 h-5" fill="none" stroke="currentColor"
-                                                viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
-                                                    d="M15 19l-7-7 7-7" />
-                                            </svg>
-                                            Précédent
-                                        </a>
-                                    @else
-                                        <div></div>
-                                    @endif
-                                    <button type="submit" class="{{ $btn }}">
-                                        Valider mon inscription ✓
-                                    </button>
-                                </div>
-                            </div>
-                        </form>
+                            <button type="submit" class="{{ $btn }}">
+                                <span x-show="modePaiement === 'helloasso'">Continuer vers HelloAsso 🔒</span>
+                                <span x-show="modePaiement === 'interne'">Valider mon inscription ✓</span>
+                            </button>
+                        </div>
                     </div>
+                </form>
+            </div>
                 @elseif($step === 11)
                     <div class="p-8 md:p-12 text-center">
                         <div

@@ -31,6 +31,8 @@ Route::get('/adhesion', [App\Http\Controllers\AdherentFormulaireController::clas
 Route::post('/adhesion/recup-numero', [App\Http\Controllers\AdherentFormulaireController::class, 'envoyerCodeRecup'])->name('adhesion.recup');
 Route::get('/adhesion/{token}',  [App\Http\Controllers\AdherentFormulaireController::class, 'show'])->name('adhesion.show');
 Route::post('/adhesion/{token}', [App\Http\Controllers\AdherentFormulaireController::class, 'next'])->name('adhesion.next');
+Route::get('/adhesion/{token}/helloasso/{status}', [App\Http\Controllers\AdherentFormulaireController::class, 'helloassoReturn'])->name('adhesion.helloasso.return');
+
 
 Route::middleware('auth')->group(function () {
 

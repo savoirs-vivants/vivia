@@ -11,6 +11,8 @@ use Illuminate\Support\Str;
 use App\Mail\RecupNumeroMail;
 use App\Models\Adherent;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Validator;
+use App\Services\HelloAssoService;
 
 class AdherentFormulaireController extends Controller
 {
@@ -154,24 +156,24 @@ class AdherentFormulaireController extends Controller
         $hasPrev    = ($step !== 1);
 
         return view('adhesion', compact(
-            'step',
-            'formData',
-            'token',
-            'ateliers',
-            'stages',
-            'path',
-            'stepMeta',
-            'isMineur',
-            'currentNum',
-            'totalSteps',
-            'prevStep',
-            'hasPrev'
+            'step', 'formData', 'token', 'ateliers', 'stages',
+            'path', 'stepMeta', 'isMineur', 'currentNum', 'totalSteps',
+            'prevStep', 'hasPrev'
         ));
     }
 
     public function envoyerCodeRecup(Request $request)
     {
-        $request->validate(['email' => 'required|email']);
+        $validator = Validator::make($request->all(), [
+            'email' => 'required|email'
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'message' => 'L\'adresse email n\'est pas valide.',
+                'status'  => 'error'
+            ], 422);
+        }
 
         try {
             $adherent = Adherent::where('mail', $request->email)->first();
@@ -205,9 +207,7 @@ class AdherentFormulaireController extends Controller
 
         if ($step === 1 && $request->input('is_adherent') === 'oui') {
             $inputNumero = trim($request->input('numero_adherent'));
-
             $vraiNumero = Cache::get("recup_adherent_{$inputNumero}");
-
             $numeroRecherche = $vraiNumero ? $vraiNumero : $inputNumero;
 
             $adherentExistant = Adherent::where('numero_adherent', $numeroRecherche)->first();
@@ -217,10 +217,46 @@ class AdherentFormulaireController extends Controller
             }
 
             $request->merge(['numero_adherent' => $adherentExistant->numero_adherent]);
+        }
 
-            $formData['nom'] = $adherentExistant->nom;
-            $formData['prenom'] = $adherentExistant->prenom;
-            $formData['mail'] = $adherentExistant->mail;
+        if ($step === 10 && $request->input('mode_paiement') === 'helloasso') {
+            $totalEuros = 0;
+            $service = new HelloAssoService();
+
+            if (($formData['is_adherent'] ?? 'non') === 'non') {
+                $formSlug = env('HELLOASSO_MEMBERSHIP_FORM_SLUG');
+                $totalEuros += $service->getBaseMembershipPrice($formSlug);
+            }
+
+            $activitesIds = $formData['activites_selectionnees'] ?? [];
+            if (!empty($activitesIds)) {
+                $activites = \App\Models\Activite::whereIn('id', $activitesIds)->get();
+                $totalEuros += $activites->sum('tarif');
+            }
+
+            if ($totalEuros > 0) {
+                $formData['mode_paiement'] = 'helloasso';
+                $formData['_last_completed'] = 10;
+                $request->session()->put("adhesion_{$token}", $formData);
+
+                try {
+                    $urlPaiement = $service->createCheckout(
+                        $totalEuros * 100,
+                        [
+                            'prenom' => $formData['prenom'] ?? 'Prénom',
+                            'nom'    => $formData['nom'] ?? 'Nom',
+                            'mail'   => $formData['mail'] ?? 'email@defaut.fr',
+                        ],
+                        $token
+                    );
+
+                    return redirect($urlPaiement);
+
+                } catch (\Exception $e) {
+                    \Illuminate\Support\Facades\Log::error('HelloAsso Error: ' . $e->getMessage());
+                    return back()->withErrors(['helloasso' => 'Le service de paiement est indisponible pour le moment.']);
+                }
+            }
         }
 
         if ($request->hasFile('carnet_sante')) {
@@ -239,5 +275,19 @@ class AdherentFormulaireController extends Controller
         $next = $this->getNextStep($step, $formData);
 
         return redirect()->route('adhesion.show', ['token' => $token, 'step' => $next]);
+    }
+
+    public function helloassoReturn(Request $request, $token, $status)
+    {
+        if ($status === 'cancel' || $status === 'error') {
+            return redirect()->route('adhesion.show', ['token' => $token, 'step' => 10])
+                             ->withErrors(['helloasso' => 'Le paiement a été annulé ou a échoué. Vous pouvez réessayer ou choisir un autre moyen de paiement.']);
+        }
+
+        $formData = $request->session()->get("adhesion_{$token}", []);
+        $formData['_last_completed'] = max((int)($formData['_last_completed'] ?? 0), 10);
+        $request->session()->put("adhesion_{$token}", $formData);
+
+        return redirect()->route('adhesion.show', ['token' => $token, 'step' => 11]);
     }
 }
