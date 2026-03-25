@@ -8,12 +8,14 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Support\Str;
 
 class Adherent extends Model
 {
     protected $table = 'adherents';
 
     protected $fillable = [
+        'numero_adherent',
         'id_tuteur',
         'nom',
         'prenom',
@@ -40,12 +42,21 @@ class Adherent extends Model
     ];
 
     protected $casts = [
-        'criteres'      => 'array',   // stocké en JSON dans la BDD
+        'criteres'      => 'array',  
         'date_naiss'    => 'date',
         'manif'         => 'boolean',
         'communication' => 'boolean',
         'bulletin'      => 'boolean',
     ];
+
+    public static function genererNumeroUnique(): string
+    {
+        do {
+            $numero = 'ADH-' . date('y') . '-' . strtoupper(Str::random(4));
+        } while (self::where('numero_adherent', $numero)->exists());
+
+        return $numero;
+    }
 
     /**
      * Le tuteur légal de l'adhérent (table `tuteur`).
