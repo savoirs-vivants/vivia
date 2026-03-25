@@ -40,7 +40,18 @@ class AdherentFormulaireController extends Controller
         $needsActivite = in_array($activite, ['atelier', 'stage']);
 
         if ($isAdherent) {
-            return [1, 2, 10, 11];
+            $path = [1, 2]; 
+
+            if ($needsActivite) {
+                $path[] = 6;
+            }
+
+            if (! $isClubMaker) {
+                $path[] = 10;
+            }
+
+            $path[] = 11;
+            return $path;
         }
 
         $path = [1, 2, 3];

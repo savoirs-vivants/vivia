@@ -593,7 +593,7 @@
                             Participation aux manifestations
                         </h3>
                         <p class="text-sm text-gray-600 mb-5 font-medium leading-relaxed">
-                            [TEXTE À COMPLÉTER — ex : Fête de la Science / Séjour / Pint of Science / Organisation de manifestations…]
+                            Chaque année, Savoirs Vivants organise plusieurs manifestations. Ces manfiestations rassemblent les activités proposées dans l'année. Pour que celles-ci soient réussies, nous avons besoin qu'un grand nombre d'entre nous y prenne part (plusieurs rencontres seront nécessaires pendant et après les manifestations)
                         </p>
                         <div class="flex flex-col sm:flex-row gap-4">
                             <label class="flex items-center gap-3 p-3 bg-white border border-gray-200 rounded-xl cursor-pointer hover:border-teal-600 transition-all flex-1">
@@ -862,12 +862,26 @@
                 <div class="w-24 h-24 rounded-full flex items-center justify-center mx-auto mb-6 text-5xl bg-teal-50 shadow-inner">
                     ✅
                 </div>
-                <h2 class="text-3xl font-black text-slate-900 mb-3">Inscription envoyée !</h2>
+
+                @php
+                    $isAdherentExistant = ($formData['is_adherent'] ?? 'non') === 'oui';
+                    $prenomNom = $isAdherentExistant ? '' : ($formData['prenom'] ?? '') . ' ' . ($formData['nom'] ?? '');
+                @endphp
+
+                <h2 class="text-3xl font-black text-slate-900 mb-3">Demande envoyée !</h2>
+
+                @if($prenomNom)
                 <p class="text-slate-600 text-lg mb-2">
-                    Merci <strong class="text-teal-600">{{ ($formData['prenom'] ?? '') . ' ' . ($formData['nom'] ?? '') }}</strong> !
+                    Merci <strong class="text-teal-600">{{ $prenomNom }}</strong> !
                 </p>
+                @endif
+
                 <p class="text-gray-500 font-medium mb-8 max-w-lg mx-auto leading-relaxed">
-                    Votre demande d'adhésion a bien été transmise. Vous recevrez un e-mail de confirmation dès la validation.
+                    @if($isAdherentExistant)
+                        Votre demande d'inscription pour cette nouvelle activité a bien été transmise à notre équipe. Elle sera traitée dans les plus brefs délais.
+                    @else
+                        Votre demande d'adhésion a bien été transmise à notre équipe. Elle sera traitée dans les plus brefs délais. Vous recevrez un e-mail de confirmation dès la validation.
+                    @endif
                 </p>
 
                 @if(($formData['mode_paiement'] ?? '') === 'interne')
@@ -885,11 +899,12 @@
                 @endif
 
                 <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 text-left mb-8">
-                    <div class="p-5 bg-white rounded-2xl border border-gray-200 text-center shadow-sm">
+                    <div class="p-5 bg-white rounded-2xl border border-gray-200 text-center shadow-sm {{ $isAdherentExistant ? 'sm:col-span-3 sm:max-w-xs sm:mx-auto' : '' }}">
                         <div class="text-3xl mb-2">📧</div>
                         <p class="text-xs font-semibold text-gray-500 uppercase tracking-wide">Email de confirmation</p>
-                        <p class="text-sm font-bold text-slate-900 mt-1">Sous 48h</p>
                     </div>
+
+                    @if(!$isAdherentExistant)
                     <div class="p-5 bg-white rounded-2xl border border-gray-200 text-center shadow-sm">
                         <div class="text-3xl mb-2">🪪</div>
                         <p class="text-xs font-semibold text-gray-500 uppercase tracking-wide">Numéro d'adhérent</p>
@@ -900,6 +915,7 @@
                         <p class="text-xs font-semibold text-gray-500 uppercase tracking-wide">Bienvenue !</p>
                         <p class="text-sm font-bold text-teal-600 mt-1">Après validation</p>
                     </div>
+                    @endif
                 </div>
 
                 <p class="text-sm font-bold text-gray-400">
