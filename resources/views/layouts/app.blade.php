@@ -16,7 +16,7 @@
 </head>
 
 <body class="font-grotesk bg-[#f3f5f8] antialiased">
-    @if (!Route::is('login') && !Route::is('inscription') && !Route::is('password.forgot') && !Route::is('password.reset'))
+    @if (!Route::is('login') && !Route::is('inscription') && !Route::is('password.forgot') && !Route::is('password.reset') && !Route::is('adhesion.*'))
         @include('components.sidebar')
 
         <div class="ml-[292px] px-8 pt-6 pb-8 min-h-screen flex flex-col">

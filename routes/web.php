@@ -58,4 +58,8 @@ Route::middleware('auth')->group(function () {
     Route::get('/profil/logs-synchronisation', [App\Http\Controllers\ProfileController::class, 'logs'])->name('profile.logs');
 
     Route::get('/statistiques', [StatistiqueController::class, 'index'])->name('statistiques.index');
+
+    Route::get('/adhesion', [App\Http\Controllers\AdherentFormulaireController::class, 'index'])->name('adhesion.index');
+    Route::get('/adhesion/{token}',  [App\Http\Controllers\AdherentFormulaireController::class, 'show'])->name('adhesion.show');
+    Route::post('/adhesion/{token}', [App\Http\Controllers\AdherentFormulaireController::class, 'next'])->name('adhesion.next');
 });
