@@ -27,6 +27,11 @@ Route::post('/mot-de-passe-oublie', [PasswordResetController::class, 'sendReset'
 Route::get('/reinitialiser/{token}/{email}', [PasswordResetController::class, 'showReset'])->name('password.reset');
 Route::post('/reinitialiser', [PasswordResetController::class, 'reset'])->name('password.update');
 
+Route::get('/adhesion', [App\Http\Controllers\AdherentFormulaireController::class, 'index'])->name('adhesion.index');
+Route::post('/adhesion/recup-numero', [App\Http\Controllers\AdherentFormulaireController::class, 'envoyerCodeRecup'])->name('adhesion.recup');
+Route::get('/adhesion/{token}',  [App\Http\Controllers\AdherentFormulaireController::class, 'show'])->name('adhesion.show');
+Route::post('/adhesion/{token}', [App\Http\Controllers\AdherentFormulaireController::class, 'next'])->name('adhesion.next');
+
 Route::middleware('auth')->group(function () {
 
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
@@ -59,7 +64,4 @@ Route::middleware('auth')->group(function () {
 
     Route::get('/statistiques', [StatistiqueController::class, 'index'])->name('statistiques.index');
 
-    Route::get('/adhesion', [App\Http\Controllers\AdherentFormulaireController::class, 'index'])->name('adhesion.index');
-    Route::get('/adhesion/{token}',  [App\Http\Controllers\AdherentFormulaireController::class, 'show'])->name('adhesion.show');
-    Route::post('/adhesion/{token}', [App\Http\Controllers\AdherentFormulaireController::class, 'next'])->name('adhesion.next');
 });
