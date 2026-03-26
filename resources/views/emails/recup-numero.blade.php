@@ -30,17 +30,6 @@
             <span style="font-family: 'Space Mono', monospace; font-size: 28px; color: #16987C; font-weight: 700;">{{ $adherent->numero_adherent }}</span>
         </div>
 
-        <p style="font-size: 15px; line-height: 1.6; margin-bottom: 16px; text-align: center;">
-            Pour aller plus vite, vous pouvez aussi copier ce <strong>code temporaire</strong> directement dans le formulaire :
-        </p>
-
-        <div style="text-align: center; margin-bottom: 32px;">
-            <div style="display: inline-block; padding: 12px 24px; background-color: #222A60; color: #ffffff; border-radius: 10px; font-family: 'Space Mono', monospace; font-weight: 700; font-size: 20px; letter-spacing: 3px;">
-                {{ $codeTemporaire }}
-            </div>
-            <p style="color: #94a3b8; font-size: 11px; margin-top: 8px;">Valable pendant 30 minutes</p>
-        </div>
-
         <p style="font-size: 16px; line-height: 1.6; margin-bottom: 0; text-align: center;">
             À très vite,<br>
             <strong style="color: #222A60;">L'équipe Savoirs Vivants</strong>

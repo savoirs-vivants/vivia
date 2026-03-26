@@ -160,7 +160,7 @@
 
                                     <input type="text" name="numero_adherent"
                                         value="{{ $formData['numero_adherent'] ?? '' }}"
-                                        placeholder="Ex : ADH-26-XXXX ou code à 6 lettres" class="{{ $field }}">
+                                        placeholder="Ex : ADH-26-XXXX" class="{{ $field }}">
 
                                     @error('numero_adherent')
                                         <p class="text-sm font-bold text-red-500 mt-2">❌ {{ $message }}</p>
