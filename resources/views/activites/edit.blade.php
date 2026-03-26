@@ -273,6 +273,63 @@
                         </div>
                     </div>
 
+                    @php
+                        $currentDossierAction = old('dossier_action', $activite->id_dossier ? 'existing' : 'none');
+                    @endphp
+                    <div x-data="{ dossierAction: '{{ $currentDossierAction }}' }">
+                        <span class="block text-xs font-black text-gray-400 uppercase tracking-widest mb-3">Dossier</span>
+                        <div class="space-y-2 p-4 bg-gray-50/50 rounded-xl border border-gray-100">
+
+                            <label class="flex items-center gap-3 cursor-pointer group">
+                                <input type="radio" name="dossier_action" value="none" x-model="dossierAction" class="sr-only peer">
+                                <div class="w-4 h-4 rounded-full border-2 border-gray-300 peer-checked:border-[#222A60] peer-checked:bg-[#222A60] flex items-center justify-center flex-shrink-0 transition-colors">
+                                    <div class="w-1.5 h-1.5 rounded-full bg-white"></div>
+                                </div>
+                                <span class="text-sm text-gray-600 font-medium">Aucun dossier</span>
+                            </label>
+
+                            @if($dossiers->isNotEmpty())
+                                <label class="flex items-start gap-3 cursor-pointer group">
+                                    <input type="radio" name="dossier_action" value="existing" x-model="dossierAction" class="sr-only peer">
+                                    <div class="w-4 h-4 rounded-full border-2 border-gray-300 peer-checked:border-[#222A60] peer-checked:bg-[#222A60] flex items-center justify-center flex-shrink-0 transition-colors mt-0.5">
+                                        <div class="w-1.5 h-1.5 rounded-full bg-white"></div>
+                                    </div>
+                                    <div class="flex-1">
+                                        <span class="text-sm text-gray-600 font-medium">Dossier existant</span>
+                                        <div x-show="dossierAction === 'existing'" class="mt-2">
+                                            <select name="id_dossier"
+                                                class="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-[#16987C]/30 focus:border-[#16987C]/40">
+                                                <option value="">Choisir un dossier...</option>
+                                                @foreach($dossiers as $d)
+                                                    <option value="{{ $d->id }}"
+                                                        {{ old('id_dossier', $activite->id_dossier) == $d->id ? 'selected' : '' }}>
+                                                        {{ $d->nom }}
+                                                    </option>
+                                                @endforeach
+                                            </select>
+                                        </div>
+                                    </div>
+                                </label>
+                            @endif
+
+                            <label class="flex items-start gap-3 cursor-pointer group">
+                                <input type="radio" name="dossier_action" value="new" x-model="dossierAction" class="sr-only peer">
+                                <div class="w-4 h-4 rounded-full border-2 border-gray-300 peer-checked:border-[#222A60] peer-checked:bg-[#222A60] flex items-center justify-center flex-shrink-0 transition-colors mt-0.5">
+                                    <div class="w-1.5 h-1.5 rounded-full bg-white"></div>
+                                </div>
+                                <div class="flex-1">
+                                    <span class="text-sm text-gray-600 font-medium">Créer un nouveau dossier</span>
+                                    <div x-show="dossierAction === 'new'" class="mt-2">
+                                        <input type="text" name="nouveau_dossier" value="{{ old('nouveau_dossier') }}"
+                                            placeholder="Nom du dossier..."
+                                            class="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm text-gray-700 placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-[#16987C]/30 focus:border-[#16987C]/40">
+                                    </div>
+                                </div>
+                            </label>
+
+                        </div>
+                    </div>
+
                     <div class="flex items-center justify-end gap-3 pt-6 border-t border-gray-50 mt-8">
                         <a href="{{ route('activites.show', $activite) }}"
                             class="px-5 py-2.5 text-sm font-bold text-gray-500 hover:text-[#0F143A] transition-colors">
