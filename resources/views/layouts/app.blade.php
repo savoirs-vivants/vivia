@@ -15,11 +15,23 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 </head>
 
-<body class="font-grotesk bg-[#f3f5f8] antialiased">
+<body class="font-grotesk bg-[#f3f5f8] antialiased" x-data="{ sidebarOpen: false }">
     @if (!Route::is('login') && !Route::is('inscription') && !Route::is('password.forgot') && !Route::is('password.reset') && !Route::is('adhesion.*'))
+        <div
+            x-show="sidebarOpen"
+            x-transition:enter="transition-opacity ease-out duration-300"
+            x-transition:enter-start="opacity-0"
+            x-transition:enter-end="opacity-100"
+            x-transition:leave="transition-opacity ease-in duration-200"
+            x-transition:leave-start="opacity-100"
+            x-transition:leave-end="opacity-0"
+            @click="sidebarOpen = false"
+            class="fixed inset-0 bg-black/40 backdrop-blur-sm z-10 lg:hidden"
+            style="display: none;"
+        ></div>
         @include('components.sidebar')
 
-        <div class="ml-[292px] px-8 pt-6 pb-8 min-h-screen flex flex-col">
+        <div class="lg:ml-64 md:ml-16 transition-all duration-300 px-4 sm:px-6 lg:px-8 pt-5 pb-8 min-h-screen flex flex-col">
             @include('components.header', [
                 'title' => view()->yieldContent('title' ?? ''),
                 'saison' => $saison ?? null,
