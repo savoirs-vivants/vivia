@@ -3,12 +3,13 @@
 @section('title', 'Tableau de bord')
 
 @section('content')
-    <div class="flex flex-col gap-5 h-full">
+    <div class="flex flex-col gap-4 sm:gap-5 h-full">
 
-        <div class="grid grid-cols-12 gap-4">
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
 
             <div
-                class="col-span-4 bg-gradient-to-br from-[#083325] to-[#111536] rounded-2xl p-6 relative overflow-hidden shadow-lg shadow-[#083325]/10 border border-white/10">
+                class="bg-gradient-to-br from-[#083325] to-[#111536] rounded-2xl p-5 sm:p-6
+                        relative overflow-hidden shadow-lg shadow-[#083325]/10 border border-white/10">
                 <div class="absolute -right-8 -bottom-8 w-40 h-40 bg-[#16A37A]/20 rounded-full blur-3xl pointer-events-none">
                 </div>
                 <svg class="absolute top-0 right-0 w-48 h-48 text-white/5 translate-x-1/3 -translate-y-1/4 pointer-events-none"
@@ -16,37 +17,35 @@
                     <circle cx="50" cy="50" r="40" />
                     <circle cx="50" cy="50" r="20" fill="none" stroke="currentColor" stroke-width="2" />
                 </svg>
-                <div class="relative z-10 flex items-start justify-between">
-                    <div>
-                        <div class="flex items-center gap-2 mb-4">
-                            <div
-                                class="w-9 h-9 rounded-xl bg-white/10 flex items-center justify-center border border-white/5">
-                                <svg class="w-5 h-5 text-[#16A37A]" fill="none" stroke="currentColor"
-                                    viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                        d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
-                                </svg>
-                            </div>
-                            <span
-                                class="font-grotesk font-bold text-white/60 text-xs uppercase tracking-widest">Adhérents</span>
+                <div class="relative z-10">
+                    <div class="flex items-center gap-2 mb-4">
+                        <div class="w-9 h-9 rounded-xl bg-white/10 flex items-center justify-center border border-white/5">
+                            <svg class="w-5 h-5 text-[#16A37A]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
+                            </svg>
                         </div>
-                        <p class="font-grotesk font-black text-6xl text-white tracking-tighter leading-none">
-                            {{ $totalAdherents }}</p>
-                        @if ($newThisMonth > 0)
-                            <div
-                                class="inline-flex items-center gap-1.5 mt-3 bg-white/10 border border-white/10 text-[#16A37A] px-3 py-1.5 rounded-lg text-xs font-bold">
-                                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3"
-                                        d="M5 10l7-7m0 0l7 7m-7-7v18" />
-                                </svg>
-                                +{{ $newThisMonth }} ce mois
-                            </div>
-                        @endif
+                        <span
+                            class="font-grotesk font-bold text-white/60 text-xs uppercase tracking-widest">Adhérents</span>
                     </div>
+                    <p class="font-grotesk font-black text-5xl sm:text-6xl text-white tracking-tighter leading-none">
+                        {{ $totalAdherents }}
+                    </p>
+                    @if ($newThisMonth > 0)
+                        <div
+                            class="inline-flex items-center gap-1.5 mt-3 bg-white/10 border border-white/10
+                                    text-[#16A37A] px-3 py-1.5 rounded-lg text-xs font-bold">
+                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3"
+                                    d="M5 10l7-7m0 0l7 7m-7-7v18" />
+                            </svg>
+                            +{{ $newThisMonth }} ce mois
+                        </div>
+                    @endif
                 </div>
             </div>
 
-            <div class="col-span-4 bg-white rounded-2xl p-6 border border-gray-200 shadow-sm relative overflow-hidden">
+            <div class="bg-white rounded-2xl p-5 sm:p-6 border border-gray-200 shadow-sm relative overflow-hidden">
                 <svg class="absolute -right-6 -bottom-6 w-32 h-32 text-gray-50 pointer-events-none" fill="none"
                     stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1"
@@ -58,7 +57,8 @@
                             Finances</p>
                         <h3 class="font-grotesk font-bold text-gray-700 text-sm">Trésorerie encaissée</h3>
                     </div>
-                    <div class="w-9 h-9 rounded-xl bg-blue-50 flex items-center justify-center border border-blue-100/50">
+                    <div
+                        class="w-9 h-9 rounded-xl bg-blue-50 flex items-center justify-center border border-blue-100/50 shrink-0">
                         <svg class="w-5 h-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                 d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -66,20 +66,25 @@
                     </div>
                 </div>
                 <div class="flex items-baseline gap-1 relative z-10">
-                    <p class="font-grotesk font-black text-4xl text-gray-900 tracking-tight leading-none">
-                        {{ number_format($totalCotisations, 0, ',', ' ') }}</p>
-                    <span class="text-2xl text-gray-200 font-bold">€</span>
+                    <p class="font-grotesk font-black text-3xl sm:text-4xl text-gray-900 tracking-tight leading-none">
+                        {{ number_format($totalCotisations, 0, ',', ' ') }}
+                    </p>
+                    <span class="text-xl sm:text-2xl text-gray-200 font-bold">€</span>
                 </div>
                 @if ($totalEnAttente > 0)
                     <div
-                        class="mt-3 inline-flex items-center gap-2 bg-amber-50 px-3 py-1.5 rounded-xl border border-amber-100 relative z-10">
+                        class="mt-3 inline-flex items-center gap-2 bg-amber-50 px-3 py-1.5
+                                rounded-xl border border-amber-100 relative z-10">
                         <span class="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse shrink-0"></span>
-                        <p class="text-xs font-bold text-amber-700">Attente : <span
-                                class="text-amber-900">{{ number_format($totalEnAttente, 0, ',', ' ') }} €</span></p>
+                        <p class="text-xs font-bold text-amber-700">
+                            Attente : <span class="text-amber-900">{{ number_format($totalEnAttente, 0, ',', ' ') }}
+                                €</span>
+                        </p>
                     </div>
                 @else
                     <div
-                        class="mt-3 inline-flex items-center gap-1.5 text-xs font-bold text-[#16A37A] bg-[#16A37A]/10 px-3 py-1.5 rounded-lg relative z-10">
+                        class="mt-3 inline-flex items-center gap-1.5 text-xs font-bold text-[#16A37A]
+                                bg-[#16A37A]/10 px-3 py-1.5 rounded-lg relative z-10">
                         <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
                         </svg>
@@ -88,15 +93,18 @@
                 @endif
             </div>
 
-            <div class="col-span-4 bg-white rounded-2xl p-6 border border-gray-200 shadow-sm flex flex-col justify-center">
+            <div
+                class="sm:col-span-2 lg:col-span-1 bg-white rounded-2xl p-5 sm:p-6
+                        border border-gray-200 shadow-sm flex flex-col justify-center">
                 <div class="mb-4">
                     <p class="font-grotesk font-bold text-gray-400 uppercase text-[10px] tracking-[0.2em] mb-0.5">Suivi</p>
                     <h3 class="font-grotesk font-bold text-gray-700 text-sm">État des dossiers</h3>
                 </div>
 
-                <div class="space-y-5">
+                <div class="space-y-4 sm:space-y-0 sm:grid sm:grid-cols-3 sm:gap-4 lg:block lg:space-y-5">
                     @php $total = max(1, $statutPaye + $statutPartiel + $statutAttente); @endphp
-                    <div>
+
+                    <div class="sm:flex sm:flex-col sm:justify-end lg:block">
                         <div class="flex items-center justify-between text-xs mb-1.5">
                             <div class="flex items-center gap-2 font-bold text-gray-700">
                                 <span class="w-2.5 h-2.5 rounded-full bg-[#16A37A] shadow-sm"></span> Payés
@@ -108,7 +116,7 @@
                                 style="width: {{ round(($statutPaye / $total) * 100) }}%"></div>
                         </div>
                     </div>
-                    <div>
+                    <div class="sm:flex sm:flex-col sm:justify-end lg:block">
                         <div class="flex items-center justify-between text-xs mb-1.5">
                             <div class="flex items-center gap-2 font-bold text-gray-700">
                                 <span class="w-2.5 h-2.5 rounded-full bg-amber-400 shadow-sm"></span> Partiel
@@ -120,7 +128,7 @@
                                 style="width: {{ round(($statutPartiel / $total) * 100) }}%"></div>
                         </div>
                     </div>
-                    <div>
+                    <div class="sm:flex sm:flex-col sm:justify-end lg:block">
                         <div class="flex items-center justify-between text-xs mb-1.5">
                             <div class="flex items-center gap-2 font-bold text-gray-700">
                                 <span class="w-2.5 h-2.5 rounded-full bg-rose-400 shadow-sm"></span> En attente
@@ -139,24 +147,26 @@
 
         <div class="bg-white rounded-3xl border border-gray-200 shadow-sm overflow-hidden flex flex-col flex-1 min-h-0">
 
-            <div class="px-8 py-6 border-b border-gray-100 bg-white flex items-center justify-between shrink-0">
+            <div
+                class="px-5 sm:px-8 py-5 sm:py-6 border-b border-gray-100 bg-white flex items-center justify-between shrink-0">
                 <div>
-                    <h3 class="font-grotesk font-black text-xl text-gray-900 tracking-tight flex items-center gap-3">
+                    <h3
+                        class="font-grotesk font-black text-lg sm:text-xl text-gray-900 tracking-tight flex items-center gap-2 sm:gap-3">
                         @if ($isGestionnaire)
                             <span
-                                class="w-8 h-8 rounded-lg bg-teal-50 text-teal-600 flex items-center justify-center text-base">📋</span>
+                                class="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-teal-50 text-teal-600 flex items-center justify-center text-sm sm:text-base">📋</span>
                             Carnet de bord
                         @elseif (Auth::user()->role === 'admin')
                             <span
-                                class="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center text-base">📊</span>
+                                class="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center text-sm sm:text-base">📊</span>
                             Analyse des effectifs
                         @else
                             <span
-                                class="w-8 h-8 rounded-lg bg-gray-50 text-gray-400 flex items-center justify-center text-base">☕</span>
+                                class="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-gray-50 text-gray-400 flex items-center justify-center text-sm sm:text-base">☕</span>
                             Espace personnel
                         @endif
                     </h3>
-                    <p class="text-sm text-gray-500 font-medium mt-1 pl-11">
+                    <p class="text-xs sm:text-sm text-gray-500 font-medium mt-1 pl-9 sm:pl-11">
                         @if ($isGestionnaire)
                             Gérez votre prochaine intervention sur le terrain
                         @elseif (Auth::user()->role === 'admin')
@@ -171,11 +181,11 @@
             <div class="flex flex-col lg:flex-row flex-1 bg-gray-50/30">
 
                 @if ($isGestionnaire)
-                    <div class="flex-1 p-8">
+                    <div class="flex-1 p-5 sm:p-8">
 
                         @if ($prochaineSeance)
                             <div class="max-w-4xl mx-auto">
-                                <div class="flex items-center gap-3 mb-6">
+                                <div class="flex items-center gap-3 mb-5 sm:mb-6">
                                     <span class="relative flex h-2.5 w-2.5">
                                         <span
                                             class="animate-ping absolute inline-flex h-full w-full rounded-full bg-teal-400 opacity-75"></span>
@@ -189,16 +199,17 @@
                                     class="bg-white rounded-3xl border border-gray-200 shadow-[0_8px_30px_rgb(0,0,0,0.04)] overflow-hidden">
                                     <div class="grid grid-cols-1 md:grid-cols-5">
 
-                                        <div class="md:col-span-3 p-8 flex items-start gap-6">
+                                        <div class="md:col-span-3 p-5 sm:p-8 flex items-start gap-4 sm:gap-6">
                                             <div
-                                                class="w-24 h-28 shrink-0 bg-white border-2 border-gray-100 rounded-2xl flex flex-col overflow-hidden text-center shadow-sm">
+                                                class="w-20 h-24 sm:w-24 sm:h-28 shrink-0 bg-white border-2 border-gray-100
+                                                        rounded-2xl flex flex-col overflow-hidden text-center shadow-sm">
                                                 <div
                                                     class="bg-[#222A60] text-white text-[11px] font-bold uppercase py-2 tracking-widest">
                                                     {{ \Carbon\Carbon::parse($prochaineSeance->date)->translatedFormat('M') }}
                                                 </div>
                                                 <div class="flex-1 flex flex-col items-center justify-center">
                                                     <span
-                                                        class="font-grotesk font-black text-4xl text-gray-900 leading-none mb-1">
+                                                        class="font-grotesk font-black text-3xl sm:text-4xl text-gray-900 leading-none mb-1">
                                                         {{ \Carbon\Carbon::parse($prochaineSeance->date)->format('d') }}
                                                     </span>
                                                     <span class="text-[10px] font-bold text-gray-400 uppercase">
@@ -207,9 +218,10 @@
                                                 </div>
                                             </div>
 
-                                            <div class="flex flex-col justify-center py-1">
+                                            <div class="flex flex-col justify-center py-1 min-w-0">
                                                 <div
-                                                    class="text-[#16A37A] font-black text-sm mb-2 flex items-center gap-2 bg-teal-50 w-fit px-3 py-1 rounded-lg">
+                                                    class="text-[#16A37A] font-black text-sm mb-2 flex items-center gap-2
+                                                            bg-teal-50 w-fit px-3 py-1 rounded-lg">
                                                     <svg class="w-4 h-4" fill="none" stroke="currentColor"
                                                         viewBox="0 0 24 24">
                                                         <path stroke-linecap="round" stroke-linejoin="round"
@@ -218,15 +230,13 @@
                                                     </svg>
                                                     {{ \Carbon\Carbon::parse($prochaineSeance->date)->format('H:i') }}
                                                 </div>
-
                                                 <h3
-                                                    class="font-grotesk font-black text-2xl text-[#0F143A] leading-tight mb-3">
+                                                    class="font-grotesk font-black text-xl sm:text-2xl text-[#0F143A] leading-tight mb-3 truncate">
                                                     {{ $prochaineSeance->activite_nom }}
                                                 </h3>
-
                                                 <p
                                                     class="inline-flex items-center gap-2 text-sm font-medium text-gray-500">
-                                                    <svg class="w-4 h-4 text-gray-400" fill="none"
+                                                    <svg class="w-4 h-4 text-gray-400 shrink-0" fill="none"
                                                         stroke="currentColor" viewBox="0 0 24 24">
                                                         <path stroke-linecap="round" stroke-linejoin="round"
                                                             stroke-width="2"
@@ -234,15 +244,19 @@
                                                         <path stroke-linecap="round" stroke-linejoin="round"
                                                             stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
                                                     </svg>
-                                                    {{ $prochaineSeance->adresse ?: 'Lieu non défini' }}
+                                                    <span
+                                                        class="truncate">{{ $prochaineSeance->adresse ?: 'Lieu non défini' }}</span>
                                                 </p>
                                             </div>
                                         </div>
 
                                         <div
-                                            class="md:col-span-2 bg-gray-50 border-t md:border-t-0 md:border-l border-gray-100 p-8 flex flex-col justify-between">
+                                            class="md:col-span-2 bg-gray-50 border-t md:border-t-0 md:border-l border-gray-100
+                                                    p-5 sm:p-8 flex flex-col justify-end">
                                             <button
-                                                class="mt-6 w-full bg-[#083325] hover:bg-[#16A37A] text-white font-grotesk font-bold py-3.5 rounded-xl transition-all duration-300 shadow-md hover:shadow-lg flex items-center justify-center gap-2 group text-sm">
+                                                class="w-full bg-[#083325] hover:bg-[#16A37A] text-white font-grotesk font-bold
+                                                           py-3.5 rounded-xl transition-all duration-300 shadow-md hover:shadow-lg
+                                                           flex items-center justify-center gap-2 group text-sm">
                                                 Procéder à l'appel
                                                 <svg class="w-4 h-4 group-hover:translate-x-1 transition-transform"
                                                     fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -258,7 +272,8 @@
                         @else
                             <div class="h-full flex flex-col items-center justify-center text-gray-400 py-12">
                                 <div
-                                    class="w-20 h-20 rounded-3xl bg-white flex items-center justify-center mb-5 border border-gray-100 shadow-sm shadow-gray-100/50">
+                                    class="w-20 h-20 rounded-3xl bg-white flex items-center justify-center mb-5
+                                            border border-gray-100 shadow-sm shadow-gray-100/50">
                                     <svg class="w-10 h-10 text-gray-300" fill="none" stroke="currentColor"
                                         viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
@@ -266,16 +281,20 @@
                                     </svg>
                                 </div>
                                 <h3 class="text-lg font-black text-gray-900 mb-1">Aucune séance à venir</h3>
-                                <p class="text-sm font-medium text-gray-500">Vous n'avez pas de séance planifiée
-                                    prochainement.</p>
+                                <p class="text-sm font-medium text-gray-500 text-center">
+                                    Vous n'avez pas de séance planifiée prochainement.
+                                </p>
                             </div>
                         @endif
+
                     </div>
                 @elseif (Auth::user()->role === 'admin')
-                    <div class="flex-1 p-8 border-b lg:border-b-0 lg:border-r border-gray-200 bg-white">
-                        <p class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-8 text-center">Types des
-                            adhésions</p>
-                        <div class="relative w-full aspect-square max-h-[300px] mx-auto flex items-center justify-center">
+                    <div class="flex-1 p-5 sm:p-8 border-b lg:border-b-0 lg:border-r border-gray-200 bg-white">
+                        <p class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-6 sm:mb-8 text-center">
+                            Types des adhésions
+                        </p>
+                        <div class="relative w-full mx-auto flex items-center justify-center"
+                            style="max-height: 280px; height: min(280px, 55vw);">
                             <canvas id="chartTypes" class="absolute inset-0 w-full h-full z-10"></canvas>
                         </div>
                         @php
@@ -287,11 +306,11 @@
                         @endphp
                     </div>
 
-                    <div class="flex-[1.5] p-8 bg-white">
-                        <div class="flex items-center justify-between mb-8">
+                    <div class="flex-[1.5] p-5 sm:p-8 bg-white">
+                        <div class="flex items-center justify-between mb-6 sm:mb-8">
                             <p class="text-xs font-bold text-gray-400 uppercase tracking-widest">Top 3 des activités</p>
                         </div>
-                        <div class="relative w-full h-[300px]">
+                        <div class="relative w-full" style="height: min(280px, 60vw);">
                             @php
                                 $actLabels = $activitesStats->pluck('nom')->toJson();
                                 $actData = $activitesStats->pluck('total_inscrits')->toJson();
@@ -308,21 +327,20 @@
                 @else
                     <div class="flex-1 flex flex-col items-center justify-center text-gray-400 py-16 w-full">
                         <div
-                            class="w-16 h-16 rounded-full bg-white flex items-center justify-center mb-4 border border-gray-200 shadow-sm">
+                            class="w-16 h-16 rounded-full bg-white flex items-center justify-center mb-4
+                                    border border-gray-200 shadow-sm">
                             <span class="text-3xl opacity-80">☕</span>
                         </div>
-                        <p class="text-base font-bold text-gray-600">Vous n'êtes assigné·e à la gestion d'aucune activité.
+                        <p class="text-sm sm:text-base font-bold text-gray-600 text-center px-6">
+                            Vous n'êtes assigné·e à la gestion d'aucune activité.
                         </p>
                     </div>
                 @endif
-
             </div>
         </div>
     </div>
-    </div>
 @endsection
 
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script>
     document.addEventListener('DOMContentLoaded', function() {
 
@@ -355,34 +373,28 @@
             cornerRadius: 12,
         };
 
-        // ==========================================
-        // 1. DOUGHNUT : RÉPARTITION PAR TYPE (ADMIN)
-        // ==========================================
         const ctxTypes = document.getElementById('chartTypes');
         if (ctxTypes) {
-            const labels = {!! $typeLabels ?? '[]' !!};
-            const data = {!! $typeData ?? '[]' !!};
-
             new Chart(ctxTypes, {
                 type: 'doughnut',
                 data: {
-                    labels: labels,
+                    labels: {!! $typeLabels ?? '[]' !!},
                     datasets: [{
-                        data: data,
+                        data: {!! $typeData ?? '[]' !!},
                         backgroundColor: [SV_GREEN, SV_DARK, SV_LIGHT, SV_MUTED],
                         borderWidth: 4,
                         borderColor: '#ffffff',
-                        hoverOffset: 6
+                        hoverOffset: 6,
                     }]
                 },
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
-                    cutout: '75%',
+                    cutout: '72%',
                     layout: {
                         padding: {
-                            top: 10,
-                            bottom: 10
+                            top: 8,
+                            bottom: 8
                         }
                     },
                     plugins: {
@@ -390,24 +402,21 @@
                             position: 'bottom',
                             labels: {
                                 usePointStyle: true,
-                                padding: 20,
+                                padding: 16,
                                 font: {
                                     family: 'Space Grotesk, sans-serif',
-                                    size: 12,
+                                    size: 11,
                                     weight: 'bold'
                                 },
-                                color: '#4B5563'
+                                color: '#4B5563',
                             }
                         },
-                        tooltip: modernTooltip
+                        tooltip: modernTooltip,
                     }
                 }
             });
         }
 
-        // ==========================================
-        // 2. BARRES HORIZONTALES : PALMARÈS ACTIVITÉS
-        // ==========================================
         const ctxAct = document.getElementById('chartActivites');
         if (ctxAct) {
             const labels = {!! $actLabels ?? '[]' !!};
@@ -417,14 +426,14 @@
             new Chart(ctxAct, {
                 type: 'bar',
                 data: {
-                    labels: labels,
+                    labels,
                     datasets: [{
                         label: 'Inscrits',
-                        data: data,
+                        data,
                         backgroundColor: SV_GREEN,
                         borderRadius: 6,
-                        barThickness: 28,
-                        borderSkipped: false
+                        barThickness: 24,
+                        borderSkipped: false,
                     }]
                 },
                 options: {
@@ -433,7 +442,7 @@
                     maintainAspectRatio: false,
                     layout: {
                         padding: {
-                            right: 40
+                            right: 36
                         }
                     },
                     plugins: {
@@ -445,7 +454,7 @@
                             callbacks: {
                                 label: (ctx) => ` ${ctx.parsed.x} inscrits`,
                                 afterLabel: (ctx) => horaires[ctx.dataIndex] ?
-                                    ` ${horaires[ctx.dataIndex]}` : ''
+                                    ` ${horaires[ctx.dataIndex]}` : '',
                             }
                         }
                     },
@@ -465,11 +474,11 @@
                                 color: '#111827',
                                 font: {
                                     family: 'Space Grotesk, sans-serif',
-                                    size: 13,
+                                    size: 12,
                                     weight: 'bold'
                                 },
-                                padding: 10,
-                                callback: function(val, i) {
+                                padding: 8,
+                                callback: function(val) {
                                     const label = this.getLabelForValue(val);
                                     return label.length > 18 ? label.slice(0, 16) + '…' : label;
                                 }
@@ -493,7 +502,7 @@
                             if (!val) return;
                             ctx.save();
                             ctx.fillStyle = '#6B7280';
-                            ctx.font = 'bold 13px Space Grotesk, sans-serif';
+                            ctx.font = 'bold 12px Space Grotesk, sans-serif';
                             ctx.textAlign = 'left';
                             ctx.textBaseline = 'middle';
                             ctx.fillText(val, bar.x + 8, bar.y);

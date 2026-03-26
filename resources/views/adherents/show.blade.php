@@ -1,20 +1,24 @@
 @extends('layouts.app')
 
-@section('title', $adherent->prenom . ' ' . $adherent->nom)
+@section('title', 'Détails - ' . $adherent->prenom . ' ' . $adherent->nom)
 
 @section('content')
 
-@if(session('success'))
-    <div class="mb-4 px-4 py-3 bg-emerald-50 border border-emerald-100 rounded-xl text-sm font-semibold text-emerald-600 flex items-center gap-2">
-        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
-        {{ session('success') }}
-    </div>
-@endif
+    @if (session('success'))
+        <div
+            class="mb-4 px-4 py-3 bg-emerald-50 border border-emerald-100 rounded-xl text-sm font-semibold text-emerald-600 flex items-center gap-2">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+            </svg>
+            {{ session('success') }}
+        </div>
+    @endif
 
     <div class="mb-8">
 
         <div class="flex items-center gap-2 text-xs text-gray-400 mb-5 pl-1">
-            <a href="{{ route('adherents.index') }}" class="hover:text-[#222A60] transition-colors font-medium">Adhérents</a>
+            <a href="{{ route('adherents.index') }}"
+                class="hover:text-[#222A60] transition-colors font-medium">Adhérents</a>
             <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7" />
             </svg>
@@ -132,26 +136,40 @@
                             @endif
                         </div>
 
-                        <div class="flex items-center gap-3">
-                            <div class="text-center px-4 py-2.5 bg-[#16987C]/8 rounded-xl border border-[#16987C]/15">
-                                <p class="font-grotesk text-xl font-black text-[#16987C]">{{ $nbPresences }}</p>
-                                <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-0.5">Présences
-                                </p>
+                        <div class="grid grid-cols-2 md:grid-cols-4 gap-3 w-full">
+                            <div
+                                class="text-center px-3 sm:px-4 py-2.5 bg-[#16987C]/10 rounded-xl border border-[#16987C]/15 flex flex-col justify-center">
+                                <p class="font-grotesk text-lg sm:text-xl font-black text-[#16987C] leading-none">
+                                    {{ $nbPresences }}</p>
+                                <p
+                                    class="text-[9px] sm:text-[10px] font-bold text-gray-500 uppercase tracking-widest mt-1.5">
+                                    Présences</p>
                             </div>
-                            <div class="text-center px-4 py-2.5 bg-rose-50 rounded-xl border border-rose-100">
-                                <p class="font-grotesk text-xl font-black text-rose-500">{{ $nbAbsences }}</p>
-                                <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-0.5">Absences</p>
+                            <div
+                                class="text-center px-3 sm:px-4 py-2.5 bg-rose-50 rounded-xl border border-rose-100 flex flex-col justify-center">
+                                <p class="font-grotesk text-lg sm:text-xl font-black text-rose-500 leading-none">
+                                    {{ $nbAbsences }}</p>
+                                <p
+                                    class="text-[9px] sm:text-[10px] font-bold text-gray-500 uppercase tracking-widest mt-1.5">
+                                    Absences</p>
                             </div>
-                            <div class="text-center px-4 py-2.5 bg-gray-50 rounded-xl border border-gray-100">
-                                <p class="font-grotesk text-xl font-black text-[#0F143A]">{{ $tauxPresence }}%</p>
-                                <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-0.5">Assiduité
-                                </p>
+                            <div
+                                class="text-center px-3 sm:px-4 py-2.5 bg-gray-50 rounded-xl border border-gray-100 flex flex-col justify-center">
+                                <p class="font-grotesk text-lg sm:text-xl font-black text-[#0F143A] leading-none">
+                                    {{ $tauxPresence }}%</p>
+                                <p
+                                    class="text-[9px] sm:text-[10px] font-bold text-gray-500 uppercase tracking-widest mt-1.5">
+                                    Assiduité</p>
                             </div>
-                            <div class="text-center px-4 py-2.5 bg-[#222A60]/5 rounded-xl border border-[#222A60]/10">
-                                <p class="font-grotesk text-xl font-black text-[#222A60]">
+                            <div
+                                class="text-center px-3 sm:px-4 py-2.5 bg-[#222A60]/5 rounded-xl border border-[#222A60]/10 flex flex-col justify-center">
+                                <p class="font-grotesk text-lg sm:text-xl font-black text-[#222A60] leading-none">
                                     {{ number_format($adherent->montant_total, 0, ',', ' ') }} €</p>
-                                <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-0.5">Encaissé</p>
+                                <p
+                                    class="text-[9px] sm:text-[10px] font-bold text-gray-500 uppercase tracking-widest mt-1.5">
+                                    Encaissé</p>
                             </div>
+
                         </div>
                     </div>
 
@@ -204,7 +222,8 @@
                         @endphp
                         @foreach ($infos as $info)
                             <div class="flex items-baseline justify-between py-3 border-b border-gray-50 last:border-0">
-                                <span class="text-xs font-semibold text-gray-400 shrink-0 mr-4">{{ $info['label'] }}</span>
+                                <span
+                                    class="text-xs font-semibold text-gray-400 shrink-0 mr-4">{{ $info['label'] }}</span>
                                 <span
                                     class="text-sm font-semibold text-[#0F143A] text-right">{{ $info['value'] ?? '—' }}</span>
                             </div>
@@ -487,17 +506,6 @@
                             class="font-grotesk text-lg font-black text-[#16987C]">{{ number_format($adherent->montant_total, 2, ',', ' ') }}
                             €</span>
                     </div>
-
-                    @if ($paiementPrincipal?->source === 'HelloAsso' && $paiementPrincipal?->commentaire)
-                        <div class="mx-5 mb-4 flex items-start gap-2 p-3 bg-blue-50 rounded-xl border border-blue-100">
-                            <svg class="w-4 h-4 text-blue-400 shrink-0 mt-0.5" fill="none" stroke="currentColor"
-                                viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                            </svg>
-                            <p class="text-xs text-blue-600">{{ $paiementPrincipal->commentaire }}</p>
-                        </div>
-                    @endif
                 </div>
             @endif
 

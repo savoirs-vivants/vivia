@@ -15,7 +15,7 @@
                 </p>
             </div>
 
-            <div class="flex flex-wrap items-center gap-3">
+            <div class="flex flex-wrap items-center gap-3 w-full md:w-auto">
 
                 <livewire:export-statistiques :saison="$saisonCourante" />
 

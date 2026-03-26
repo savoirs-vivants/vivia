@@ -186,56 +186,34 @@
                         action="{{ route('activites.presences.store', ['activite' => $activite->id, 'seance' => $seance->id_seance]) }}"
                         method="POST">
                         @csrf
-                        <div class="divide-y divide-gray-50">
+                        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 p-4">
                             @foreach ($adherentsStats as $adherent)
                                 @php
                                     $presence = $seance->presences->where('id_adherent', $adherent->id)->first();
                                     $estAbsent = $presence !== null;
                                 @endphp
-                                <div
-                                    class="flex items-center justify-between py-3.5 px-6 hover:bg-gray-50/60 transition-colors">
-                                    <div class="flex items-center gap-3">
-                                        <div class="w-9 h-9 rounded-full flex items-center justify-center text-white text-xs font-black shrink-0"
-                                            style="background-color: {{ $adherent->couleur_avatar }}">
-                                            {{ $adherent->initiales }}
-                                        </div>
-                                        <span class="text-sm font-bold text-[#0F143A]">{{ $adherent->nom_complet }}</span>
+
+                                <div class="group flex items-center gap-3.5 p-3 rounded-2xl hover:bg-gray-50/80 border border-transparent hover:border-gray-100 transition-all"
+                                    x-data="{ isAbsent: {{ $estAbsent ? 'true' : 'false' }} }">
+
+                                    <div class="w-10 h-10 rounded-[14px] flex items-center justify-center text-white text-sm font-black shrink-0 shadow-sm"
+                                        style="background-color: {{ $adherent->couleur_avatar }}">
+                                        {{ $adherent->initiales }}
                                     </div>
-                                    <div class="flex items-center gap-3">
-                                        <input type="text" id="raison-{{ $seance->id_seance }}-{{ $adherent->id }}"
-                                            name="presences[{{ $adherent->id }}][raison]"
-                                            value="{{ $presence->raison ?? '' }}" placeholder="Motif…"
-                                            class="{{ $estAbsent ? '' : 'hidden' }} text-xs px-3 py-2 border border-gray-200 rounded-lg bg-white text-gray-600 focus:outline-none focus:border-rose-300 focus:ring-2 focus:ring-rose-100 w-36 transition-all shadow-sm">
-                                        <label class="relative inline-flex items-center cursor-pointer">
-                                            <input type="checkbox" name="presences[{{ $adherent->id }}][statut]"
-                                                value="present" class="sr-only peer" {{ $estAbsent ? '' : 'checked' }}
-                                                onchange="toggleRaison(this, 'raison-{{ $seance->id_seance }}-{{ $adherent->id }}')">
-                                            <div
-                                                class="w-11 h-6 bg-rose-100 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#16987C] shadow-inner">
-                                            </div>
-                                            <span
-                                                class="ml-3 text-xs font-bold w-14 text-center
-                                            {{ $estAbsent ? 'text-rose-500' : 'text-[#16987C]' }}"
-                                                id="label-{{ $seance->id_seance }}-{{ $adherent->id }}">
-                                                {{ $estAbsent ? 'Absent' : 'Présent' }}
-                                            </span>
-                                        </label>
+
+                                    <div class="flex flex-col min-w-0">
+                                        <span class="text-sm font-bold text-[#0F143A] truncate leading-tight">
+                                            {{ $adherent->nom_complet }}
+                                        </span>
+                                        <span
+                                            class="text-[10px] font-black uppercase tracking-widest mt-0.5 transition-colors"
+                                            :class="isAbsent ? 'text-rose-500' : 'text-[#16987C]'"
+                                            x-text="isAbsent ? 'Absent' : 'Présent'">
+                                        </span>
                                     </div>
+
                                 </div>
                             @endforeach
-                        </div>
-                        <div class="px-6 py-4 bg-gray-50 border-t border-gray-100 flex justify-end">
-                            <button type="submit"
-                                class="inline-flex items-center gap-2 px-6 py-2.5 text-white text-sm font-bold rounded-xl transition-all shadow-sm"
-                                style="background: #083325; box-shadow: 0 2px 8px rgba(8,51,37,.22);"
-                                onmouseover="this.style.background='#0a3d2c'"
-                                onmouseout="this.style.background='#083325'">
-                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
-                                        d="M5 13l4 4L19 7" />
-                                </svg>
-                                Enregistrer les présences
-                            </button>
                         </div>
                     </form>
                 </div>
@@ -283,8 +261,10 @@
                                 {{ $adherent->taux_presence }}% d'assiduité
                             </span>
                         </div>
+
+                        {{-- Bouton d'abandon : visible par défaut sur mobile/tablette, caché sur PC sauf au survol --}}
                         <button type="button" onclick="toggleAbandonForm({{ $adherent->id }})"
-                            class="opacity-0 group-hover:opacity-100 transition-opacity p-2 rounded-xl text-gray-300 hover:text-rose-500 hover:bg-rose-50">
+                            class="opacity-100 lg:opacity-0 group-hover:opacity-100 transition-opacity p-2 rounded-xl text-gray-400 lg:text-gray-300 hover:text-rose-500 hover:bg-rose-50">
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                     d="M13 7a4 4 0 11-8 0 4 4 0 018 0zM9 14a6 6 0 00-6 6v1h12v-1a6 6 0 00-6-6zM21 12h-6" />
