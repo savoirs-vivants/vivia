@@ -5,6 +5,7 @@ use App\Http\Controllers\AdherentController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\BackOfficeController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\DossierActiviteController;
 use App\Http\Controllers\InscriptionController;
 use App\Http\Controllers\PasswordResetController;
 use App\Http\Controllers\ProfileController;
@@ -59,6 +60,9 @@ Route::middleware('auth')->group(function () {
     Route::put('/activites/{activite}', [ActiviteController::class, 'update'])->name('activites.update');
     Route::post('/activites/{activite}/toggle-archive', [ActiviteController::class, 'toggleArchive'])->name('activites.toggleArchive');
     Route::post('/activites/{activite}/adherents/{adherent}/abandon', [ActiviteController::class, 'abandonner'])->name('activites.abandonner');
+
+    Route::post('/dossiers-activite', [DossierActiviteController::class, 'store'])->name('dossiers.store');
+    Route::delete('/dossiers-activite/{dossier}', [DossierActiviteController::class, 'destroy'])->name('dossiers.destroy');
 
     Route::get('/profil/modifier', [App\Http\Controllers\ProfileController::class, 'edit'])->name('profile.edit');
     Route::put('/profil', [App\Http\Controllers\ProfileController::class, 'update'])->name('profile.update');

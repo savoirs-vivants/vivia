@@ -10,13 +10,22 @@
             <span class="font-bold text-gray-600">{{ $activites->count() }}</span> activités cette saison
         </p>
     </div>
-    <a href="{{ route('activites.create') }}"
-       class="inline-flex items-center gap-2 px-5 py-2.5 bg-[#222A60] hover:bg-[#1a2050] text-white text-sm font-bold rounded-xl transition-all shadow-sm hover:shadow-md">
-        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/>
-        </svg>
-        Ajouter une activité
-    </a>
+    <div class="flex items-center gap-2">
+        <button onclick="toggleModalDossier()"
+            class="inline-flex items-center gap-2 px-4 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-600 text-sm font-bold rounded-xl transition-all">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V7z"/>
+            </svg>
+            Gérer les dossiers
+        </button>
+        <a href="{{ route('activites.create') }}"
+           class="inline-flex items-center gap-2 px-5 py-2.5 bg-[#222A60] hover:bg-[#1a2050] text-white text-sm font-bold rounded-xl transition-all shadow-sm hover:shadow-md">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/>
+            </svg>
+            Ajouter une activité
+        </a>
+    </div>
 </div>
 
 <div class="flex flex-wrap items-center gap-2 mb-6 pl-2">
@@ -39,125 +48,100 @@
     </a>
 </div>
 
-<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-5">
+@php
+    $activitesParDossier = $activites->groupBy(fn($a) => $a->id_dossier ?? 0);
+    $activitesSansDossier = $activitesParDossier->get(0, collect());
+    $dossiersAvecActivites = $dossiers->filter(fn($d) => $activitesParDossier->has($d->id));
+    $dossiersSansActivites = $dossiers->reject(fn($d) => $activitesParDossier->has($d->id));
+@endphp
 
-    @forelse ($activites as $activite)
-        <div class="bg-white rounded-2xl border border-gray-100 shadow-[0_2px_12px_rgba(0,0,0,0.04)] hover:shadow-[0_8px_30px_rgba(0,0,0,0.08)] transition-all duration-200 group relative overflow-hidden flex flex-col">
-
-            <div class="absolute top-0 right-0 flex items-center">
-                <form action="{{ route('activites.toggleArchive', $activite) }}" method="POST" class="opacity-0 group-hover:opacity-100 transition-opacity">
-                    @csrf
-                    <button type="submit" class="p-2 text-gray-300 hover:text-rose-500 transition-colors" title="Archiver cette activité">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
-                        </svg>
-                    </button>
-                </form>
-
-                <span class="text-[10px] font-black uppercase px-3.5 py-1.5 rounded-bl-xl
-                    {{ $activite->est_stage ? 'bg-amber-100 text-amber-600' : 'bg-[#222A60]/8 text-[#222A60]' }}">
-                    {{ $activite->est_stage ? 'Stage' : 'Activité' }}
-                </span>
-            </div>
-
-            <div class="p-5 flex flex-col flex-1">
-
-                <div class="w-11 h-11 rounded-xl flex items-center justify-center mb-4 transition-colors
-                    {{ $activite->est_stage ? 'bg-amber-50 group-hover:bg-amber-100' : 'bg-[#222A60]/5 group-hover:bg-[#16987C]/10' }}">
-                    @if($activite->est_stage)
-                        <svg class="w-5 h-5 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
-                        </svg>
-                    @else
-                        <svg class="w-5 h-5 text-[#222A60]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/>
-                        </svg>
-                    @endif
-                </div>
-
-                <h3 class="font-grotesk font-black text-base text-[#0F143A] leading-tight mb-1 pr-12">
-                    {{ $activite->nom }}
-                </h3>
-                <p class="text-xs text-gray-400 font-medium mb-1">
-                    @if($activite->adresse) {{ $activite->adresse }} @endif
-                    @if($activite->adresse && $activite->ville) · @endif
-                    @if($activite->ville) {{ $activite->ville }} @endif
-                </p>
-
-                @if(!empty($activite->horaires_list))
-                    <div class="flex flex-wrap gap-1 mb-4">
-                        @foreach($activite->horaires_list as $h)
-                            <span class="inline-flex items-center px-2 py-0.5 bg-gray-100 text-gray-500 rounded-md text-[10px] font-semibold">
-                                {{ $h }}
-                            </span>
-                        @endforeach
-                    </div>
-                @else
-                    <div class="mb-4"></div>
-                @endif
-
-                <div class="mt-auto flex items-end justify-between pt-4 border-t border-gray-50">
-                    <div>
-                        <div class="flex items-baseline gap-1">
-                            <p class="font-grotesk text-3xl font-black text-[#222A60] leading-none">
-                                {{ $activite->nb_inscrits }}
-                            </p>
-                            <p class="text-xs font-bold text-gray-400 uppercase">inscrits</p>
-                        </div>
-                        <p class="text-sm font-black text-[#0F143A] mt-1">{{ $activite->tarif_format }}</p>
-                    </div>
-
-                    <a href="{{ route('activites.show', $activite) }}"
-                       class="w-9 h-9 rounded-xl flex items-center justify-center transition-all
-                       bg-gray-50 text-gray-400 group-hover:bg-[#222A60] group-hover:text-white">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/>
-                        </svg>
-                    </a>
-                </div>
-            </div>
-        </div>
-    @empty
-        <div class="col-span-full py-20 flex flex-col items-center gap-3 text-gray-300">
-            <div class="w-16 h-16 rounded-2xl bg-gray-100 flex items-center justify-center">
-                <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/>
+@foreach($dossiersAvecActivites as $dossier)
+    @php $activitesDuDossier = $activitesParDossier->get($dossier->id, collect()); @endphp
+    <div class="mb-8" x-data="{ open: true }">
+        <div class="flex items-center gap-3 mb-4 pl-1 cursor-pointer" @click="open = !open">
+            <div class="w-8 h-8 rounded-lg bg-[#222A60]/10 flex items-center justify-center flex-shrink-0">
+                <svg class="w-4 h-4 text-[#222A60]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V7z"/>
                 </svg>
             </div>
-            <p class="font-bold text-gray-400">Aucune activité trouvée</p>
-        </div>
-    @endforelse
-
-    <a href="{{ route('activites.create') }}"
-       class="border-2 border-dashed border-gray-200 rounded-2xl p-5 flex flex-col items-center justify-center gap-3
-       text-gray-400 hover:border-[#16987C] hover:text-[#16987C] transition-all group min-h-[200px]">
-        <div class="w-11 h-11 rounded-full border-2 border-dashed border-current flex items-center justify-center group-hover:scale-110 transition-transform">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+            <div class="flex items-center gap-2 flex-1 min-w-0">
+                <h2 class="font-grotesk font-black text-sm text-[#0F143A] truncate">{{ $dossier->nom }}</h2>
+                <span class="text-[10px] font-bold bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full flex-shrink-0">{{ $activitesDuDossier->count() }}</span>
+            </div>
+            <svg class="w-4 h-4 text-gray-400 transition-transform flex-shrink-0" :class="open ? 'rotate-90' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"/>
             </svg>
         </div>
-        <span class="font-grotesk font-black text-xs uppercase tracking-widest">Nouvelle activité</span>
-    </a>
 
-    @if($archives->count() > 0)
-        <button onclick="toggleArchives()"
-           class="bg-gray-50 border-2 border-gray-100 rounded-2xl p-5 flex flex-col items-center justify-center gap-3
-           text-gray-400 hover:border-gray-300 hover:text-gray-600 transition-all group min-h-[200px]">
-            <div class="relative">
-                <div class="w-14 h-14 rounded-2xl bg-gray-200 flex items-center justify-center group-hover:scale-110 transition-transform">
-                    <svg class="w-6 h-6 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
-                    </svg>
-                </div>
-                <div class="absolute -top-2 -right-2 w-6 h-6 rounded-full bg-rose-500 text-white text-[10px] font-black flex items-center justify-center border-2 border-white shadow-sm">
-                    {{ $archives->count() }}
-                </div>
+        <div x-show="open" x-transition:enter="transition ease-out duration-150" x-transition:enter-start="opacity-0 -translate-y-2" x-transition:enter-end="opacity-100 translate-y-0"
+             class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-5">
+            @foreach($activitesDuDossier as $activite)
+                @include('activites._card', ['activite' => $activite])
+            @endforeach
+        </div>
+    </div>
+@endforeach
+
+@if($activitesSansDossier->isNotEmpty() || $activites->isEmpty())
+    @if($dossiersAvecActivites->isNotEmpty())
+        <div class="flex items-center gap-3 mb-4 pl-1">
+            <div class="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center flex-shrink-0">
+                <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/>
+                </svg>
             </div>
-            <span class="font-grotesk font-black text-sm uppercase tracking-widest text-gray-500">Archives</span>
-        </button>
+            <h2 class="font-grotesk font-black text-sm text-gray-400">Sans dossier</h2>
+            <span class="text-[10px] font-bold bg-gray-100 text-gray-400 px-2 py-0.5 rounded-full">{{ $activitesSansDossier->count() }}</span>
+        </div>
     @endif
 
-</div>
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-5">
+
+        @forelse ($activitesSansDossier as $activite)
+            @include('activites._card', ['activite' => $activite])
+        @empty
+            @if($activites->isEmpty())
+                <div class="col-span-full py-20 flex flex-col items-center gap-3 text-gray-300">
+                    <div class="w-16 h-16 rounded-2xl bg-gray-100 flex items-center justify-center">
+                        <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/>
+                        </svg>
+                    </div>
+                    <p class="font-bold text-gray-400">Aucune activité trouvée</p>
+                </div>
+            @endif
+        @endforelse
+
+        <a href="{{ route('activites.create') }}"
+           class="border-2 border-dashed border-gray-200 rounded-2xl p-5 flex flex-col items-center justify-center gap-3
+           text-gray-400 hover:border-[#16987C] hover:text-[#16987C] transition-all group min-h-[200px]">
+            <div class="w-11 h-11 rounded-full border-2 border-dashed border-current flex items-center justify-center group-hover:scale-110 transition-transform">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                </svg>
+            </div>
+            <span class="font-grotesk font-black text-xs uppercase tracking-widest">Nouvelle activité</span>
+        </a>
+
+        @if($archives->count() > 0)
+            <button onclick="toggleArchives()"
+               class="bg-gray-50 border-2 border-gray-100 rounded-2xl p-5 flex flex-col items-center justify-center gap-3
+               text-gray-400 hover:border-gray-300 hover:text-gray-600 transition-all group min-h-[200px]">
+                <div class="relative">
+                    <div class="w-14 h-14 rounded-2xl bg-gray-200 flex items-center justify-center group-hover:scale-110 transition-transform">
+                        <svg class="w-6 h-6 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
+                        </svg>
+                    </div>
+                    <div class="absolute -top-2 -right-2 w-6 h-6 rounded-full bg-rose-500 text-white text-[10px] font-black flex items-center justify-center border-2 border-white shadow-sm">
+                        {{ $archives->count() }}
+                    </div>
+                </div>
+                <span class="font-grotesk font-black text-sm uppercase tracking-widest text-gray-500">Archives</span>
+            </button>
+        @endif
+    </div>
+@endif
 
 <div id="archives-modal" class="fixed inset-0 z-50 hidden">
     <div class="absolute inset-0 bg-gray-900/40 backdrop-blur-sm transition-opacity" onclick="toggleArchives()"></div>
@@ -203,6 +187,71 @@
     </div>
 </div>
 
+<div id="dossiers-modal" class="fixed inset-0 z-50 hidden">
+    <div class="absolute inset-0 bg-gray-900/40 backdrop-blur-sm" onclick="toggleModalDossier()"></div>
+
+    <div class="absolute inset-y-0 right-0 max-w-sm w-full bg-white shadow-2xl transform translate-x-full transition-transform duration-300 ease-in-out flex flex-col" id="dossiers-panel">
+        <div class="px-6 py-4 border-b border-gray-100 flex items-center justify-between bg-gray-50/50">
+            <div class="flex items-center gap-3">
+                <div class="w-8 h-8 rounded-lg bg-[#222A60]/10 flex items-center justify-center text-[#222A60]">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V7z"/>
+                    </svg>
+                </div>
+                <h2 class="font-grotesk text-lg font-black text-[#0F143A]">Gérer les dossiers</h2>
+            </div>
+            <button onclick="toggleModalDossier()" class="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-colors">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+            </button>
+        </div>
+
+        <div class="flex-1 overflow-y-auto p-6 space-y-4">
+
+            <form action="{{ route('dossiers.store') }}" method="POST" class="flex gap-2">
+                @csrf
+                <input type="text" name="nom" placeholder="Nom du nouveau dossier..."
+                    class="flex-1 px-3 py-2 bg-gray-50 border border-gray-100 rounded-xl text-sm text-gray-700 placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-[#16987C]/30 focus:border-[#16987C]/40">
+                <button type="submit"
+                    class="px-4 py-2 bg-[#222A60] text-white text-sm font-bold rounded-xl hover:bg-[#1a2050] transition-colors">
+                    Créer
+                </button>
+            </form>
+
+            @if($dossiers->isEmpty())
+                <p class="text-sm text-gray-400 text-center py-6">Aucun dossier créé</p>
+            @else
+                <div class="space-y-2">
+                    @foreach($dossiers as $dossier)
+                        <div class="flex items-center justify-between p-3 rounded-xl border border-gray-100 bg-white hover:border-gray-200 transition-colors group">
+                            <div class="flex items-center gap-3">
+                                <div class="w-7 h-7 rounded-lg bg-[#222A60]/8 flex items-center justify-center">
+                                    <svg class="w-3.5 h-3.5 text-[#222A60]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V7z"/>
+                                    </svg>
+                                </div>
+                                <div>
+                                    <p class="font-bold text-sm text-[#0F143A]">{{ $dossier->nom }}</p>
+                                    <p class="text-[10px] text-gray-400">{{ $dossier->nb_activites }} activité(s)</p>
+                                </div>
+                            </div>
+                            <form action="{{ route('dossiers.destroy', $dossier) }}" method="POST"
+                                onsubmit="return confirm('Supprimer ce dossier ? Les activités seront déplacées hors du dossier.')">
+                                @csrf
+                                @method('DELETE')
+                                <button type="submit" class="p-2 text-gray-300 hover:text-rose-500 hover:bg-rose-50 rounded-lg transition-colors">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                                    </svg>
+                                </button>
+                            </form>
+                        </div>
+                    @endforeach
+                </div>
+            @endif
+        </div>
+    </div>
+</div>
+
 <script>
     function toggleArchives() {
         const modal = document.getElementById('archives-modal');
@@ -210,14 +259,23 @@
 
         if (modal.classList.contains('hidden')) {
             modal.classList.remove('hidden');
-            setTimeout(() => {
-                panel.classList.remove('translate-x-full');
-            }, 10);
+            setTimeout(() => panel.classList.remove('translate-x-full'), 10);
         } else {
             panel.classList.add('translate-x-full');
-            setTimeout(() => {
-                modal.classList.add('hidden');
-            }, 300);
+            setTimeout(() => modal.classList.add('hidden'), 300);
+        }
+    }
+
+    function toggleModalDossier() {
+        const modal = document.getElementById('dossiers-modal');
+        const panel = document.getElementById('dossiers-panel');
+
+        if (modal.classList.contains('hidden')) {
+            modal.classList.remove('hidden');
+            setTimeout(() => panel.classList.remove('translate-x-full'), 10);
+        } else {
+            panel.classList.add('translate-x-full');
+            setTimeout(() => modal.classList.add('hidden'), 300);
         }
     }
 </script>
