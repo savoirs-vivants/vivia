@@ -3,7 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Models\Activite;
-use App\Models\User; 
+use App\Models\DossierActivite;
+use App\Models\User;
 use Illuminate\Http\Request;
 
 class ActiviteController extends Controller
@@ -15,6 +16,7 @@ class ActiviteController extends Controller
         $ville  = $request->get('ville');
 
         $toutesActivites = Activite::withCount(['adherentsActifs as nb_inscrits'])
+            ->with('dossier')
             ->when($search, fn($q) => $q->where('nom', 'like', "%{$search}%"))
             ->when($type,   fn($q) => $q->where('type', $type))
             ->when($ville,  fn($q) => $q->where(function ($q2) use ($ville) {
@@ -29,7 +31,9 @@ class ActiviteController extends Controller
 
         $lieux = Activite::select('ville')->distinct()->whereNotNull('ville')->pluck('ville');
 
-        return view('activites.index', compact('activites', 'archives', 'search', 'type', 'ville', 'lieux'));
+        $dossiers = DossierActivite::withCount(['activitesActives as nb_activites'])->orderBy('nom')->get();
+
+        return view('activites.index', compact('activites', 'archives', 'search', 'type', 'ville', 'lieux', 'dossiers'));
     }
 
     public function toggleArchive(Activite $activite)
@@ -46,22 +50,26 @@ class ActiviteController extends Controller
     public function create()
     {
         $users = User::orderBy('name')->get();
-        return view('activites.create', compact('users'));
+        $dossiers = DossierActivite::orderBy('nom')->get();
+        return view('activites.create', compact('users', 'dossiers'));
     }
 
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'type'            => 'required|in:activite,stage',
-            'nom'             => 'required|string|max:255',
-            'tarif'           => 'nullable|numeric|min:0',
-            'adresse'         => 'nullable|string|max:255',
-            'ville'           => 'nullable|string|max:255',
-            'jours.*'         => 'nullable|string',
-            'debuts.*'        => 'nullable|date_format:H:i',
-            'fins.*'          => 'nullable|date_format:H:i',
-            'gestionnaires'   => 'nullable|array',
-            'gestionnaires.*' => 'exists:users,id',
+            'type'              => 'required|in:activite,stage',
+            'nom'               => 'required|string|max:255',
+            'tarif'             => 'nullable|numeric|min:0',
+            'adresse'           => 'nullable|string|max:255',
+            'ville'             => 'nullable|string|max:255',
+            'jours.*'           => 'nullable|string',
+            'debuts.*'          => 'nullable|date_format:H:i',
+            'fins.*'            => 'nullable|date_format:H:i',
+            'gestionnaires'     => 'nullable|array',
+            'gestionnaires.*'   => 'exists:users,id',
+            'dossier_action'    => 'nullable|in:none,existing,new',
+            'id_dossier'        => 'nullable|exists:dossiers_activite,id',
+            'nouveau_dossier'   => 'nullable|string|max:255',
         ]);
 
         $horaires = [];
@@ -81,13 +89,24 @@ class ActiviteController extends Controller
             }
         }
 
+        $idDossier = null;
+        $dossierAction = $request->input('dossier_action', 'none');
+
+        if ($dossierAction === 'existing') {
+            $idDossier = $request->input('id_dossier');
+        } elseif ($dossierAction === 'new' && !empty($request->input('nouveau_dossier'))) {
+            $dossier = DossierActivite::create(['nom' => $request->input('nouveau_dossier')]);
+            $idDossier = $dossier->id;
+        }
+
         $activite = Activite::create([
-            'type'     => $validated['type'],
-            'nom'      => $validated['nom'],
-            'tarif'    => $validated['tarif'],
-            'adresse'  => $validated['adresse'],
-            'ville'    => $validated['ville'],
-            'horaires' => empty($horaires) ? null : $horaires,
+            'type'       => $validated['type'],
+            'nom'        => $validated['nom'],
+            'tarif'      => $validated['tarif'],
+            'adresse'    => $validated['adresse'],
+            'ville'      => $validated['ville'],
+            'horaires'   => empty($horaires) ? null : $horaires,
+            'id_dossier' => $idDossier,
         ]);
 
         if (!empty($validated['gestionnaires'])) {
@@ -214,24 +233,28 @@ class ActiviteController extends Controller
     public function edit(Activite $activite)
     {
         $users = User::orderBy('name')->get();
+        $dossiers = DossierActivite::orderBy('nom')->get();
         $activite->load('gestionnaires');
 
-        return view('activites.edit', compact('activite', 'users'));
+        return view('activites.edit', compact('activite', 'users', 'dossiers'));
     }
 
     public function update(Request $request, Activite $activite)
     {
         $validated = $request->validate([
-            'type'            => 'required|in:activite,stage',
-            'nom'             => 'required|string|max:255',
-            'tarif'           => 'nullable|numeric|min:0',
-            'adresse'         => 'nullable|string|max:255',
-            'ville'           => 'nullable|string|max:255',
-            'jours.*'         => 'nullable|string',
-            'debuts.*'        => 'nullable|date_format:H:i',
-            'fins.*'          => 'nullable|date_format:H:i',
-            'gestionnaires'   => 'nullable|array',
-            'gestionnaires.*' => 'exists:users,id',
+            'type'              => 'required|in:activite,stage',
+            'nom'               => 'required|string|max:255',
+            'tarif'             => 'nullable|numeric|min:0',
+            'adresse'           => 'nullable|string|max:255',
+            'ville'             => 'nullable|string|max:255',
+            'jours.*'           => 'nullable|string',
+            'debuts.*'          => 'nullable|date_format:H:i',
+            'fins.*'            => 'nullable|date_format:H:i',
+            'gestionnaires'     => 'nullable|array',
+            'gestionnaires.*'   => 'exists:users,id',
+            'dossier_action'    => 'nullable|in:none,existing,new',
+            'id_dossier'        => 'nullable|exists:dossiers_activite,id',
+            'nouveau_dossier'   => 'nullable|string|max:255',
         ]);
 
         $horaires = [];
@@ -250,13 +273,24 @@ class ActiviteController extends Controller
             }
         }
 
+        $idDossier = null;
+        $dossierAction = $request->input('dossier_action', 'none');
+
+        if ($dossierAction === 'existing') {
+            $idDossier = $request->input('id_dossier');
+        } elseif ($dossierAction === 'new' && !empty($request->input('nouveau_dossier'))) {
+            $dossier = DossierActivite::create(['nom' => $request->input('nouveau_dossier')]);
+            $idDossier = $dossier->id;
+        }
+
         $activite->update([
-            'type'     => $validated['type'],
-            'nom'      => $validated['nom'],
-            'tarif'    => $validated['tarif'],
-            'adresse'  => $validated['adresse'],
-            'ville'    => $validated['ville'],
-            'horaires' => empty($horaires) ? null : $horaires,
+            'type'       => $validated['type'],
+            'nom'        => $validated['nom'],
+            'tarif'      => $validated['tarif'],
+            'adresse'    => $validated['adresse'],
+            'ville'      => $validated['ville'],
+            'horaires'   => empty($horaires) ? null : $horaires,
+            'id_dossier' => $idDossier,
         ]);
 
         $activite->gestionnaires()->sync($validated['gestionnaires'] ?? []);
