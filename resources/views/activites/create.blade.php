@@ -182,14 +182,6 @@
                         <div class="md:col-span-2 p-5 bg-gray-50/50 rounded-xl border border-gray-100">
                             <div class="flex items-center justify-between mb-4">
                                 <h3 class="text-sm font-bold text-[#0F143A]">Créneaux horaires</h3>
-                                <button type="button" id="btn-add-horaire"
-                                    class="inline-flex items-center gap-1 text-xs font-bold text-[#16987C] hover:text-[#117a63] transition-colors bg-[#16987C]/10 px-3 py-1.5 rounded-lg">
-                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
-                                            d="M12 4v16m8-8H4" />
-                                    </svg>
-                                    Ajouter un créneau
-                                </button>
                             </div>
 
                             <div id="horaires-container" class="space-y-3">
@@ -306,48 +298,6 @@
     </div>
 
     <script>
-        function updateTypeUI() {
-            const isStage = document.querySelector('input[name="type"]:checked').value === 'stage';
-            const iconActivite = document.getElementById('icon-activite');
-            const iconStage = document.getElementById('icon-stage');
-
-            if (isStage) {
-                iconStage.className =
-                    "w-10 h-10 rounded-lg flex items-center justify-center transition-colors bg-amber-500/20 text-amber-600";
-                iconActivite.className =
-                    "w-10 h-10 rounded-lg flex items-center justify-center transition-colors bg-gray-100 text-gray-400";
-            } else {
-                iconActivite.className =
-                    "w-10 h-10 rounded-lg flex items-center justify-center transition-colors bg-[#222A60]/10 text-[#222A60]";
-                iconStage.className =
-                    "w-10 h-10 rounded-lg flex items-center justify-center transition-colors bg-gray-100 text-gray-400";
-            }
-        }
-        document.addEventListener('DOMContentLoaded', updateTypeUI);
-
-        document.addEventListener('DOMContentLoaded', function() {
-            const container = document.getElementById('horaires-container');
-            const btnAdd = document.getElementById('btn-add-horaire');
-
-            btnAdd.addEventListener('click', function() {
-                const firstRow = container.querySelector('.horaire-row');
-                const newRow = firstRow.cloneNode(true);
-
-                newRow.querySelector('select').value = '';
-                const inputs = newRow.querySelectorAll('input[type="time"]');
-                inputs.forEach(input => input.value = '');
-
-                const removeBtn = newRow.querySelector('.btn-remove-horaire');
-                removeBtn.classList.remove('invisible');
-
-                removeBtn.addEventListener('click', function() {
-                    newRow.remove();
-                });
-
-                container.appendChild(newRow);
-            });
-        });
-
         function gestionnaireSearch() {
             return {
                 query: '',
