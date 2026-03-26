@@ -232,6 +232,8 @@
                         </div>
                     </div>
 
+                    @include('activites._classes_picker', ['selectedClasses' => old('classes', [])])
+
                     <div x-data="{ dossierAction: '{{ old('dossier_action', 'none') }}' }">
                         <span class="block text-xs font-black text-gray-400 uppercase tracking-widest mb-3">Dossier</span>
                         <div class="space-y-2 p-4 bg-gray-50/50 rounded-xl border border-gray-100">

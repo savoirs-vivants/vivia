@@ -273,6 +273,8 @@
                         </div>
                     </div>
 
+                    @include('activites._classes_picker', ['selectedClasses' => old('classes', $activite->classes ?? [])])
+
                     @php
                         $currentDossierAction = old('dossier_action', $activite->id_dossier ? 'existing' : 'none');
                     @endphp
