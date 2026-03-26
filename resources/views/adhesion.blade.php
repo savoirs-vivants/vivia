@@ -261,36 +261,31 @@
                                             'value' => 'atelier',
                                             'label' => 'Inscription à un atelier',
                                             'icon' => '🔧',
-                                            'desc' => 'Ateliers créatifs, techniques ou artistiques',
+                                            'desc' => 'Ateliers robotiques',
                                         ],
                                         [
-                                            'value' => 'pass_culture',
-                                            'label' => 'Pass Culture',
-                                            'icon' => '🎫',
-                                            'desc' => 'Utiliser votre Pass Culture',
+                                            'value' => 'ressourcerie',
+                                            'label' => 'Ressourcerie',
+                                            'desc' => 'Louer un Codey Rocky',
                                         ],
                                         [
                                             'value' => 'stage',
                                             'label' => 'Inscription à un stage',
-                                            'icon' => '🎭',
-                                            'desc' => 'Stages intensifs sur plusieurs jours',
+                                            'desc' => 'Stages sur plusieurs jours',
                                         ],
                                         [
                                             'value' => 'club_maker',
                                             'label' => 'Club Maker',
-                                            'icon' => '🔨',
                                             'desc' => 'Rejoindre le club des makers',
                                         ],
                                         [
                                             'value' => 'soutien',
                                             'label' => 'Inscription par soutien',
-                                            'icon' => '💛',
                                             'desc' => 'Soutenir financièrement l\'association',
                                         ],
                                         [
                                             'value' => 'recherche',
                                             'label' => 'Recherche participative',
-                                            'icon' => '🔬',
                                             'desc' => 'Participer à un programme de recherche',
                                         ],
                                     ];
@@ -305,7 +300,6 @@
                                                 'border-teal-600 bg-teal-50 ring-2 ring-teal-600/20' :
                                                 'border-gray-200 group-hover:border-slate-900'"
                                                 class="{{ $card }}">
-                                                <div class="text-3xl mb-2">{{ $opt['icon'] }}</div>
                                                 <h3 class="font-bold text-slate-900 text-base">{{ $opt['label'] }}</h3>
                                                 <p class="text-gray-500 text-xs mt-1.5 flex-1 leading-relaxed">
                                                     {{ $opt['desc'] }}</p>
@@ -353,7 +347,7 @@
                 @elseif($step === 3)
                     <div class="p-6 md:p-8">
                         <div class="mb-6">
-                            <h2 class="text-2xl font-bold text-slate-900">Vos informations personnelles 📋</h2>
+                            <h2 class="text-2xl font-bold text-slate-900">Informations personnelles de l'adhérent 📋</h2>
                             <p class="text-gray-500 mt-1">Renseignez vos coordonnées et informations d'adhésion</p>
                         </div>
 
@@ -364,7 +358,7 @@
                             <div class="mb-5">
                                 <label class="{{ $label }}">Genre</label>
                                 <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                                    @foreach (['Homme' => '🧔', 'Femme' => '👩', 'Autre' => '🧑', 'Non précisé' => '🤐'] as $val => $icon)
+                                    @foreach (['Homme' => '🧔', 'Femme' => '👩', 'Autre' => '🧑'] as $val => $icon)
                                         <label class="cursor-pointer block group">
                                             <input type="radio" name="genre" value="{{ $val }}"
                                                 {{ ($formData['genre'] ?? '') === $val ? 'checked' : '' }}
@@ -415,8 +409,6 @@
                                 <label class="{{ $label }}">🎂 Date de naissance *</label>
                                 <input type="date" name="date_naiss" value="{{ $formData['date_naiss'] ?? '' }}"
                                     required class="{{ $field }}">
-                                <p class="text-xs text-gray-500 mt-2 font-medium">Cette information détermine
-                                    automatiquement les étapes suivantes.</p>
                             </div>
 
                             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-5">
@@ -502,7 +494,7 @@
                             <input type="hidden" name="current_step" value="4">
 
                             <div class="mb-6">
-                                <label class="{{ $label }}">📷 Photo du carnet de santé</label>
+                                <label class="{{ $label }}">📷 Photo des vaccins sur le carnet de santé</label>
                                 @if (!empty($formData['carnet_sante_path']))
                                     <div
                                         class="mb-4 p-4 bg-teal-50 border border-teal-200 rounded-xl flex items-center gap-3">
@@ -519,7 +511,7 @@
                                     <template x-if="!preview">
                                         <div>
                                             <div class="text-5xl mb-3 group-hover:scale-110 transition-transform">📁</div>
-                                            <p class="text-base font-bold text-slate-700">Cliquez pour déposer le carnet
+                                            <p class="text-base font-bold text-slate-700">Cliquez pour déposer l'image
                                             </p>
                                             <p class="text-sm text-gray-400 mt-1 font-medium">JPG, PNG ou PDF — max 10 Mo
                                             </p>
@@ -537,7 +529,6 @@
                                 <textarea name="problemes_sante" rows="3" placeholder="Ex : asthme, épilepsie, diabète, problèmes cardiaques…"
                                     class="{{ $field }}">{{ $formData['problemes_sante'] ?? '' }}</textarea>
                             </div>
-
                             <div class="mb-6">
                                 <label class="{{ $label }}">🤧 Allergies connues</label>
                                 <textarea name="allergies" rows="3" placeholder="Ex : arachides, pollen, latex, médicaments…"
@@ -582,7 +573,7 @@
                                 <div x-data="{ occupation: '{{ $formData['occupation'] ?? '' }}' }">
                                     <p class="text-sm font-bold text-slate-700 mb-3">📚 Niveau scolaire</p>
                                     <div class="grid grid-cols-2 gap-3 mb-5">
-                                        @foreach ([['val' => 'Maternelle', 'icon' => '🧸', 'desc' => '3 à 5 ans'], ['val' => 'Primaire', 'icon' => '📖', 'desc' => '6 à 10 ans'], ['val' => 'Collège', 'icon' => '🎒', 'desc' => '11 à 14 ans'], ['val' => 'Lycée', 'icon' => '🎓', 'desc' => '15 à 17 ans']] as $o)
+                                        @foreach ([['val' => 'Maternelle', 'desc' => '3 à 5 ans'], ['val' => 'Primaire', 'desc' => '6 à 10 ans'], ['val' => 'Collège', 'desc' => '11 à 14 ans'], ['val' => 'Lycée', 'desc' => '15 à 17 ans'], ['val' => 'École à la maison', 'desc' => 'Tout âge']] as $o)
                                             <label class="cursor-pointer block group">
                                                 <input type="radio" name="occupation" value="{{ $o['val'] }}"
                                                     x-model="occupation" class="sr-only">
@@ -590,7 +581,6 @@
                                                     'border-teal-600 bg-teal-50 ring-2 ring-teal-600/20' :
                                                     'border-gray-200 group-hover:border-slate-900'"
                                                     class="border-2 rounded-2xl p-4 text-center transition-all">
-                                                    <div class="text-3xl mb-1">{{ $o['icon'] }}</div>
                                                     <div class="font-bold text-sm text-slate-900">{{ $o['val'] }}
                                                     </div>
                                                     <div class="text-xs text-gray-500 font-medium mt-1">
@@ -923,7 +913,7 @@
                 @elseif($step === 8)
                     <div class="p-6 md:p-8">
                         <div class="mb-6">
-                            <h2 class="text-2xl font-bold text-slate-900">Fiche tuteur·trice·s 👨‍👩‍👧</h2>
+                            <h2 class="text-2xl font-bold text-slate-900">Fiche parents et/ou tuteur·trice·s 👨‍👩‍👧</h2>
                             <p class="text-gray-500 mt-1">Responsables légaux de <strong
                                     class="text-slate-900">{{ ($formData['prenom'] ?? '') . ' ' . ($formData['nom'] ?? '') }}</strong>
                             </p>
@@ -941,8 +931,8 @@
                                             <h3 class="font-bold text-slate-900 text-lg flex items-center gap-3">
                                                 <span
                                                     class="w-10 h-10 rounded-xl bg-slate-900 text-white flex items-center justify-center font-bold shadow-md"
-                                                    x-text="'T' + (i+1)"></span>
-                                                <span x-text="'Tuteur·trice ' + (i+1)"></span>
+                                                    x-text="'P' + (i+1)"></span>
+                                                <span x-text="'Personne ' + (i+1)"></span>
                                             </h3>
                                             <button type="button" @click="removeTuteur(i)" x-show="tuteurs.length > 1"
                                                 class="text-red-500 bg-red-50 px-3 py-1.5 rounded-lg font-bold text-sm hover:bg-red-500 hover:text-white transition-colors flex items-center gap-2">
@@ -1042,7 +1032,25 @@
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
                                             d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
                                     </svg>
-                                    Ajouter un·e tuteur·trice
+                                    Ajouter un·e parent / tuteur·trice
+                                </button>
+
+                                <button type="button" @click="addTuteur()"
+                                    class="w-full border-2 border-dashed border-teal-600 text-teal-700 bg-teal-50 font-bold rounded-2xl py-4 px-4 hover:bg-teal-600 hover:text-white transition-colors flex items-center justify-center gap-2 mb-4">
+                                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
+                                            d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                                    </svg>
+                                    Ajouter un·e adulte autorisé à récupérer l'enfant
+                                </button>
+
+                                <button type="button" @click="addTuteur()"
+                                    class="w-full border-2 border-dashed border-teal-600 text-teal-700 bg-teal-50 font-bold rounded-2xl py-4 px-4 hover:bg-teal-600 hover:text-white transition-colors flex items-center justify-center gap-2 mb-4">
+                                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
+                                            d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                                    </svg>
+                                    Ajouter un·e adulte non autorisé à récupérer l'enfant
                                 </button>
                             </div>
 
@@ -1197,9 +1205,9 @@
                                         Pour finaliser votre adhésion, merci de contacter notre équipe afin de convenir d'un
                                         rendez-vous :
                                     </p>
-                                    <a href="mailto:contact@savoirsvivants.fr"
+                                    <a href="mailto:direction@savoirsvivants.fr"
                                         class="inline-flex items-center gap-2 bg-slate-900 text-white text-sm font-bold px-5 py-3 rounded-xl hover:bg-teal-600 shadow-md transition-colors">
-                                        ✉️ contact@savoirsvivants.fr
+                                        ✉️ direction@savoirsvivants.fr
                                     </a>
                                     <p class="text-xs text-gray-500 mt-4 font-semibold">Modes acceptés : chèque, espèces,
                                         ou virement bancaire.</p>
