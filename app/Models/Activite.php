@@ -18,14 +18,24 @@ class Activite extends Model
         'ville',
         'tarif',
         'horaires',
+        'classes',
         'is_archived',
         'id_dossier',
     ];
 
     protected $casts = [
-        'horaires' => 'array',
-        'tarif'    => 'decimal:2',
+        'horaires'    => 'array',
+        'classes'     => 'array',
+        'tarif'       => 'decimal:2',
         'is_archived' => 'boolean',
+    ];
+
+    const CLASSES_NIVEAUX = [
+        'Maternelle' => ['PS', 'MS', 'GS'],
+        'Primaire'   => ['CP', 'CE1', 'CE2', 'CM1', 'CM2'],
+        'Collège'    => ['6ème', '5ème', '4ème', '3ème'],
+        'Lycée'      => ['Seconde', 'Première', 'Terminale'],
+        'Autre'      => ['Adulte', 'Senior'],
     ];
 
     /**
@@ -143,6 +153,25 @@ class Activite extends Model
             array_keys($this->horaires),
             $this->horaires
         );
+    }
+
+    /**
+     * Classes sous forme lisible, triées selon l'ordre canonique.
+     * Ex. : ["CP", "CE1", "CM1"]
+     *
+     * @return string[]
+     */
+    public function getClassesListAttribute(): array
+    {
+        if (empty($this->classes)) {
+            return [];
+        }
+
+        $ordre = array_merge(...array_values(self::CLASSES_NIVEAUX));
+        $classes = $this->classes;
+        usort($classes, fn($a, $b) => (array_search($a, $ordre) ?? 99) <=> (array_search($b, $ordre) ?? 99));
+
+        return $classes;
     }
 
     /**

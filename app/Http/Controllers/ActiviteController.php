@@ -67,6 +67,8 @@ class ActiviteController extends Controller
             'fins.*'            => 'nullable|date_format:H:i',
             'gestionnaires'     => 'nullable|array',
             'gestionnaires.*'   => 'exists:users,id',
+            'classes'           => 'nullable|array',
+            'classes.*'         => 'nullable|string',
             'dossier_action'    => 'nullable|in:none,existing,new',
             'id_dossier'        => 'nullable|exists:dossiers_activite,id',
             'nouveau_dossier'   => 'nullable|string|max:255',
@@ -106,6 +108,7 @@ class ActiviteController extends Controller
             'adresse'    => $validated['adresse'],
             'ville'      => $validated['ville'],
             'horaires'   => empty($horaires) ? null : $horaires,
+            'classes'    => $request->input('classes') ?: null,
             'id_dossier' => $idDossier,
         ]);
 
@@ -252,6 +255,8 @@ class ActiviteController extends Controller
             'fins.*'            => 'nullable|date_format:H:i',
             'gestionnaires'     => 'nullable|array',
             'gestionnaires.*'   => 'exists:users,id',
+            'classes'           => 'nullable|array',
+            'classes.*'         => 'nullable|string',
             'dossier_action'    => 'nullable|in:none,existing,new',
             'id_dossier'        => 'nullable|exists:dossiers_activite,id',
             'nouveau_dossier'   => 'nullable|string|max:255',
@@ -290,6 +295,7 @@ class ActiviteController extends Controller
             'adresse'    => $validated['adresse'],
             'ville'      => $validated['ville'],
             'horaires'   => empty($horaires) ? null : $horaires,
+            'classes'    => $request->input('classes') ?: null,
             'id_dossier' => $idDossier,
         ]);
 
