@@ -41,15 +41,25 @@
         </p>
 
         @if(!empty($activite->horaires_list))
-            <div class="flex flex-wrap gap-1 mb-4">
+            <div class="flex flex-wrap gap-1 mb-2">
                 @foreach($activite->horaires_list as $h)
                     <span class="inline-flex items-center px-2 py-0.5 bg-gray-100 text-gray-500 rounded-md text-[10px] font-semibold">
                         {{ $h }}
                     </span>
                 @endforeach
             </div>
+        @endif
+
+        @if(!empty($activite->classes_list))
+            <div class="flex flex-wrap gap-1 mb-4">
+                @foreach($activite->classes_list as $classe)
+                    <span class="inline-flex items-center px-1.5 py-0.5 bg-indigo-50 text-indigo-500 rounded text-[10px] font-bold">
+                        {{ $classe }}
+                    </span>
+                @endforeach
+            </div>
         @else
-            <div class="mb-4"></div>
+            <div class="{{ empty($activite->horaires_list) ? 'mb-4' : 'mb-2' }}"></div>
         @endif
 
         <div class="mt-auto flex items-end justify-between pt-4 border-t border-gray-50">

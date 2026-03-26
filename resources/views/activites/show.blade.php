@@ -85,6 +85,17 @@
                                 </div>
                             @endif
                         </div>
+
+                        @if(!empty($activite->classes_list))
+                            <div class="flex flex-wrap gap-1.5 mt-3">
+                                @foreach($activite->classes_list as $classe)
+                                    <span class="px-2 py-0.5 rounded-md text-[11px] font-bold"
+                                        style="background: rgba(99,102,241,.25); color: rgba(199,210,254,.9);">
+                                        {{ $classe }}
+                                    </span>
+                                @endforeach
+                            </div>
+                        @endif
                     </div>
                 </div>
 
