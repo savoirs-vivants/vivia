@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
@@ -18,6 +19,7 @@ class Activite extends Model
         'tarif',
         'horaires',
         'is_archived',
+        'id_dossier',
     ];
 
     protected $casts = [
@@ -31,6 +33,14 @@ class Activite extends Model
      */
     const TYPE_ACTIVITE = 'activite';
     const TYPE_STAGE    = 'stage';
+
+    /**
+     * Dossier auquel appartient cette activité.
+     */
+    public function dossier(): BelongsTo
+    {
+        return $this->belongsTo(DossierActivite::class, 'id_dossier');
+    }
 
     /**
      * Adhérents inscrits à cette activité.
