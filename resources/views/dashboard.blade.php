@@ -43,11 +43,6 @@
                             </div>
                         @endif
                     </div>
-                    <span class="flex h-2.5 w-2.5 relative mt-1">
-                        <span
-                            class="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#16A37A] opacity-75"></span>
-                        <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-[#16A37A]"></span>
-                    </span>
                 </div>
             </div>
 
@@ -142,22 +137,26 @@
 
         </div>
 
-        <div class="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden flex flex-col flex-1 min-h-0">
+<div class="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden flex flex-col flex-1 min-h-0">
 
             <div class="px-8 py-5 border-b border-gray-100 bg-gray-50/50 flex items-center justify-between shrink-0">
                 <div>
                     <h3 class="font-grotesk font-black text-xl text-gray-900 tracking-tight">
-                        @if (Auth::user()->role === 'admin')
+                        @if ($isGestionnaire)
+                            Carnet de bord
+                        @elseif (Auth::user()->role === 'admin')
                             Analyse des effectifs
                         @else
                             Carnet de bord
                         @endif
                     </h3>
                     <p class="text-sm text-gray-500 font-medium mt-1">
-                        @if (Auth::user()->role === 'admin')
+                        @if ($isGestionnaire)
+                            Prochaine intervention
+                        @elseif (Auth::user()->role === 'admin')
                             Répartition de la structure et palmarès des activités
                         @else
-                            Prochaine intervention et activités populaires
+                            Aucune activité assignée
                         @endif
                     </p>
                 </div>
@@ -167,28 +166,13 @@
 
                 <div class="flex-1 p-6 border-b lg:border-b-0 lg:border-r border-gray-100 flex flex-col justify-center">
 
-                    @if (Auth::user()->role === 'admin')
-                        <p class="text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-6 text-center">Types des
-                            adhésions</p>
-                        <div class="relative flex-1 min-h-[250px] flex items-center justify-center">
-                            <canvas id="chartTypes" class="absolute inset-0 w-full h-full z-10"></canvas>
-                        </div>
-                        @php
-                            $typeLabels = $repartitionTypes
-                                ->pluck('type_adhesion')
-                                ->map(fn($l) => ucfirst($l))
-                                ->toJson();
-                            $typeData = $repartitionTypes->pluck('total')->toJson();
-                        @endphp
-                    @else
+                    @if ($isGestionnaire)
                         <div class="flex items-center justify-between mb-6">
                             <p class="text-[11px] font-bold text-gray-400 uppercase tracking-widest">Sur le terrain</p>
                             @if ($prochaineSeance)
-                                <div
-                                    class="text-[#083325] font-black text-xs px-2.5 py-1 bg-[#083325]/5 border border-[#083325]/10 rounded-lg flex items-center gap-1.5">
+                                <div class="text-[#083325] font-black text-xs px-2.5 py-1 bg-[#083325]/5 border border-[#083325]/10 rounded-lg flex items-center gap-1.5">
                                     <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                            d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                                     </svg>
                                     {{ \Carbon\Carbon::parse($prochaineSeance->date)->format('H:i') }}
                                 </div>
@@ -197,72 +181,57 @@
 
                         @if ($prochaineSeance)
                             <div class="flex gap-4 mb-5">
-                                <div
-                                    class="w-14 h-14 shrink-0 bg-white border border-gray-200 rounded-2xl shadow-sm flex flex-col overflow-hidden text-center">
+                                <div class="w-14 h-14 shrink-0 bg-white border border-gray-200 rounded-2xl shadow-sm flex flex-col overflow-hidden text-center">
                                     <div class="bg-red-500 text-white text-[9px] font-bold uppercase py-0.5 leading-none">
                                         {{ \Carbon\Carbon::parse($prochaineSeance->date)->translatedFormat('M') }}
                                     </div>
-                                    <div
-                                        class="flex-1 flex items-center justify-center font-grotesk font-black text-xl text-gray-900">
+                                    <div class="flex-1 flex items-center justify-center font-grotesk font-black text-xl text-gray-900">
                                         {{ \Carbon\Carbon::parse($prochaineSeance->date)->format('d') }}
                                     </div>
                                 </div>
                                 <div>
                                     <h3 class="font-grotesk font-black text-lg text-[#083325] leading-tight mb-1.5">
                                         {{ $prochaineSeance->activite_nom }}</h3>
-                                    <p
-                                        class="inline-flex items-center gap-1.5 text-[11px] font-medium text-gray-500 bg-gray-50 px-2 py-1 rounded-md border border-gray-100">
-                                        <svg class="w-3.5 h-3.5 text-gray-400" fill="none" stroke="currentColor"
-                                            viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                                    <p class="inline-flex items-center gap-1.5 text-[11px] font-medium text-gray-500 bg-gray-50 px-2 py-1 rounded-md border border-gray-100">
+                                        <svg class="w-3.5 h-3.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
                                         </svg>
                                         {{ $prochaineSeance->adresse ?: 'Lieu non défini' }}
                                     </p>
                                 </div>
                             </div>
 
-                            <div class="mt-auto bg-gray-50 rounded-xl p-4 border border-gray-100">
-                                @php $presencePct = $prochaineSeance->nb_inscrits > 0 ? ($nbPresencesEnregistrees / $prochaineSeance->nb_inscrits) * 100 : 0; @endphp
-                                <div class="flex items-center justify-between mb-2">
-                                    <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Appel</p>
-                                    <p class="text-xs font-black text-gray-900"><span
-                                            class="text-[#16A37A]">{{ $nbPresencesEnregistrees }}</span> /
-                                        {{ $prochaineSeance->nb_inscrits }}</p>
-                                </div>
-                                <div class="h-1.5 w-full bg-gray-200 rounded-full overflow-hidden mb-4">
-                                    <div class="h-full bg-[#16A37A] rounded-full" style="width: {{ $presencePct }}%">
-                                    </div>
-                                </div>
-                                <button
-                                    class="w-full bg-[#083325] hover:bg-[#0a4230] text-white font-grotesk font-bold py-3 rounded-xl transition-all shadow-md shadow-[#083325]/20 flex items-center justify-center gap-2 group text-xs">
+                            <div class="mt-auto p-4">
+                                <button class="w-full bg-[#083325] hover:bg-[#0a4230] text-white font-grotesk font-bold py-3 rounded-xl transition-all shadow-md shadow-[#083325]/20 flex items-center justify-center gap-2 group text-xs">
                                     Procéder à l'appel
-                                    <svg class="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" fill="none"
-                                        stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                            d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                                    <svg class="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3" />
                                     </svg>
                                 </button>
                             </div>
                         @else
                             <div class="flex-1 flex flex-col items-center justify-center text-gray-400 min-h-[250px]">
-                                <div
-                                    class="w-14 h-14 rounded-full bg-gray-50 flex items-center justify-center mb-3 border border-gray-100">
-                                    <svg class="w-7 h-7 text-gray-300" fill="none" stroke="currentColor"
-                                        viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
-                                            d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                <div class="w-14 h-14 rounded-full bg-gray-50 flex items-center justify-center mb-3 border border-gray-100">
+                                    <svg class="w-7 h-7 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                                     </svg>
                                 </div>
-                                <p class="text-sm font-bold text-gray-500">Aucune séance planifiée</p>
+                                <p class="text-sm font-bold text-gray-500">Aucune séance planifiée prochainement</p>
                             </div>
                         @endif
-                    @endif
-                </div>
 
-                <div class="flex-[1.5] p-6 flex flex-col">
+                    @elseif (Auth::user()->role === 'admin')
+                        <p class="text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-6 text-center">Types des adhésions</p>
+                        <div class="relative flex-1 min-h-[250px] flex items-center justify-center">
+                            <canvas id="chartTypes" class="absolute inset-0 w-full h-full z-10"></canvas>
+                        </div>
+                        @php
+                            $typeLabels = $repartitionTypes->pluck('type_adhesion')->map(fn($l) => ucfirst($l))->toJson();
+                            $typeData = $repartitionTypes->pluck('total')->toJson();
+                        @endphp
+
+                        <div class="flex-[1.5] p-6 flex flex-col">
                     <div class="flex items-center justify-between mb-4">
                         <p class="text-[11px] font-bold text-gray-400 uppercase tracking-widest">Top 3 des activités</p>
                     </div>
@@ -280,6 +249,18 @@
                         <canvas id="chartActivites" class="absolute inset-0 w-full h-full"></canvas>
                     </div>
                 </div>
+
+                    @else
+                        <div class="flex-1 flex flex-col items-center justify-center text-gray-400 min-h-[250px]">
+                            <div class="w-14 h-14 rounded-full bg-gray-50 flex items-center justify-center mb-3 border border-gray-100">
+                                <span class="text-2xl opacity-60">☕</span>
+                            </div>
+                            <p class="text-sm font-bold text-gray-500">Vous n'êtes assigné·e à la gestion d'aucune activité.</p>
+                        </div>
+                    @endif
+                </div>
+
+
 
             </div>
         </div>
