@@ -48,7 +48,7 @@ class AdherentFormulaireController extends Controller
         $needsActivite = in_array($activite, ['atelier', 'stage']);
 
         if ($isAdherent) {
-            $path = [1, 2];
+            $path = [1, 12, 2];
 
             if ($needsActivite) {
                 $path[] = 6;
@@ -62,7 +62,7 @@ class AdherentFormulaireController extends Controller
             return $path;
         }
 
-        $path = [1, 2, 3];
+        $path = [1, 12, 2, 3];
         if ($isMineur) {
             $path[] = 4;
         }
@@ -102,7 +102,8 @@ class AdherentFormulaireController extends Controller
     private function stepMeta(): array
     {
         return [
-            1  => ['label' => 'Statut',        'icon' => '👤'],
+            1  => ['label' => 'Bienvenue',      'icon' => '👤'],
+            12 => ['label' => 'Profil',         'icon' => '🏢'],
             2  => ['label' => 'Activité',       'icon' => '🎯'],
             3  => ['label' => 'Informations',   'icon' => '📋'],
             4  => ['label' => 'Santé',          'icon' => '🏥'],
@@ -123,7 +124,8 @@ class AdherentFormulaireController extends Controller
         }
         abort_if(empty($token), 403, 'Lien invalide ou expiré.');
 
-        $step     = max(1, min(11, (int) $request->query('step', 1)));
+        $rawStep  = (int) $request->query('step', 1);
+        $step     = in_array($rawStep, array_keys($this->stepMeta())) ? $rawStep : 1;
         $formData = $request->session()->get("adhesion_{$token}", []);
 
         $path    = $this->getUserPath($formData);
@@ -220,22 +222,23 @@ class AdherentFormulaireController extends Controller
         }
 
         if ($step === 10 && $request->input('mode_paiement') === 'helloasso') {
-            $totalEuros = 0;
-            $service = new HelloAssoService();
-
-            if (($formData['is_adherent'] ?? 'non') === 'non') {
-                $formSlug = env('HELLOASSO_MEMBERSHIP_FORM_SLUG');
-                $totalEuros += $service->getBaseMembershipPrice($formSlug);
-            }
-
+            $totalEuros   = 0;
+            $service      = new HelloAssoService();
             $activitesIds = $formData['activites_selectionnees'] ?? [];
-            if (!empty($activitesIds)) {
-                $activites = \App\Models\Activite::whereIn('id', $activitesIds)->get();
+            $hasActivites = !empty($activitesIds);
+
+            if ($hasActivites) {
+                $activites   = \App\Models\Activite::whereIn('id', $activitesIds)->get();
                 $totalEuros += $activites->sum('tarif');
+            } else {
+                if (($formData['is_adherent'] ?? 'non') === 'non') {
+                    $formSlug    = env('HELLOASSO_MEMBERSHIP_FORM_SLUG');
+                    $totalEuros += $service->getBaseMembershipPrice($formSlug);
+                }
             }
 
             if ($totalEuros > 0) {
-                $formData['mode_paiement'] = 'helloasso';
+                $formData['mode_paiement']   = 'helloasso';
                 $formData['_last_completed'] = 10;
                 $request->session()->put("adhesion_{$token}", $formData);
 

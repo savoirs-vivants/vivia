@@ -243,6 +243,99 @@
                             </div>
                         </form>
                     </div>
+                @elseif($step === 12)
+                    <div class="p-6 md:p-8">
+                        <div class="mb-6">
+                            <h2 class="text-2xl font-bold text-slate-900">Votre profil 🏢</h2>
+                            <p class="text-gray-500 mt-1">Quel est votre statut juridique ?</p>
+                        </div>
+
+                        <form action="{{ route('adhesion.next', $token) }}" method="POST">
+                            @csrf
+                            <input type="hidden" name="current_step" value="12">
+
+                            <div x-data="{ statut_juridique: '{{ $formData['statut_juridique'] ?? '' }}' }">
+                                <div class="grid grid-cols-1 gap-4 mb-6">
+
+                                    @php
+                                        $statutsJuridiques = [
+                                            [
+                                                'value' => 'personne_physique',
+                                                'label' => 'Personne physique',
+                                                'icon'  => '👤',
+                                                'desc'  => 'Particulier s\'inscrivant à titre personnel',
+                                            ],
+                                            [
+                                                'value' => 'tpe_asso',
+                                                'label' => 'TPE / Association',
+                                                'icon'  => '🤝',
+                                                'desc'  => 'Très petite entreprise ou association',
+                                            ],
+                                            [
+                                                'value' => 'esr_pme',
+                                                'label' => 'ESR / PME',
+                                                'icon'  => '🏭',
+                                                'desc'  => 'Établissement de Recherche Supérieur ou PME',
+                                            ],
+                                        ];
+                                    @endphp
+
+                                    @foreach ($statutsJuridiques as $sj)
+                                        <label class="cursor-pointer block group">
+                                            <input type="radio" name="statut_juridique"
+                                                value="{{ $sj['value'] }}"
+                                                x-model="statut_juridique" class="sr-only">
+                                            <div :class="statut_juridique === '{{ $sj['value'] }}' ?
+                                                    'border-teal-600 bg-teal-50 ring-2 ring-teal-600/20' :
+                                                    'border-gray-200 group-hover:border-slate-900'"
+                                                class="border-2 rounded-2xl p-5 flex items-center gap-5 transition-all bg-white hover:shadow-sm">
+                                                <div class="w-12 h-12 rounded-xl bg-slate-100 flex items-center justify-center text-2xl shrink-0">
+                                                    {{ $sj['icon'] }}
+                                                </div>
+                                                <div class="flex-1 min-w-0">
+                                                    <h3 class="font-bold text-slate-900 text-base">{{ $sj['label'] }}</h3>
+                                                    <p class="text-gray-500 text-sm mt-0.5">{{ $sj['desc'] }}</p>
+                                                </div>
+                                                <div class="w-6 h-6 rounded-full border-2 flex items-center justify-center shrink-0 transition-colors"
+                                                    :class="statut_juridique === '{{ $sj['value'] }}' ?
+                                                        'border-teal-600 bg-teal-600' : 'border-gray-300'">
+                                                    <svg x-show="statut_juridique === '{{ $sj['value'] }}'"
+                                                        class="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                                        <path fill-rule="evenodd"
+                                                            d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                                                            clip-rule="evenodd" />
+                                                    </svg>
+                                                </div>
+                                            </div>
+                                        </label>
+                                    @endforeach
+                                </div>
+
+                                <div class="flex items-center justify-between pt-5 border-t border-gray-100">
+                                    @if ($hasPrev)
+                                        <a href="{{ route('adhesion.show', ['token' => $token, 'step' => $prevStep]) }}"
+                                            class="{{ $btnBack }}">
+                                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
+                                                    d="M15 19l-7-7 7-7" />
+                                            </svg>
+                                            Précédent
+                                        </a>
+                                    @else
+                                        <div></div>
+                                    @endif
+                                    <button type="submit" class="{{ $btn }}">
+                                        Suivant
+                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
+                                                d="M9 5l7 7-7 7" />
+                                        </svg>
+                                    </button>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+
                 @elseif($step === 2)
                     <div class="p-6 md:p-8">
                         <div class="mb-6">
@@ -524,15 +617,54 @@
                                 </div>
                             </div>
 
-                            <div class="mb-5">
-                                <label class="{{ $label }}">⚕️ Problèmes de santé à signaler</label>
-                                <textarea name="problemes_sante" rows="3" placeholder="Ex : asthme, épilepsie, diabète, problèmes cardiaques…"
-                                    class="{{ $field }}">{{ $formData['problemes_sante'] ?? '' }}</textarea>
-                            </div>
-                            <div class="mb-6">
-                                <label class="{{ $label }}">🤧 Allergies connues</label>
-                                <textarea name="allergies" rows="3" placeholder="Ex : arachides, pollen, latex, médicaments…"
-                                    class="{{ $field }}">{{ $formData['allergies'] ?? '' }}</textarea>
+                            <div x-data="{
+                                pb_sante: @js($formData['problemes_sante'] ?? ''),
+                                allergies: @js($formData['allergies'] ?? ''),
+                                get hasHealthInfo() {
+                                    return this.pb_sante.trim().length > 0 || this.allergies.trim().length > 0;
+                                }
+                            }">
+                                <div class="mb-5">
+                                    <label class="{{ $label }}">⚕️ Problèmes de santé à signaler</label>
+                                    <textarea name="problemes_sante" rows="3"
+                                        placeholder="Ex : asthme, épilepsie, diabète, problèmes cardiaques…"
+                                        x-model="pb_sante"
+                                        class="{{ $field }}">{{ $formData['problemes_sante'] ?? '' }}</textarea>
+                                </div>
+
+                                <div class="mb-5">
+                                    <label class="{{ $label }}">🤧 Allergies connues</label>
+                                    <textarea name="allergies" rows="3"
+                                        placeholder="Ex : arachides, pollen, latex, médicaments…"
+                                        x-model="allergies"
+                                        class="{{ $field }}">{{ $formData['allergies'] ?? '' }}</textarea>
+                                </div>
+
+                                <div x-show="hasHealthInfo"
+                                     x-transition:enter="transition ease-out duration-200"
+                                     x-transition:enter-start="opacity-0 -translate-y-1"
+                                     x-transition:enter-end="opacity-100 translate-y-0"
+                                     class="mb-5 p-5 bg-amber-50 border border-amber-200 rounded-2xl">
+                                    <div class="flex items-start gap-3 mb-3">
+                                        <span class="text-xl">🚨</span>
+                                        <div>
+                                            <p class="text-sm font-bold text-amber-900">Protocole d'urgence</p>
+                                            <p class="text-xs text-amber-700 font-medium mt-0.5">
+                                                Veuillez préciser la conduite à tenir par l'encadrant en cas de survenue de ces troubles durant l'activité.
+                                            </p>
+                                        </div>
+                                    </div>
+                                    <textarea name="conduite_a_tenir" rows="3"
+                                        placeholder="Ex : En cas de crise d'asthme, administrer le Ventoline disponible dans le sac de l'enfant et contacter le 15 si absence d'amélioration…"
+                                        class="{{ $field }}">{{ $formData['conduite_a_tenir'] ?? '' }}</textarea>
+                                </div>
+
+                                <div class="mb-6">
+                                    <label class="{{ $label }}">🍽️ Restrictions alimentaires</label>
+                                    <textarea name="restrictions_alimentaires" rows="2"
+                                        placeholder="Ex : végétarien, sans porc, sans gluten, halal, kosher…"
+                                        class="{{ $field }}">{{ $formData['restrictions_alimentaires'] ?? '' }}</textarea>
+                                </div>
                             </div>
 
                             <div class="flex items-center justify-between pt-5 border-t border-gray-100">
@@ -687,9 +819,95 @@
                             @if ($liste->isEmpty())
                                 <div class="p-8 text-center bg-slate-50 rounded-2xl border border-slate-200 mb-6">
                                     <div class="text-5xl mb-3">😕</div>
-                                    <p class="text-slate-900 font-bold text-lg">Aucune activité disponible pour le moment.
-                                    </p>
+                                    <p class="text-slate-900 font-bold text-lg">Aucune activité disponible pour le moment.</p>
                                     <p class="text-gray-500 text-sm mt-2">Contactez-nous pour plus d'informations.</p>
+                                </div>
+                            @elseif ($typeActivite === 'atelier')
+                                @php
+                                    $ateliersParVille = $liste->groupBy('ville')->sortKeys();
+                                @endphp
+                                <div x-data="{ openVilles: [] }" class="space-y-3 mb-6">
+                                    @foreach ($ateliersParVille as $ville => $villeActivites)
+                                        @php
+                                            $villeKey = Str::slug($ville);
+                                            $hasSelected = $villeActivites->contains(fn($a) => in_array($a->id, $selectedActivites));
+                                        @endphp
+                                        <div class="border-2 rounded-2xl overflow-hidden transition-all
+                                            {{ $hasSelected ? 'border-teal-500' : 'border-gray-200' }}">
+
+                                            <button type="button"
+                                                @click="openVilles.includes('{{ $villeKey }}')
+                                                    ? openVilles = openVilles.filter(v => v !== '{{ $villeKey }}')
+                                                    : openVilles.push('{{ $villeKey }}')"
+                                                class="w-full flex items-center justify-between px-5 py-4 bg-white hover:bg-gray-50 transition-colors">
+                                                <div class="flex items-center gap-3">
+                                                    <span class="text-xl">📍</span>
+                                                    <span class="font-bold text-slate-900 text-base">{{ $ville }}</span>
+                                                    <span class="text-xs font-semibold text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">
+                                                        {{ $villeActivites->count() }} activité{{ $villeActivites->count() > 1 ? 's' : '' }}
+                                                    </span>
+                                                    @if ($hasSelected)
+                                                        <span class="text-xs font-bold text-teal-700 bg-teal-50 border border-teal-200 px-2 py-0.5 rounded-full">
+                                                            Sélectionnée
+                                                        </span>
+                                                    @endif
+                                                </div>
+                                                <svg class="w-5 h-5 text-gray-400 transition-transform duration-200"
+                                                    :class="openVilles.includes('{{ $villeKey }}') ? 'rotate-180' : ''"
+                                                    fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                                                </svg>
+                                            </button>
+
+                                            <div x-show="openVilles.includes('{{ $villeKey }}')"
+                                                 x-transition:enter="transition ease-out duration-200"
+                                                 x-transition:enter-start="opacity-0 -translate-y-1"
+                                                 x-transition:enter-end="opacity-100 translate-y-0"
+                                                 class="px-4 pb-4 pt-2 bg-gray-50/50 space-y-3 border-t border-gray-100">
+                                                @foreach ($villeActivites as $activite)
+                                                    @php
+                                                        $horaires = is_string($activite->horaires)
+                                                            ? json_decode($activite->horaires, true)
+                                                            : $activite->horaires ?? [];
+                                                        $firstJour  = array_key_first($horaires ?? []);
+                                                        $firstHeure = $horaires[$firstJour] ?? null;
+                                                    @endphp
+                                                    <div x-data="{ checked: {{ in_array($activite->id, $selectedActivites) ? 'true' : 'false' }} }">
+                                                        <input type="checkbox" name="activites_selectionnees[]"
+                                                            value="{{ $activite->id }}" x-model="checked" class="hidden">
+                                                        <div @click="checked = !checked"
+                                                            :class="checked
+                                                                ? 'border-teal-600 bg-teal-50 ring-2 ring-teal-600/20'
+                                                                : 'border-gray-200 hover:border-slate-400 bg-white'"
+                                                            class="border-2 rounded-xl p-4 transition-all flex items-center gap-4 cursor-pointer shadow-sm hover:shadow-md">
+                                                            <div class="flex-1 min-w-0">
+                                                                <h4 class="font-bold text-slate-900 text-sm leading-tight">{{ $activite->nom }}</h4>
+                                                                @if ($firstJour && $firstHeure)
+                                                                    <p class="text-xs text-gray-500 font-medium mt-1.5 flex items-center gap-1.5">
+                                                                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                                                        </svg>
+                                                                        {{ $firstJour }} · {{ $firstHeure }}
+                                                                    </p>
+                                                                @endif
+                                                                @if ($activite->tarif !== null)
+                                                                    <p class="text-xs font-black text-teal-600 mt-1">
+                                                                        {{ $activite->tarif > 0 ? number_format($activite->tarif, 0, ',', ' ') . ' €' : 'Gratuit' }}
+                                                                    </p>
+                                                                @endif
+                                                            </div>
+                                                            <div class="w-6 h-6 rounded-full border-2 flex items-center justify-center shrink-0 transition-colors"
+                                                                :class="checked ? 'border-teal-600 bg-teal-600' : 'border-gray-300'">
+                                                                <svg x-show="checked" class="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                                                    <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+                                                                </svg>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                @endforeach
+                                            </div>
+                                        </div>
+                                    @endforeach
                                 </div>
                             @else
                                 <div class="space-y-4 mb-6">
@@ -698,89 +916,41 @@
                                             $horaires = is_string($activite->horaires)
                                                 ? json_decode($activite->horaires, true)
                                                 : $activite->horaires ?? [];
-                                            $hasMultipleSlots =
-                                                $typeActivite === 'atelier' &&
-                                                is_array($horaires) &&
-                                                count($horaires) > 1;
                                         @endphp
                                         <div x-data="{ checked: {{ in_array($activite->id, $selectedActivites) ? 'true' : 'false' }} }">
                                             <input type="checkbox" name="activites_selectionnees[]"
                                                 value="{{ $activite->id }}" x-model="checked" class="hidden">
                                             <div :class="checked ? 'border-teal-600 bg-teal-50 ring-2 ring-teal-600/20' :
                                                 'border-gray-200 hover:border-slate-900 bg-white'"
-                                                class="border-2 rounded-2xl p-5 transition-all flex flex-col gap-4 shadow-sm hover:shadow-md">
-                                                <div @click="checked = !checked"
-                                                    class="flex items-start gap-4 cursor-pointer w-full">
-                                                    <div
-                                                        class="w-12 h-12 rounded-xl flex items-center justify-center shrink-0 text-2xl bg-slate-900 text-white shadow-sm">
-                                                        {{ $typeActivite === 'stage' ? '🎭' : '🔧' }}
-                                                    </div>
-                                                    <div class="flex-1">
-                                                        <h4 class="font-bold text-slate-900 text-lg">{{ $activite->nom }}
-                                                        </h4>
-                                                        @if ($activite->adresse)
-                                                            <p class="text-sm text-gray-500 font-medium mt-1">📍
-                                                                {{ $activite->adresse }}, {{ $activite->ville }}</p>
-                                                        @endif
-
-                                                        @if ($horaires && count($horaires) > 0)
-                                                            <div class="flex flex-wrap gap-2 mt-3">
-                                                                @foreach ($horaires as $jour => $heure)
-                                                                    <span
-                                                                        class="inline-block bg-white border border-gray-200 text-slate-700 font-semibold text-xs px-2.5 py-1 rounded-lg shadow-sm">
-                                                                        🕐 {{ $jour }} {{ $heure }}
-                                                                    </span>
-                                                                @endforeach
-                                                            </div>
-                                                        @endif
-
-                                                        @if ($activite->tarif !== null)
-                                                            <p class="text-sm font-black text-teal-600 mt-3">
-                                                                {{ $activite->tarif > 0 ? number_format($activite->tarif, 2, ',', ' ') . ' €' : 'Gratuit' }}
-                                                            </p>
-                                                        @endif
-                                                    </div>
-                                                    <div class="w-6 h-6 rounded-full border-2 flex items-center justify-center shrink-0 transition-colors mt-1"
-                                                        :class="checked ? 'border-teal-600 bg-teal-600' : 'border-gray-300'">
-                                                        <svg x-show="checked" class="w-3 h-3 text-white"
-                                                            fill="currentColor" viewBox="0 0 20 20">
-                                                            <path fill-rule="evenodd"
-                                                                d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                                                                clip-rule="evenodd" />
-                                                        </svg>
-                                                    </div>
-                                                </div>
-
-                                                @if ($hasMultipleSlots)
-                                                    <div x-show="checked" x-transition
-                                                        class="w-full pt-4 border-t border-teal-200/60 mt-1">
-                                                        <p class="text-sm font-bold text-slate-800 mb-3">📅 Choisissez
-                                                            votre créneau pour cet atelier :</p>
-                                                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                                class="border-2 rounded-2xl p-5 transition-all flex items-start gap-4 shadow-sm hover:shadow-md cursor-pointer"
+                                                @click="checked = !checked">
+                                                <div class="w-12 h-12 rounded-xl flex items-center justify-center shrink-0 text-2xl bg-slate-900 text-white shadow-sm">🎭</div>
+                                                <div class="flex-1">
+                                                    <h4 class="font-bold text-slate-900 text-lg">{{ $activite->nom }}</h4>
+                                                    @if ($activite->adresse)
+                                                        <p class="text-sm text-gray-500 font-medium mt-1">📍 {{ $activite->adresse }}, {{ $activite->ville }}</p>
+                                                    @endif
+                                                    @if ($horaires && count($horaires) > 0)
+                                                        <div class="flex flex-wrap gap-2 mt-3">
                                                             @foreach ($horaires as $jour => $heure)
-                                                                <label
-                                                                    class="flex items-center gap-3 p-3 bg-white border border-gray-200 rounded-xl cursor-pointer hover:border-teal-600 transition-all has-[:checked]:border-teal-600 has-[:checked]:ring-1 has-[:checked]:ring-teal-600">
-                                                                    <input type="radio"
-                                                                        name="horaires_selectionnes[{{ $activite->id }}]"
-                                                                        value="{{ $jour }} - {{ $heure }}"
-                                                                        {{ ($formData['horaires_selectionnes'][$activite->id] ?? '') === "$jour - $heure" ? 'checked' : '' }}
-                                                                        class="{{ $radio }}"
-                                                                        :disabled="!checked" required>
-                                                                    <span class="text-sm font-semibold text-slate-700">
-                                                                        {{ $jour }} <span
-                                                                            class="text-teal-600">{{ $heure }}</span>
-                                                                    </span>
-                                                                </label>
+                                                                <span class="inline-block bg-white border border-gray-200 text-slate-700 font-semibold text-xs px-2.5 py-1 rounded-lg shadow-sm">
+                                                                    🕐 {{ $jour }} {{ $heure }}
+                                                                </span>
                                                             @endforeach
                                                         </div>
-                                                    </div>
-                                                @elseif($typeActivite === 'atelier' && count($horaires) === 1)
-                                                    @php $uniqueSlot = array_key_first($horaires) . ' - ' . $horaires[array_key_first($horaires)]; @endphp
-                                                    <input type="hidden"
-                                                        name="horaires_selectionnes[{{ $activite->id }}]"
-                                                        value="{{ $uniqueSlot }}" :disabled="!checked">
-                                                @endif
-
+                                                    @endif
+                                                    @if ($activite->tarif !== null)
+                                                        <p class="text-sm font-black text-teal-600 mt-3">
+                                                            {{ $activite->tarif > 0 ? number_format($activite->tarif, 0, ',', ' ') . ' €' : 'Gratuit' }}
+                                                        </p>
+                                                    @endif
+                                                </div>
+                                                <div class="w-6 h-6 rounded-full border-2 flex items-center justify-center shrink-0 transition-colors mt-1"
+                                                    :class="checked ? 'border-teal-600 bg-teal-600' : 'border-gray-300'">
+                                                    <svg x-show="checked" class="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                                        <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+                                                    </svg>
+                                                </div>
                                             </div>
                                         </div>
                                     @endforeach
@@ -925,25 +1095,39 @@
 
                             <div x-data="tuteurManager()" x-init="init()">
                                 <template x-for="(tuteur, i) in tuteurs" :key="i">
-                                    <div
-                                        class="border-2 border-gray-200 rounded-3xl p-6 mb-5 bg-white relative hover:border-slate-300 transition-colors">
+                                    <div class="border-2 rounded-3xl p-6 mb-5 bg-white relative transition-colors"
+                                        :class="{
+                                            'border-slate-300 hover:border-slate-400': tuteur.type === 'parent_tuteur',
+                                            'border-teal-300 hover:border-teal-400 bg-teal-50/30': tuteur.type === 'autre_autorise',
+                                            'border-red-200 hover:border-red-300 bg-red-50/20': tuteur.type === 'non_autorise'
+                                        }">
+
                                         <div class="flex items-center justify-between mb-5">
                                             <h3 class="font-bold text-slate-900 text-lg flex items-center gap-3">
-                                                <span
-                                                    class="w-10 h-10 rounded-xl bg-slate-900 text-white flex items-center justify-center font-bold shadow-md"
-                                                    x-text="'P' + (i+1)"></span>
-                                                <span x-text="'Personne ' + (i+1)"></span>
+                                                <span class="w-10 h-10 rounded-xl text-white flex items-center justify-center font-bold shadow-md text-sm"
+                                                    :class="{
+                                                        'bg-slate-900': tuteur.type === 'parent_tuteur',
+                                                        'bg-teal-600': tuteur.type === 'autre_autorise',
+                                                        'bg-red-500': tuteur.type === 'non_autorise'
+                                                    }"
+                                                    x-text="tuteur.type === 'parent_tuteur' ? '👨‍👩‍👧' : (tuteur.type === 'autre_autorise' ? '✅' : '🚫')"></span>
+                                                <span>
+                                                    <span x-show="tuteur.type === 'parent_tuteur'" class="text-slate-900">Parent / Tuteur·trice</span>
+                                                    <span x-show="tuteur.type === 'autre_autorise'" class="text-teal-700">Personne autorisée à récupérer l'enfant</span>
+                                                    <span x-show="tuteur.type === 'non_autorise'" class="text-red-600">Personne non autorisée à récupérer l'enfant</span>
+                                                </span>
                                             </h3>
-                                            <button type="button" @click="removeTuteur(i)" x-show="tuteurs.length > 1"
+                                            <button type="button" @click="removeTuteur(i)"
                                                 class="text-red-500 bg-red-50 px-3 py-1.5 rounded-lg font-bold text-sm hover:bg-red-500 hover:text-white transition-colors flex items-center gap-2">
-                                                <svg class="w-4 h-4" fill="none" stroke="currentColor"
-                                                    viewBox="0 0 24 24">
+                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                                         d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                                                 </svg>
                                                 Retirer
                                             </button>
                                         </div>
+
+                                        <input type="hidden" :name="'tuteurs[' + i + '][type]'" :value="tuteur.type">
 
                                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
                                             <div>
@@ -975,83 +1159,78 @@
                                             </div>
                                         </div>
 
-                                        <div class="space-y-3 mb-6 p-5 bg-slate-50 border border-slate-200 rounded-2xl">
-                                            <label class="flex items-center gap-3 cursor-pointer group">
-                                                <input type="checkbox" :name="'tuteurs[' + i + '][adhere]'"
-                                                    value="1" :checked="tuteur.adhere"
-                                                    @change="tuteur.adhere = $event.target.checked"
-                                                    class="{{ $check }}">
-                                                <span class="text-sm font-semibold text-slate-800">J'autorise mon enfant à
-                                                    adhérer à l'association Savoirs Vivants</span>
-                                            </label>
-                                            <label class="flex items-center gap-3 cursor-pointer group">
-                                                <input type="checkbox" :name="'tuteurs[' + i + '][rentre_fin]'"
-                                                    value="1" :checked="tuteur.rentre_fin"
-                                                    @change="tuteur.rentre_fin = $event.target.checked"
-                                                    class="{{ $check }}">
-                                                <span class="text-sm font-semibold text-slate-800">J'autorise mon enfant à
-                                                    rentrer seul·e à la fin de l'activité</span>
-                                            </label>
-                                            <label class="flex items-center gap-3 cursor-pointer group">
-                                                <input type="checkbox" :name="'tuteurs[' + i + '][rentre_annul]'"
-                                                    value="1" :checked="tuteur.rentre_annul"
-                                                    @change="tuteur.rentre_annul = $event.target.checked"
-                                                    class="{{ $check }}">
-                                                <span class="text-sm font-semibold text-slate-800">J'autorise mon enfant à
-                                                    rentrer seul·e en cas d'annulation</span>
-                                            </label>
-                                        </div>
+                                        <template x-if="tuteur.type === 'parent_tuteur'">
+                                            <div>
+                                                <div class="space-y-3 mb-6 p-5 bg-slate-50 border border-slate-200 rounded-2xl">
+                                                    <label class="flex items-center gap-3 cursor-pointer group">
+                                                        <input type="checkbox" :name="'tuteurs[' + i + '][adhere]'"
+                                                            value="1" :checked="tuteur.adhere"
+                                                            @change="tuteur.adhere = $event.target.checked"
+                                                            class="{{ $check }}">
+                                                        <span class="text-sm font-semibold text-slate-800">J'autorise mon enfant à
+                                                            adhérer à l'association Savoirs Vivants</span>
+                                                    </label>
+                                                    <label class="flex items-center gap-3 cursor-pointer group">
+                                                        <input type="checkbox" :name="'tuteurs[' + i + '][rentre_fin]'"
+                                                            value="1" :checked="tuteur.rentre_fin"
+                                                            @change="tuteur.rentre_fin = $event.target.checked"
+                                                            class="{{ $check }}">
+                                                        <span class="text-sm font-semibold text-slate-800">J'autorise mon enfant à
+                                                            rentrer seul·e à la fin de l'activité</span>
+                                                    </label>
+                                                    <label class="flex items-center gap-3 cursor-pointer group">
+                                                        <input type="checkbox" :name="'tuteurs[' + i + '][rentre_annul]'"
+                                                            value="1" :checked="tuteur.rentre_annul"
+                                                            @change="tuteur.rentre_annul = $event.target.checked"
+                                                            class="{{ $check }}">
+                                                        <span class="text-sm font-semibold text-slate-800">J'autorise mon enfant à
+                                                            rentrer seul·e en cas d'annulation</span>
+                                                    </label>
+                                                </div>
 
-                                        <div class="mb-5">
-                                            <label class="{{ $label }}">📅 Date</label>
-                                            <input type="date" :name="'tuteurs[' + i + '][date_signature]'"
-                                                x-model="tuteur.date_signature" class="{{ $field }} max-w-xs">
-                                        </div>
+                                                <div class="mb-5">
+                                                    <label class="{{ $label }}">📅 Date</label>
+                                                    <input type="date" :name="'tuteurs[' + i + '][date_signature]'"
+                                                        x-model="tuteur.date_signature" class="{{ $field }} max-w-xs">
+                                                </div>
 
-                                        <div>
-                                            <label class="{{ $label }}">✍️ Signature du/de la tuteur·trice</label>
-                                            <div class="border-2 border-dashed border-gray-300 rounded-2xl p-2 bg-gray-50 relative overflow-hidden"
-                                                style="max-width: 400px;">
-                                                <canvas :id="'canvas-tuteur-' + i"
-                                                    class="w-full touch-none bg-white rounded-xl cursor-crosshair shadow-sm border border-gray-100"
-                                                    style="height: 120px; display: block;"></canvas>
-                                                <button type="button" @click="clearCanvas(i)"
-                                                    class="absolute top-4 right-4 bg-white border border-gray-200 text-xs font-bold text-gray-500 hover:text-red-500 hover:border-red-200 px-2 py-1 rounded shadow-sm transition">
-                                                    Effacer
-                                                </button>
+                                                <div>
+                                                    <label class="{{ $label }}">✍️ Signature du/de la tuteur·trice</label>
+                                                    <div class="border-2 border-dashed border-gray-300 rounded-2xl p-2 bg-gray-50 relative overflow-hidden"
+                                                        style="max-width: 400px;">
+                                                        <canvas :id="'canvas-tuteur-' + i"
+                                                            class="w-full touch-none bg-white rounded-xl cursor-crosshair shadow-sm border border-gray-100"
+                                                            style="height: 120px; display: block;"></canvas>
+                                                        <button type="button" @click="clearCanvas(i)"
+                                                            class="absolute top-4 right-4 bg-white border border-gray-200 text-xs font-bold text-gray-500 hover:text-red-500 hover:border-red-200 px-2 py-1 rounded shadow-sm transition">
+                                                            Effacer
+                                                        </button>
+                                                    </div>
+                                                    <input type="hidden" :name="'tuteurs[' + i + '][signature]'"
+                                                        :id="'sig-data-tuteur-' + i" x-model="tuteur.signature">
+                                                </div>
                                             </div>
-                                            <input type="hidden" :name="'tuteurs[' + i + '][signature]'"
-                                                :id="'sig-data-tuteur-' + i" x-model="tuteur.signature">
-                                        </div>
+                                        </template>
                                     </div>
                                 </template>
 
-                                <button type="button" @click="addTuteur()"
-                                    class="w-full border-2 border-dashed border-teal-600 text-teal-700 bg-teal-50 font-bold rounded-2xl py-4 px-4 hover:bg-teal-600 hover:text-white transition-colors flex items-center justify-center gap-2 mb-4">
-                                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
-                                            d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                                    </svg>
-                                    Ajouter un·e parent / tuteur·trice
-                                </button>
-
-                                <button type="button" @click="addTuteur()"
-                                    class="w-full border-2 border-dashed border-teal-600 text-teal-700 bg-teal-50 font-bold rounded-2xl py-4 px-4 hover:bg-teal-600 hover:text-white transition-colors flex items-center justify-center gap-2 mb-4">
-                                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
-                                            d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                                    </svg>
-                                    Ajouter un·e adulte autorisé à récupérer l'enfant
-                                </button>
-
-                                <button type="button" @click="addTuteur()"
-                                    class="w-full border-2 border-dashed border-teal-600 text-teal-700 bg-teal-50 font-bold rounded-2xl py-4 px-4 hover:bg-teal-600 hover:text-white transition-colors flex items-center justify-center gap-2 mb-4">
-                                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
-                                            d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                                    </svg>
-                                    Ajouter un·e adulte non autorisé à récupérer l'enfant
-                                </button>
+                                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-2">
+                                    <button type="button" @click="addTuteur('parent_tuteur')"
+                                        class="border-2 border-dashed border-slate-400 text-slate-700 bg-slate-50 font-bold rounded-2xl py-4 px-3 hover:bg-slate-900 hover:text-white hover:border-slate-900 transition-colors flex flex-col items-center justify-center gap-2 text-sm text-center">
+                                        <span class="text-2xl">👨‍👩‍👧</span>
+                                        Ajouter un·e<br>parent / tuteur·trice
+                                    </button>
+                                    <button type="button" @click="addTuteur('autre_autorise')"
+                                        class="border-2 border-dashed border-teal-500 text-teal-700 bg-teal-50 font-bold rounded-2xl py-4 px-3 hover:bg-teal-600 hover:text-white hover:border-teal-600 transition-colors flex flex-col items-center justify-center gap-2 text-sm text-center">
+                                        <span class="text-2xl">✅</span>
+                                        Ajouter une personne<br>autorisée
+                                    </button>
+                                    <button type="button" @click="addTuteur('non_autorise')"
+                                        class="border-2 border-dashed border-red-400 text-red-600 bg-red-50 font-bold rounded-2xl py-4 px-3 hover:bg-red-500 hover:text-white hover:border-red-500 transition-colors flex flex-col items-center justify-center gap-2 text-sm text-center">
+                                        <span class="text-2xl">🚫</span>
+                                        Ajouter une personne<br>non autorisée
+                                    </button>
+                                </div>
                             </div>
 
                             <div class="flex items-center justify-between pt-5 border-t border-gray-100">
@@ -1165,7 +1344,7 @@
                             <input type="hidden" name="current_step" value="10">
 
                             <div x-data="{ modePaiement: '{{ $formData['mode_paiement'] ?? 'helloasso' }}' }">
-                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
+                                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
 
                                     <label class="cursor-pointer block group">
                                         <input type="radio" name="mode_paiement" value="helloasso"
@@ -1192,6 +1371,21 @@
                                             <div class="text-4xl mb-3">🤝</div>
                                             <h3 class="text-lg font-bold text-slate-900">Paiement en personne</h3>
                                             <p class="text-gray-500 text-sm mt-2">Chèque, espèces ou virement</p>
+                                        </div>
+                                    </label>
+
+                                    <label class="cursor-pointer block group opacity-70">
+                                        <input type="radio" name="mode_paiement" value="pass_culture"
+                                            x-model="modePaiement" class="sr-only" disabled>
+                                        <div :class="modePaiement === 'pass_culture' ?
+                                            'border-purple-600 bg-purple-50 ring-2 ring-purple-600/20' :
+                                            'border-gray-200 group-hover:border-gray-300 cursor-not-allowed'"
+                                            class="{{ $card }} items-center text-center relative">
+                                            <div class="text-4xl mb-3">🎭</div>
+                                            <h3 class="text-lg font-bold text-slate-900">Pass Culture</h3>
+                                            <p class="text-gray-500 text-sm mt-2">Utiliser votre Pass Culture</p>
+                                            <span
+                                                class="inline-block mt-4 text-xs font-bold bg-purple-100 text-purple-700 px-3 py-1.5 rounded-full uppercase tracking-wider">Fonctionnalité à venir</span>
                                         </div>
                                     </label>
                                 </div>
@@ -1240,6 +1434,7 @@
                                     <button type="submit" class="{{ $btn }}">
                                         <span x-show="modePaiement === 'helloasso'">Continuer vers HelloAsso 🔒</span>
                                         <span x-show="modePaiement === 'interne'">Valider mon inscription ✓</span>
+                                        <span x-show="modePaiement === 'pass_culture'">Valider mon inscription ✓</span>
                                     </button>
                                 </div>
                             </div>
@@ -1378,36 +1573,45 @@
                     if (existing && Array.isArray(existing) && existing.length > 0) {
                         this.tuteurs = existing;
                     } else {
-                        this.tuteurs = [this.emptyTuteur()];
+                        this.tuteurs = [this.emptyTuteur('parent_tuteur')];
                     }
                     this.$nextTick(() => {
-                        this.tuteurs.forEach((_, i) => this.initSigPad(i));
+                        this.tuteurs.forEach((t, i) => {
+                            if (t.type === 'parent_tuteur') this.initSigPad(i);
+                        });
                     });
                 },
 
-                emptyTuteur() {
-                    return {
+                emptyTuteur(type) {
+                    const base = {
+                        type: type,
                         nom: '',
                         prenom: '',
                         tel: '',
                         mail: '',
-                        nom_enfant: '{{ ($formData['prenom'] ?? '') . ' ' . ($formData['nom'] ?? '') }}',
-                        adhere: false,
-                        rentre_fin: false,
-                        rentre_annul: false,
-                        date_signature: new Date().toISOString().split('T')[0],
-                        signature: ''
                     };
+                    if (type === 'parent_tuteur') {
+                        Object.assign(base, {
+                            nom_enfant: '{{ ($formData['prenom'] ?? '') . ' ' . ($formData['nom'] ?? '') }}',
+                            adhere: false,
+                            rentre_fin: false,
+                            rentre_annul: false,
+                            date_signature: new Date().toISOString().split('T')[0],
+                            signature: ''
+                        });
+                    }
+                    return base;
                 },
 
-                addTuteur() {
-                    this.tuteurs.push(this.emptyTuteur());
+                addTuteur(type) {
+                    this.tuteurs.push(this.emptyTuteur(type));
                     const newIdx = this.tuteurs.length - 1;
-                    this.$nextTick(() => this.initSigPad(newIdx));
+                    if (type === 'parent_tuteur') {
+                        this.$nextTick(() => this.initSigPad(newIdx));
+                    }
                 },
 
                 removeTuteur(i) {
-                    if (this.tuteurs.length <= 1) return;
                     if (this.sigPads[i]) {
                         delete this.sigPads[i];
                     }
