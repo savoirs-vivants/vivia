@@ -38,6 +38,8 @@ Route::get('/adhesion/{token}/helloasso/{status}', [App\Http\Controllers\Adheren
 Route::middleware('auth')->group(function () {
 
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+    Route::post('/seances/{seance}/appel', [DashboardController::class, 'enregistrerAppel'])->name('seances.appel');
+    Route::post('/seances/{seance}/terminer', [DashboardController::class, 'terminerSeance'])->name('seances.terminer');
 
     Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 

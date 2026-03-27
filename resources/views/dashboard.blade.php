@@ -252,18 +252,50 @@
 
                                         <div
                                             class="md:col-span-2 bg-gray-50 border-t md:border-t-0 md:border-l border-gray-100
-                                                    p-5 sm:p-8 flex flex-col justify-end">
-                                            <button
-                                                class="w-full bg-[#083325] hover:bg-[#16A37A] text-white font-grotesk font-bold
-                                                           py-3.5 rounded-xl transition-all duration-300 shadow-md hover:shadow-lg
-                                                           flex items-center justify-center gap-2 group text-sm">
-                                                Procéder à l'appel
-                                                <svg class="w-4 h-4 group-hover:translate-x-1 transition-transform"
-                                                    fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path stroke-linecap="round" stroke-linejoin="round"
-                                                        stroke-width="2.5" d="M14 5l7 7m0 0l-7 7m7-7H3" />
-                                                </svg>
-                                            </button>
+                                                    p-5 sm:p-8 flex flex-col justify-end gap-3">
+
+                                            @if ($prochaineSeance->statut === 'terminee')
+                                                <button disabled
+                                                    class="w-full bg-gray-100 text-gray-400 font-grotesk font-bold
+                                                               py-3.5 rounded-xl cursor-not-allowed
+                                                               flex items-center justify-center gap-2 text-sm border border-gray-200">
+                                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                                                    </svg>
+                                                    Séance clôturée
+                                                </button>
+
+                                            @elseif ($prochaineSeance->statut === 'appel_fait')
+                                                <div class="flex items-center gap-2 mb-1">
+                                                    <span class="w-2 h-2 rounded-full bg-teal-500 animate-pulse inline-block"></span>
+                                                    <span class="text-xs font-bold text-teal-600">Appel enregistré</span>
+                                                </div>
+                                                <button onclick="openFinOverlay()"
+                                                    class="w-full bg-[#222A60] hover:bg-[#2d3a8c] text-white font-grotesk font-bold
+                                                               py-3.5 rounded-xl transition-all duration-300 shadow-md hover:shadow-lg
+                                                               flex items-center justify-center gap-2 group text-sm">
+                                                    Fin de l'activité
+                                                    <svg class="w-4 h-4 group-hover:translate-x-1 transition-transform"
+                                                        fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round"
+                                                            stroke-width="2.5" d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                                                    </svg>
+                                                </button>
+
+                                            @else
+                                                <button onclick="openAppelOverlay()"
+                                                    class="w-full bg-[#083325] hover:bg-[#16A37A] text-white font-grotesk font-bold
+                                                               py-3.5 rounded-xl transition-all duration-300 shadow-md hover:shadow-lg
+                                                               flex items-center justify-center gap-2 group text-sm">
+                                                    Procéder à l'appel
+                                                    <svg class="w-4 h-4 group-hover:translate-x-1 transition-transform"
+                                                        fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round"
+                                                            stroke-width="2.5" d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                                                    </svg>
+                                                </button>
+                                            @endif
+
                                         </div>
 
                                     </div>
@@ -339,6 +371,151 @@
             </div>
         </div>
     </div>
+
+    @if ($isGestionnaire && $prochaineSeance && $prochaineSeance->statut !== 'terminee')
+
+    {{-- ═══════════════════════════════════════════════════════════════ --}}
+    {{-- OVERLAY 1 : APPEL                                              --}}
+    {{-- ═══════════════════════════════════════════════════════════════ --}}
+    <div id="overlay-appel"
+         class="fixed inset-0 z-50 hidden items-center justify-center bg-black/50 backdrop-blur-sm p-4"
+         style="display:none!important">
+        <div class="bg-white rounded-3xl shadow-2xl w-full max-w-lg flex flex-col"
+             style="max-height:90vh">
+
+            <div class="px-6 py-5 border-b border-gray-100 flex items-center justify-between shrink-0">
+                <div>
+                    <h2 class="font-grotesk font-black text-lg text-gray-900">Appel des adhérents</h2>
+                    <p class="text-xs text-gray-500 font-medium mt-0.5">{{ $prochaineSeance->activite_nom }}</p>
+                </div>
+                <button onclick="closeAppelOverlay()"
+                        class="w-8 h-8 rounded-lg bg-gray-100 hover:bg-gray-200 flex items-center justify-center transition-colors">
+                    <svg class="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                </button>
+            </div>
+
+            <div id="appel-list" class="flex-1 overflow-y-auto px-6 py-4 space-y-2"></div>
+
+            <div class="px-6 py-5 border-t border-gray-100 shrink-0">
+                <button onclick="validerAppel()" id="btn-valider-appel"
+                        class="w-full bg-[#083325] hover:bg-[#16A37A] text-white font-grotesk font-bold
+                               py-3.5 rounded-xl transition-all duration-300 shadow-md hover:shadow-lg text-sm
+                               flex items-center justify-center gap-2">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/>
+                    </svg>
+                    Valider l'appel
+                </button>
+            </div>
+        </div>
+    </div>
+
+    {{-- ═══════════════════════════════════════════════════════════════ --}}
+    {{-- OVERLAY 2 : FIN DE L'ACTIVITÉ (liste des enfants)             --}}
+    {{-- ═══════════════════════════════════════════════════════════════ --}}
+    <div id="overlay-fin"
+         class="fixed inset-0 z-50 hidden items-center justify-center bg-black/50 backdrop-blur-sm p-4"
+         style="display:none!important">
+        <div class="bg-white rounded-3xl shadow-2xl w-full max-w-lg flex flex-col"
+             style="max-height:90vh">
+
+            <div class="px-6 py-5 border-b border-gray-100 flex items-center justify-between shrink-0">
+                <div>
+                    <h2 class="font-grotesk font-black text-lg text-gray-900">Fin de l'activité</h2>
+                    <p class="text-xs text-gray-500 font-medium mt-0.5">Confirmez la récupération des enfants</p>
+                </div>
+                <button onclick="closeFinOverlay()"
+                        class="w-8 h-8 rounded-lg bg-gray-100 hover:bg-gray-200 flex items-center justify-center transition-colors">
+                    <svg class="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                </button>
+            </div>
+
+            <div id="fin-list" class="flex-1 overflow-y-auto px-6 py-4 space-y-2"></div>
+
+            <div class="px-6 py-5 border-t border-gray-100 shrink-0">
+                <button id="btn-valider-fin" onclick="validerFin()" disabled
+                        class="w-full bg-gray-100 text-gray-400 font-grotesk font-bold
+                               py-3.5 rounded-xl cursor-not-allowed text-sm
+                               flex items-center justify-center gap-2 transition-all duration-300">
+                    Terminer & clôturer la séance
+                </button>
+            </div>
+        </div>
+    </div>
+
+    {{-- ═══════════════════════════════════════════════════════════════ --}}
+    {{-- OVERLAY 3 : CONFIRMATION ENFANT (checkbox + signature)        --}}
+    {{-- ═══════════════════════════════════════════════════════════════ --}}
+    <div id="overlay-enfant"
+         class="fixed inset-0 z-[60] hidden items-center justify-center bg-black/60 backdrop-blur-sm p-4"
+         style="display:none!important">
+        <div class="bg-white rounded-3xl shadow-2xl w-full max-w-md">
+
+            <div class="px-6 py-5 border-b border-gray-100 flex items-center justify-between">
+                <div>
+                    <p class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-0.5">Récupération</p>
+                    <h2 class="font-grotesk font-black text-lg text-gray-900" id="enfant-nom-titre">—</h2>
+                </div>
+                <button onclick="closeEnfantOverlay()"
+                        class="w-8 h-8 rounded-lg bg-gray-100 hover:bg-gray-200 flex items-center justify-center transition-colors">
+                    <svg class="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                </button>
+            </div>
+
+            <div class="px-6 py-5 space-y-5">
+                <label class="flex items-start gap-3 cursor-pointer group">
+                    <div class="relative mt-0.5 shrink-0">
+                        <input type="checkbox" id="cb-recup" onchange="onEnfantFormChange()"
+                               class="peer w-5 h-5 rounded border-2 border-gray-300 accent-[#083325] cursor-pointer">
+                    </div>
+                    <span class="text-sm font-semibold text-gray-700 leading-snug group-hover:text-gray-900 transition-colors">
+                        Je certifie avoir récupéré mon enfant
+                    </span>
+                </label>
+
+                <div>
+                    <label class="block text-sm font-bold text-gray-700 mb-2">
+                        Signature du responsable <span class="text-rose-500">*</span>
+                    </label>
+                    <div class="relative border-2 border-dashed border-gray-300 rounded-2xl p-2 bg-gray-50 overflow-hidden"
+                         style="height:150px">
+                        <canvas id="canvas-fin"
+                                class="w-full h-full touch-none bg-white rounded-xl cursor-crosshair block border border-gray-100"></canvas>
+                        <button type="button" onclick="clearSigFin()"
+                                class="absolute top-3 right-3 bg-white border border-gray-200 text-xs font-bold
+                                       text-gray-500 hover:text-rose-500 hover:border-rose-200 px-2 py-1 rounded-lg
+                                       shadow-sm transition-colors">
+                            Effacer
+                        </button>
+                    </div>
+                    <p id="sig-warning" class="text-xs text-rose-500 font-medium mt-1.5 hidden">
+                        La signature est requise pour valider.
+                    </p>
+                </div>
+            </div>
+
+            <div class="px-6 py-5 border-t border-gray-100">
+                <button id="btn-valider-enfant" onclick="validerEnfant()"
+                        class="w-full bg-gray-100 text-gray-400 font-grotesk font-bold
+                               py-3.5 rounded-xl cursor-not-allowed text-sm transition-all duration-300
+                               flex items-center justify-center gap-2" disabled>
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/>
+                    </svg>
+                    Valider
+                </button>
+            </div>
+        </div>
+    </div>
+
+    @endif
+
 @endsection
 
 <script>
@@ -514,3 +691,337 @@
         }
     });
 </script>
+
+@if ($isGestionnaire && $prochaineSeance && $prochaineSeance->statut !== 'terminee')
+<script src="https://cdnjs.cloudflare.com/ajax/libs/signature_pad/4.1.7/signature_pad.umd.min.js"></script>
+<script>
+(function () {
+    const SEANCE_ID    = {{ $prochaineSeance->id_seance }};
+    const CSRF_TOKEN   = '{{ csrf_token() }}';
+    const ADHERENTS    = @json($adherentsSeance);
+    const ABSENTS_IDS  = @json($absentsSeanceIds ?? []);
+    const PRESENTS     = ADHERENTS.filter(a => !ABSENTS_IDS.includes(a.id));
+
+    // ── État ─────────────────────────────────────────────────────────────────
+    let presenceState  = {};
+    let enfantsState   = {};
+    let currentEnfantId = null;
+    let sigPad         = null;
+    let sigPadInited   = false;
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // HELPERS
+    // ─────────────────────────────────────────────────────────────────────────
+    function showOverlay(id) {
+        const el = document.getElementById(id);
+        el.style.removeProperty('display');
+        el.classList.remove('hidden');
+        el.classList.add('flex');
+    }
+    function hideOverlay(id) {
+        const el = document.getElementById(id);
+        el.classList.remove('flex');
+        el.classList.add('hidden');
+        el.style.display = 'none';
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // OVERLAY 1 : APPEL
+    // ─────────────────────────────────────────────────────────────────────────
+    window.openAppelOverlay = function () {
+        presenceState = {};
+        ADHERENTS.forEach(a => {
+            presenceState[a.id] = { statut: 'present', motif: '' };
+        });
+        renderAppelList();
+        showOverlay('overlay-appel');
+    };
+
+    window.closeAppelOverlay = function () {
+        hideOverlay('overlay-appel');
+    };
+
+    function renderAppelList() {
+        const container = document.getElementById('appel-list');
+        if (!container) return;
+
+        if (ADHERENTS.length === 0) {
+            container.innerHTML = `
+                <p class="text-center text-gray-400 text-sm py-8 font-medium">
+                    Aucun adhérent inscrit à cette activité.
+                </p>`;
+            return;
+        }
+
+        container.innerHTML = ADHERENTS.map(a => {
+            const s = presenceState[a.id];
+            const isAbsent = s.statut === 'absent';
+            return `
+            <div class="rounded-xl border ${isAbsent ? 'border-rose-200 bg-rose-50' : 'border-gray-100 bg-white'} p-3 transition-all duration-200">
+                <div class="flex items-center justify-between">
+                    <span class="font-semibold text-sm text-gray-800">${a.prenom} ${a.nom}</span>
+                    <button onclick="togglePresence(${a.id})"
+                            class="text-xs font-bold px-3 py-1.5 rounded-lg transition-all duration-200 ${
+                                isAbsent
+                                ? 'bg-rose-100 text-rose-600 hover:bg-rose-200'
+                                : 'bg-teal-50 text-teal-600 hover:bg-teal-100'
+                            }">
+                        ${isAbsent ? 'Absent' : 'Présent'}
+                    </button>
+                </div>
+                ${isAbsent ? `
+                <div class="mt-2">
+                    <input type="text"
+                           placeholder="Motif d'absence (facultatif)…"
+                           value="${escHtml(s.motif)}"
+                           oninput="setMotif(${a.id}, this.value)"
+                           class="w-full text-xs border border-rose-200 rounded-lg px-3 py-2 bg-white
+                                  focus:outline-none focus:ring-2 focus:ring-rose-300 text-gray-700 placeholder-gray-400">
+                </div>` : ''}
+            </div>`;
+        }).join('');
+    }
+
+    window.togglePresence = function (id) {
+        presenceState[id].statut = presenceState[id].statut === 'present' ? 'absent' : 'present';
+        if (presenceState[id].statut === 'present') presenceState[id].motif = '';
+        renderAppelList();
+    };
+
+    window.setMotif = function (id, value) {
+        presenceState[id].motif = value;
+    };
+
+    window.validerAppel = async function () {
+        const btn = document.getElementById('btn-valider-appel');
+        btn.disabled = true;
+        btn.textContent = 'Enregistrement…';
+
+        const absents = Object.entries(presenceState)
+            .filter(([, s]) => s.statut === 'absent')
+            .map(([id, s]) => ({ id_adherent: parseInt(id), motif: s.motif || null }));
+
+        try {
+            const res = await fetch(`/seances/${SEANCE_ID}/appel`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': CSRF_TOKEN,
+                },
+                body: JSON.stringify({ absents }),
+            });
+            if (!res.ok) throw new Error('Erreur serveur');
+            window.location.reload();
+        } catch (e) {
+            btn.disabled = false;
+            btn.textContent = 'Valider l\'appel';
+            alert('Une erreur est survenue, veuillez réessayer.');
+        }
+    };
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // OVERLAY 2 : FIN DE L'ACTIVITÉ
+    // ─────────────────────────────────────────────────────────────────────────
+    window.openFinOverlay = function () {
+        enfantsState = {};
+        PRESENTS.forEach(e => { enfantsState[e.id] = { valide: false }; });
+        renderFinList();
+        showOverlay('overlay-fin');
+    };
+
+    window.closeFinOverlay = function () {
+        hideOverlay('overlay-fin');
+    };
+
+    function renderFinList() {
+        const container = document.getElementById('fin-list');
+        if (!container) return;
+
+        if (PRESENTS.length === 0) {
+            container.innerHTML = `
+                <p class="text-center text-gray-400 text-sm py-8 font-medium">
+                    Aucun enfant avec tuteur dans cette activité.
+                </p>`;
+        } else {
+            container.innerHTML = PRESENTS.map(e => {
+                const done = enfantsState[e.id]?.valide;
+                return `
+                <div onclick="${done ? '' : `ouvrirEnfantOverlay(${e.id})`}"
+                     class="flex items-center justify-between p-4 rounded-xl border transition-all duration-200 ${
+                         done
+                         ? 'bg-teal-50 border-teal-200 cursor-default'
+                         : 'bg-white border-gray-100 hover:border-gray-300 hover:shadow-sm cursor-pointer'
+                     }">
+                    <div class="flex items-center gap-3">
+                        <div class="w-8 h-8 rounded-full flex items-center justify-center text-sm font-black ${
+                            done ? 'bg-teal-100 text-teal-600' : 'bg-gray-100 text-gray-500'
+                        }">
+                            ${e.prenom.charAt(0)}${e.nom.charAt(0)}
+                        </div>
+                        <span class="font-semibold text-sm text-gray-800">${e.prenom} ${e.nom}</span>
+                    </div>
+                    ${done
+                        ? `<span class="w-6 h-6 rounded-full bg-teal-500 flex items-center justify-center">
+                               <svg class="w-3.5 h-3.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/>
+                               </svg>
+                           </span>`
+                        : `<svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                           </svg>`
+                    }
+                </div>`;
+            }).join('');
+        }
+
+        const allDone = PRESENTS.length === 0 || PRESENTS.every(e => enfantsState[e.id]?.valide);
+        const btn = document.getElementById('btn-valider-fin');
+        if (allDone) {
+            btn.disabled = false;
+            btn.className = 'w-full bg-[#222A60] hover:bg-[#2d3a8c] text-white font-grotesk font-bold py-3.5 rounded-xl transition-all duration-300 shadow-md hover:shadow-lg text-sm flex items-center justify-center gap-2';
+            btn.innerHTML = `<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/>
+            </svg> Terminer & clôturer la séance`;
+        } else {
+            btn.disabled = true;
+            btn.className = 'w-full bg-gray-100 text-gray-400 font-grotesk font-bold py-3.5 rounded-xl cursor-not-allowed text-sm flex items-center justify-center gap-2 transition-all duration-300';
+            const remaining = PRESENTS.filter(e => !enfantsState[e.id]?.valide).length;
+            btn.textContent = `${remaining} enfant${remaining > 1 ? 's' : ''} restant${remaining > 1 ? 's' : ''}`;
+        }
+    }
+
+    window.validerFin = async function () {
+        const btn = document.getElementById('btn-valider-fin');
+        btn.disabled = true;
+        btn.textContent = 'Clôture en cours…';
+
+        try {
+            const res = await fetch(`/seances/${SEANCE_ID}/terminer`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': CSRF_TOKEN,
+                },
+                body: JSON.stringify({}),
+            });
+            if (!res.ok) throw new Error('Erreur serveur');
+            window.location.reload();
+        } catch (e) {
+            btn.disabled = false;
+            btn.textContent = 'Terminer & clôturer la séance';
+            alert('Une erreur est survenue, veuillez réessayer.');
+        }
+    };
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // OVERLAY 3 : CONFIRMATION ENFANT
+    // ─────────────────────────────────────────────────────────────────────────
+    window.ouvrirEnfantOverlay = function (id) {
+        currentEnfantId = id;
+        const enfant = PRESENTS.find(e => e.id === id);
+        document.getElementById('enfant-nom-titre').textContent = `${enfant.prenom} ${enfant.nom}`;
+
+        document.getElementById('cb-recup').checked = false;
+        document.getElementById('sig-warning').classList.add('hidden');
+        resetBtnEnfant();
+
+        showOverlay('overlay-enfant');
+
+        requestAnimationFrame(() => initSigPad());
+    };
+
+    window.closeEnfantOverlay = function () {
+        hideOverlay('overlay-enfant');
+        currentEnfantId = null;
+    };
+
+    function initSigPad() {
+        const canvas = document.getElementById('canvas-fin');
+        if (!canvas) return;
+
+        if (!sigPadInited) {
+            sigPad = new SignaturePad(canvas, {
+                penColor: '#0f172a',
+                backgroundColor: 'rgba(255,255,255,1)',
+            });
+            sigPad.addEventListener('endStroke', onEnfantFormChange);
+            sigPadInited = true;
+        }
+
+        const ratio = Math.max(window.devicePixelRatio || 1, 1);
+        const data = sigPad.toData();
+        canvas.width  = canvas.offsetWidth  * ratio;
+        canvas.height = canvas.offsetHeight * ratio;
+        canvas.getContext('2d').scale(ratio, ratio);
+        sigPad.clear();
+        if (data.length) sigPad.fromData(data);
+        sigPad.clear();
+    }
+
+    window.clearSigFin = function () {
+        if (sigPad) sigPad.clear();
+        onEnfantFormChange();
+    };
+
+    window.onEnfantFormChange = function () {
+        const checked = document.getElementById('cb-recup').checked;
+        const signed  = sigPad && !sigPad.isEmpty();
+        const btn = document.getElementById('btn-valider-enfant');
+
+        if (checked && signed) {
+            btn.disabled = false;
+            btn.className = 'w-full bg-[#083325] hover:bg-[#16A37A] text-white font-grotesk font-bold py-3.5 rounded-xl transition-all duration-300 shadow-md hover:shadow-lg text-sm flex items-center justify-center gap-2';
+            btn.innerHTML = `<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/>
+            </svg> Valider`;
+        } else {
+            resetBtnEnfant();
+        }
+    };
+
+    function resetBtnEnfant() {
+        const btn = document.getElementById('btn-valider-enfant');
+        btn.disabled = true;
+        btn.className = 'w-full bg-gray-100 text-gray-400 font-grotesk font-bold py-3.5 rounded-xl cursor-not-allowed text-sm flex items-center justify-center gap-2 transition-all duration-300';
+        btn.innerHTML = `<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/>
+        </svg> Valider`;
+    }
+
+    window.validerEnfant = function () {
+        const checked = document.getElementById('cb-recup').checked;
+        const signed  = sigPad && !sigPad.isEmpty();
+
+        if (!signed) {
+            document.getElementById('sig-warning').classList.remove('hidden');
+            return;
+        }
+        if (!checked) return;
+
+        enfantsState[currentEnfantId].valide = true;
+        hideOverlay('overlay-enfant');
+        currentEnfantId = null;
+        renderFinList();
+    };
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // UTILITAIRE
+    // ─────────────────────────────────────────────────────────────────────────
+    function escHtml(str) {
+        return String(str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+
+    ['overlay-appel','overlay-fin','overlay-enfant'].forEach(id => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        el.addEventListener('click', function (e) {
+            if (e.target === el) {
+                if (id === 'overlay-enfant') closeEnfantOverlay();
+                else if (id === 'overlay-appel') closeAppelOverlay();
+                else closeFinOverlay();
+            }
+        });
+    });
+})();
+</script>
+@endif
