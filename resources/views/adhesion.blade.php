@@ -599,6 +599,10 @@
                                             class="max-h-48 mx-auto rounded-xl shadow-sm object-contain border border-gray-200">
                                     </template>
                                 </div>
+                                <p class="mt-2 text-xs text-gray-400 flex items-start gap-1.5">
+                                    <span class="shrink-0 mt-0.5">ℹ️</span>
+                                    <span>Ce champ est <strong class="text-gray-500">facultatif</strong>. Toutefois, disposer d'une copie du carnet de vaccination permet à notre équipe d'alerter rapidement les professionnels de santé compétents en cas de besoin lors d'une activité.</span>
+                                </p>
                             </div>
 
                             <div x-data="{
