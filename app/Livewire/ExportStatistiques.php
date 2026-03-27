@@ -149,7 +149,7 @@ class ExportStatistiques extends Component
         $sd = $spreadsheet->createSheet(7)->setTitle('Adhérents Payés');
 
         $headers = [
-            'ID', 'Nom Tuteur', 'Prénom Tuteur', 'Nom', 'Prénom', 'Carnet', 'Date de Naiss.', 'Âge',
+            'ID', 'Nom', 'Prénom', 'Carnet', 'Date de Naiss.', 'Âge',
             'Genre', 'Adresse', 'Ville', 'Code Postal', 'Tél', 'Mail', 'Statut',
             'Occupation', 'Établissement', 'Régime Social', 'Actions', 'Critères',
             'Commentaire', 'Manifestation', 'Communication', 'Bulletin'
@@ -169,8 +169,6 @@ class ExportStatistiques extends Component
 
             $rowData = [
                 $a->id,
-                $a->tuteur->nom ?? '',
-                $a->tuteur->prenom ?? '',
                 $a->nom,
                 $a->prenom,
                 $a->carnet ?? '',
@@ -252,7 +250,7 @@ class ExportStatistiques extends Component
             fputcsv($f, ['--- DÉTAIL DES ADHÉRENTS (PAYÉS UNIQUEMENT) ---'], ';');
 
             $headers = [
-                'ID', 'Nom Tuteur', 'Prénom Tuteur', 'Nom', 'Prénom', 'Carnet', 'Date de Naiss.', 'Âge',
+                'ID', 'Nom', 'Prénom', 'Carnet', 'Date de Naiss.', 'Âge',
                 'Genre', 'Adresse', 'Ville', 'Code Postal', 'Tél', 'Mail', 'Statut',
                 'Occupation', 'Établissement', 'Régime Social', 'Actions', 'Critères',
                 'Commentaire', 'Manifestation', 'Communication', 'Bulletin'
@@ -266,8 +264,6 @@ class ExportStatistiques extends Component
 
                 fputcsv($f, [
                     $a->id,
-                    $a->tuteur->nom ?? '',
-                    $a->tuteur->prenom ?? '',
                     $a->nom,
                     $a->prenom,
                     $a->carnet ?? '',
