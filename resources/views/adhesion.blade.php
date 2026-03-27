@@ -779,6 +779,8 @@
                             <h2 class="text-xl font-bold text-gray-900">
                                 @if ($typeActivite === 'atelier')
                                     Choisissez votre atelier 🔧
+                                @elseif ($typeActivite === 'ressourcerie')
+                                    Ressourcerie 📦
                                 @else
                                     Choisissez votre stage 🎭
                                 @endif
@@ -786,6 +788,8 @@
                             <p class="text-gray-400 mt-1 text-sm">
                                 @if ($typeActivite === 'atelier')
                                     Sélectionnez le ou les ateliers auxquels vous souhaitez vous inscrire
+                                @elseif ($typeActivite === 'ressourcerie')
+                                    Sélectionnez les équipements que vous souhaitez louer
                                 @else
                                     Sélectionnez le stage qui vous intéresse
                                 @endif
@@ -802,9 +806,85 @@
                                 if (!is_array($selectedActivites)) {
                                     $selectedActivites = [];
                                 }
+                                $selectedRessourcerie = $formData['ressourcerie_selectionnees'] ?? [];
+                                if (!is_array($selectedRessourcerie)) {
+                                    $selectedRessourcerie = [];
+                                }
                             @endphp
 
-                            @if ($classeAdherent)
+                            @if ($typeActivite === 'ressourcerie')
+
+                                @if ($ressourcerie->isEmpty())
+                                    <div class="p-6 text-center bg-gray-50 rounded-xl border border-gray-200 mb-5">
+                                        <div class="text-4xl mb-2">😕</div>
+                                        <p class="text-gray-800 font-semibold">Aucun équipement disponible pour votre profil.</p>
+                                        <p class="text-gray-400 text-sm mt-1">Contactez-nous pour plus d'informations.</p>
+                                    </div>
+                                @else
+                                    @php
+                                        $labelsTarif = [
+                                            'tarif_particulier' => ['label' => 'Tarif particulier', 'color' => 'bg-sky-50 text-sky-700 border-sky-200'],
+                                            'tarif_structure'   => ['label' => 'Tarif structure',   'color' => 'bg-violet-50 text-violet-700 border-violet-200'],
+                                            'tarif_scolaire'    => ['label' => 'Tarif scolaire',    'color' => 'bg-amber-50 text-amber-700 border-amber-200'],
+                                        ];
+                                        $groupes = $ressourcerie->groupBy('type_tarif');
+                                    @endphp
+                                    <div class="space-y-6 mb-6">
+                                        @foreach ($groupes as $typeTarif => $items)
+                                            @php $meta = $labelsTarif[$typeTarif] ?? ['label' => $typeTarif, 'color' => 'bg-gray-100 text-gray-600 border-gray-200']; @endphp
+                                            @if ($groupes->count() > 1)
+                                                <div class="flex items-center gap-2 mb-2">
+                                                    <span class="text-xs font-bold px-2.5 py-1 rounded-full border {{ $meta['color'] }}">{{ $meta['label'] }}</span>
+                                                    <div class="flex-1 h-px bg-gray-200"></div>
+                                                </div>
+                                            @endif
+                                            <div class="space-y-3">
+                                                @foreach ($items as $item)
+                                                    <div x-data="{ checked: {{ in_array($item->id, $selectedRessourcerie) ? 'true' : 'false' }} }">
+                                                        <input type="checkbox" name="ressourcerie_selectionnees[]"
+                                                            value="{{ $item->id }}" x-model="checked" class="hidden">
+                                                        <div @click="checked = !checked"
+                                                            :class="checked
+                                                                ? 'border-teal-600 bg-teal-50 ring-2 ring-teal-600/20'
+                                                                : 'border-gray-200 hover:border-slate-400 bg-white'"
+                                                            class="border-2 rounded-xl p-4 transition-all cursor-pointer shadow-sm hover:shadow-md">
+                                                            <div class="flex items-start justify-between gap-4">
+                                                                <div class="flex-1 min-w-0">
+                                                                    <div class="flex items-center gap-2 flex-wrap">
+                                                                        <h4 class="font-bold text-slate-900 text-sm leading-tight">{{ $item->nom }}</h4>
+                                                                        <span class="text-xs font-semibold px-2 py-0.5 rounded-full border {{ $meta['color'] }}">
+                                                                            {{ $meta['label'] }}
+                                                                        </span>
+                                                                    </div>
+                                                                    @if ($item->description)
+                                                                        <p class="text-xs text-gray-500 mt-1.5 leading-relaxed">{{ $item->description }}</p>
+                                                                    @endif
+                                                                    @if ($item->condition_location)
+                                                                        <div class="mt-2 flex items-start gap-1.5">
+                                                                            <span class="text-xs shrink-0 mt-0.5">📋</span>
+                                                                            <p class="text-xs text-gray-400 italic leading-relaxed">{{ $item->condition_location }}</p>
+                                                                        </div>
+                                                                    @endif
+                                                                </div>
+                                                                <div class="flex flex-col items-end gap-3 shrink-0">
+                                                                    <p class="text-base font-black text-teal-600">{{ $item->prix_format }}</p>
+                                                                    <div class="w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors"
+                                                                        :class="checked ? 'border-teal-600 bg-teal-600' : 'border-gray-300'">
+                                                                        <svg x-show="checked" class="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                                                            <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+                                                                        </svg>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                @endforeach
+                                            </div>
+                                        @endforeach
+                                    </div>
+                                @endif
+
+                            @elseif ($classeAdherent)
                                 <div class="flex items-center gap-2 mb-4 px-1">
                                     <span class="text-base">🎓</span>
                                     <p class="text-xs text-gray-500">
@@ -814,6 +894,7 @@
                                 </div>
                             @endif
 
+                            @if ($typeActivite !== 'ressourcerie')
                             @if ($liste->isEmpty())
                                 <div class="p-6 text-center bg-gray-50 rounded-xl border border-gray-200 mb-5">
                                     <div class="text-4xl mb-2">😕</div>
@@ -954,6 +1035,7 @@
                                     @endforeach
                                 </div>
                             @endif
+                            @endif {{-- fin @if ($typeActivite !== 'ressourcerie') --}}
 
                             <div class="flex items-center justify-between pt-4 border-t border-gray-100 mt-1">
                                 @if ($hasPrev)

@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use App\Models\Activite;
+use App\Models\Ressourcerie;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
@@ -44,8 +45,9 @@ class AdherentFormulaireController extends Controller
         $isAdherent    = ($formData['is_adherent']  ?? 'non') === 'oui';
         $activite      =  $formData['type_activite'] ?? '';
         $isMineur      = $this->isMineur($formData['date_naiss'] ?? null);
-        $isClubMaker   = ($activite === 'club_maker');
-        $needsActivite = in_array($activite, ['atelier', 'stage']);
+        $isClubMaker      = ($activite === 'club_maker');
+        $isRessourcerie   = ($activite === 'ressourcerie');
+        $needsActivite    = in_array($activite, ['atelier', 'stage', 'ressourcerie']);
 
         if ($isAdherent) {
             $path = [1, 12, 2];
@@ -202,6 +204,16 @@ class AdherentFormulaireController extends Controller
             ->filter(fn($a) => !in_array($a->id, $activitesDejaInscritesIds))
             ->values();
 
+        $statutJuridique = $formData['statut_juridique'] ?? null;
+        $tarifsRessourcerie = match($statutJuridique) {
+            'personne_physique' => ['tarif_particulier'],
+            'tpe_asso', 'esr_pme' => ['tarif_structure', 'tarif_scolaire'],
+            default => ['tarif_particulier', 'tarif_structure', 'tarif_scolaire'],
+        };
+        $ressourcerie = Ressourcerie::actifs()
+            ->whereIn('type_tarif', $tarifsRessourcerie)
+            ->get();
+
         $stepMeta    = $this->stepMeta();
         $isMineur    = $this->isMineur($formData['date_naiss'] ?? null);
         $currentNum  = $requestedIdx + 1;
@@ -211,7 +223,7 @@ class AdherentFormulaireController extends Controller
         $paiement1Done = (bool) $request->session()->pull("paiement1_done_{$token}", false);
 
         return view('adhesion', compact(
-            'step', 'formData', 'token', 'ateliers', 'stages',
+            'step', 'formData', 'token', 'ateliers', 'stages', 'ressourcerie',
             'path', 'stepMeta', 'isMineur', 'currentNum', 'totalSteps',
             'prevStep', 'hasPrev', 'classeAdherent', 'paiement1Done'
         ));
