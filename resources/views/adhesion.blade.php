@@ -6,94 +6,78 @@
 
     @php
         $field =
-            'w-full rounded-xl border border-gray-300 px-4 py-3.5 text-gray-800 bg-white focus:outline-none focus:ring-4 focus:ring-teal-600/20 focus:border-teal-600 transition-all shadow-sm text-base';
-        $label = 'block text-sm font-bold text-slate-700 mb-2';
+            'w-full rounded-lg border border-gray-200 px-3.5 py-2.5 text-gray-800 bg-white focus:outline-none focus:ring-2 focus:ring-teal-500/25 focus:border-teal-500 transition-colors text-sm placeholder:text-gray-400';
+        $label = 'block text-xs font-bold text-gray-500 mb-1.5 uppercase tracking-wide';
         $card =
-            'border-2 rounded-2xl p-5 transition-all duration-200 h-full flex flex-col bg-white hover:shadow-md cursor-pointer';
+            'border-2 rounded-xl p-4 transition-all duration-150 h-full flex flex-col bg-white cursor-pointer select-none';
         $btn =
-            'inline-flex items-center justify-center gap-2 bg-slate-900 text-white font-bold px-8 py-3.5 rounded-xl hover:bg-teal-600 focus:ring-4 focus:ring-teal-600/30 transition-all duration-200 shadow-md hover:shadow-lg text-sm';
+            'inline-flex items-center justify-center gap-2 bg-teal-600 text-white font-semibold px-6 py-2.5 rounded-lg hover:bg-teal-700 active:scale-95 focus:ring-2 focus:ring-teal-500/30 transition text-sm shadow-sm';
         $btnBack =
-            'inline-flex items-center justify-center gap-2 text-slate-600 font-semibold px-5 py-3.5 rounded-xl border border-gray-200 hover:bg-gray-100 hover:text-slate-900 transition-all duration-200 text-sm';
-        $check = 'h-5 w-5 rounded border-gray-300 text-teal-600 focus:ring-teal-600 cursor-pointer transition-colors';
-        $radio = 'h-5 w-5 border-gray-300 text-teal-600 focus:ring-teal-600 cursor-pointer transition-colors';
+            'inline-flex items-center justify-center gap-2 text-gray-500 font-medium px-4 py-2.5 rounded-lg border border-gray-200 hover:bg-gray-50 hover:text-gray-700 transition text-sm';
+        $check = 'h-4 w-4 rounded border-gray-300 text-teal-600 focus:ring-teal-500 cursor-pointer';
+        $radio = 'h-4 w-4 border-gray-300 text-teal-600 focus:ring-teal-500 cursor-pointer';
     @endphp
 
-    <div class="min-h-screen bg-slate-50 py-8 px-4" style="font-family: 'Space Grotesk', sans-serif;">
-        <div class="max-w-2xl mx-auto">
+    <div class="min-h-screen bg-gray-50 py-6 px-4" style="font-family: 'Space Grotesk', sans-serif;">
+        <div class="max-w-xl mx-auto">
 
-            <div class="text-center mb-8">
-                <div
-                    class="inline-flex items-center justify-center w-14 h-14 rounded-2xl mb-4 bg-slate-900 shadow-lg text-white">
-                    <span class="text-2xl">📝</span>
-                </div>
-                <h1 class="text-3xl font-bold text-slate-900">Formulaire d'adhésion</h1>
-                <p class="text-gray-500 mt-2 text-sm">Remplissez les informations étape par étape</p>
+            <div class="text-center mb-5">
+                <h1 class="text-2xl font-bold text-gray-900">📝 Formulaire d'adhésion</h1>
+                <p class="text-gray-500 mt-1 text-sm">Remplissez les informations étape par étape</p>
             </div>
 
             @if ($step !== 11)
-                <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 mb-6">
-                    <div class="flex items-center justify-between mb-3">
-                        <span class="text-sm text-gray-500">Étape <span
-                                class="font-bold text-slate-900">{{ $currentNum }}</span> sur <span
-                                class="font-bold">{{ $totalSteps }}</span></span>
-                        <span class="text-sm font-bold text-teal-600 bg-teal-50 px-3 py-1 rounded-full">
+                <div class="bg-white rounded-xl border border-gray-100 shadow-sm px-5 pt-4 pb-5 mb-5">
+
+                    <div class="flex items-center justify-between mb-2.5">
+                        <p class="text-xs text-gray-400 font-medium">
+                            Étape <span class="font-bold text-gray-700">{{ $currentNum }}</span>
+                            <span class="text-gray-300 mx-1">/</span>
+                            <span class="text-gray-500">{{ $totalSteps }}</span>
+                        </p>
+                        <span class="text-xs font-semibold text-teal-700 bg-teal-50 border border-teal-100 px-2.5 py-1 rounded-full">
                             {{ $stepMeta[$step]['icon'] }} {{ $stepMeta[$step]['label'] }}
                         </span>
                     </div>
-                    <div class="w-full bg-gray-100 rounded-full h-2">
-                        <div class="h-2 rounded-full transition-all duration-500 bg-teal-600"
+
+                    <div class="w-full bg-gray-100 rounded-full h-1.5 mb-4">
+                        <div class="h-1.5 rounded-full bg-teal-500 transition-all duration-500"
                             style="width: {{ ($currentNum / $totalSteps) * 100 }}%;"></div>
                     </div>
-                    <div class="hidden md:block mt-8 mb-12 px-4">
-                        <div class="relative flex items-center justify-between w-full">
-                            <div class="absolute top-4 left-0 w-full h-0.5 bg-gray-200 -z-10"></div>
-                            <div class="absolute top-4 left-0 h-0.5 bg-teal-600 transition-all duration-500 -z-10"
-                                style="width: {{ (array_search($step, $path) / (count($path) - 1)) * 100 }}%">
-                            </div>
-                            @foreach ($path as $i => $s)
-                                @php
-                                    $pathIdx = array_search($step, $path);
-                                    $isDone = $i < $pathIdx;
-                                    $isCurrent = $s === $step;
-                                @endphp
 
-                                <div class="relative flex flex-col items-center">
-                                    <div
-                                        class="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-all duration-300 border-2
-                    {{ $isCurrent ? 'border-slate-900 bg-white text-slate-900 scale-125 z-10 shadow-lg' : '' }}
-                    {{ $isDone ? 'border-teal-600 bg-teal-600 text-white' : '' }}
-                    {{ !$isCurrent && !$isDone ? 'border-gray-300 bg-white text-gray-400' : '' }}">
-                                        @if ($isDone)
-                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3"
-                                                    d="M5 13l4 4L19 7" />
-                                            </svg>
-                                        @else
-                                            {{ $i + 1 }}
-                                        @endif
-                                    </div>
-                                    <div class="absolute top-10 whitespace-nowrap flex flex-col items-center">
-                                        <span
-                                            class="text-[10px] uppercase tracking-tighter transition-all duration-300
-                        {{ $isCurrent ? 'text-slate-900 font-bold opacity-100' : 'text-gray-400 font-medium opacity-60' }}
-                        {{ count($path) > 7 && !$isCurrent ? 'hidden lg:block' : '' }}">
-                                            {{ $stepMeta[$s]['label'] }}
-                                        </span>
-                                    </div>
-                                </div>
-                            @endforeach
-                        </div>
+                    <div class="flex items-center">
+                        @foreach ($path as $i => $s)
+                            @php
+                                $pathIdx = array_search($step, $path);
+                                $isDone    = $i < $pathIdx;
+                                $isCurrent = $s === $step;
+                            @endphp
+
+                            @if ($i > 0)
+                                <div class="h-px flex-1 min-w-[6px] transition-colors duration-300
+                                    {{ $isDone ? 'bg-teal-400' : 'bg-gray-200' }}"></div>
+                            @endif
+
+                            <div class="shrink-0 rounded-full transition-all duration-300
+                                {{ $isCurrent
+                                    ? 'w-3 h-3 bg-teal-600 ring-2 ring-offset-1 ring-teal-300'
+                                    : ($isDone
+                                        ? 'w-2.5 h-2.5 bg-teal-400'
+                                        : 'w-2 h-2 bg-gray-200') }}"
+                                title="{{ $stepMeta[$s]['label'] }}">
+                            </div>
+                        @endforeach
                     </div>
                 </div>
             @endif
 
-            <div class="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden">
+            <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
 
                 @if ($step === 1)
-                    <div class="p-6 md:p-8">
-                        <div class="mb-6">
-                            <h2 class="text-2xl font-bold text-slate-900">Bienvenue ! 👋</h2>
-                            <p class="text-gray-500 mt-1">Êtes-vous déjà adhérent·e de notre association ?</p>
+                    <div class="p-5 md:p-6">
+                        <div class="mb-5">
+                            <h2 class="text-xl font-bold text-gray-900">Bienvenue ! 👋</h2>
+                            <p class="text-gray-400 mt-1 text-sm">Êtes-vous déjà adhérent·e de notre association ?</p>
                         </div>
 
                         <form action="{{ route('adhesion.next', $token) }}" method="POST">
@@ -106,7 +90,7 @@
                                         <input type="radio" name="is_adherent" value="oui" x-model="statut"
                                             class="sr-only">
                                         <div :class="statut === 'oui' ? 'border-teal-600 bg-teal-50 ring-2 ring-teal-600/20' :
-                                            'border-gray-200 group-hover:border-slate-900'"
+                                            'border-gray-200 group-hover:border-teal-400'"
                                             class="{{ $card }} items-center text-center">
                                             <div class="text-5xl mb-3">🪪</div>
                                             <h3 class="text-lg font-bold text-slate-900">Oui, je suis adhérent·e</h3>
@@ -128,7 +112,7 @@
                                         <input type="radio" name="is_adherent" value="non" x-model="statut"
                                             class="sr-only">
                                         <div :class="statut === 'non' ? 'border-teal-600 bg-teal-50 ring-2 ring-teal-600/20' :
-                                            'border-gray-200 group-hover:border-slate-900'"
+                                            'border-gray-200 group-hover:border-teal-400'"
                                             class="{{ $card }} items-center text-center">
                                             <div class="text-5xl mb-3">🆕</div>
                                             <h3 class="text-lg font-bold text-slate-900">Non, première inscription</h3>
@@ -150,7 +134,7 @@
                                 <div x-show="statut === 'oui'" x-transition:enter="transition ease-out duration-200"
                                     x-transition:enter-start="opacity-0 -translate-y-2"
                                     x-transition:enter-end="opacity-100 translate-y-0"
-                                    class="mb-6 p-5 bg-teal-50 rounded-2xl border border-teal-200">
+                                    class="mb-5 p-4 bg-teal-50 rounded-xl border border-teal-100">
 
                                     <div class="flex justify-between items-end mb-2">
                                         <label class="{{ $label }} !mb-0">🔢 Numéro d'adhérent <span
@@ -231,7 +215,7 @@
                                     </div>
                                 </div>
 
-                                <div class="flex justify-end pt-5 border-t border-gray-100 mt-2">
+                                <div class="flex justify-end pt-4 border-t border-gray-100 mt-1">
                                     <button type="submit" class="{{ $btn }}">
                                         Suivant
                                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -244,10 +228,10 @@
                         </form>
                     </div>
                 @elseif($step === 12)
-                    <div class="p-6 md:p-8">
-                        <div class="mb-6">
-                            <h2 class="text-2xl font-bold text-slate-900">Votre profil 🏢</h2>
-                            <p class="text-gray-500 mt-1">Quel est votre statut juridique ?</p>
+                    <div class="p-5 md:p-6">
+                        <div class="mb-5">
+                            <h2 class="text-xl font-bold text-gray-900">Votre profil 🏢</h2>
+                            <p class="text-gray-400 mt-1 text-sm">Quel est votre statut juridique ?</p>
                         </div>
 
                         <form action="{{ route('adhesion.next', $token) }}" method="POST">
@@ -287,9 +271,9 @@
                                                 x-model="statut_juridique" class="sr-only">
                                             <div :class="statut_juridique === '{{ $sj['value'] }}' ?
                                                     'border-teal-600 bg-teal-50 ring-2 ring-teal-600/20' :
-                                                    'border-gray-200 group-hover:border-slate-900'"
-                                                class="border-2 rounded-2xl p-5 flex items-center gap-5 transition-all bg-white hover:shadow-sm">
-                                                <div class="w-12 h-12 rounded-xl bg-slate-100 flex items-center justify-center text-2xl shrink-0">
+                                                    'border-gray-200 group-hover:border-teal-400'"
+                                                class="border-2 rounded-xl p-4 flex items-center gap-4 transition-all bg-white">
+                                                <div class="w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center text-xl shrink-0">
                                                     {{ $sj['icon'] }}
                                                 </div>
                                                 <div class="flex-1 min-w-0">
@@ -311,7 +295,7 @@
                                     @endforeach
                                 </div>
 
-                                <div class="flex items-center justify-between pt-5 border-t border-gray-100">
+                                <div class="flex items-center justify-between pt-4 border-t border-gray-100 mt-1">
                                     @if ($hasPrev)
                                         <a href="{{ route('adhesion.show', ['token' => $token, 'step' => $prevStep]) }}"
                                             class="{{ $btnBack }}">
@@ -337,10 +321,10 @@
                     </div>
 
                 @elseif($step === 2)
-                    <div class="p-6 md:p-8">
-                        <div class="mb-6">
-                            <h2 class="text-2xl font-bold text-slate-900">Pour quelle activité ? 🎯</h2>
-                            <p class="text-gray-500 mt-1">Choisissez le type d'inscription souhaité</p>
+                    <div class="p-5 md:p-6">
+                        <div class="mb-5">
+                            <h2 class="text-xl font-bold text-gray-900">Pour quelle activité ? 🎯</h2>
+                            <p class="text-gray-400 mt-1 text-sm">Choisissez le type d'inscription souhaité</p>
                         </div>
 
                         <form action="{{ route('adhesion.next', $token) }}" method="POST">
@@ -391,7 +375,7 @@
                                                 x-model="activite" class="sr-only">
                                             <div :class="activite === '{{ $opt['value'] }}' ?
                                                 'border-teal-600 bg-teal-50 ring-2 ring-teal-600/20' :
-                                                'border-gray-200 group-hover:border-slate-900'"
+                                                'border-gray-200 group-hover:border-teal-400'"
                                                 class="{{ $card }}">
                                                 <h3 class="font-bold text-slate-900 text-base">{{ $opt['label'] }}</h3>
                                                 <p class="text-gray-500 text-xs mt-1.5 flex-1 leading-relaxed">
@@ -412,7 +396,7 @@
                                     @endforeach
                                 </div>
 
-                                <div class="flex items-center justify-between pt-5 border-t border-gray-100">
+                                <div class="flex items-center justify-between pt-4 border-t border-gray-100 mt-1">
                                     @if ($hasPrev)
                                         <a href="{{ route('adhesion.show', ['token' => $token, 'step' => $prevStep]) }}"
                                             class="{{ $btnBack }}">
@@ -438,10 +422,10 @@
                         </form>
                     </div>
                 @elseif($step === 3)
-                    <div class="p-6 md:p-8">
-                        <div class="mb-6">
-                            <h2 class="text-2xl font-bold text-slate-900">Informations personnelles de l'adhérent 📋</h2>
-                            <p class="text-gray-500 mt-1">Renseignez vos coordonnées et informations d'adhésion</p>
+                    <div class="p-5 md:p-6">
+                        <div class="mb-5">
+                            <h2 class="text-xl font-bold text-gray-900">Informations personnelles de l'adhérent 📋</h2>
+                            <p class="text-gray-400 mt-1 text-sm">Renseignez vos coordonnées et informations d'adhésion</p>
                         </div>
 
                         <form action="{{ route('adhesion.next', $token) }}" method="POST">
@@ -457,7 +441,7 @@
                                                 {{ ($formData['genre'] ?? '') === $val ? 'checked' : '' }}
                                                 class="sr-only peer">
                                             <div
-                                                class="border-2 rounded-xl p-3 text-center peer-checked:border-teal-600 peer-checked:bg-teal-50 peer-checked:ring-2 ring-teal-600/20 border-gray-200 group-hover:border-slate-900 transition-all">
+                                                class="border-2 rounded-lg p-3 text-center peer-checked:border-teal-500 peer-checked:bg-teal-50 peer-checked:ring-2 ring-teal-500/20 border-gray-200 group-hover:border-teal-400 transition-all">
                                                 <div class="text-2xl mb-1">{{ $icon }}</div>
                                                 <span class="text-xs font-bold text-slate-700">{{ $val }}</span>
                                             </div>
@@ -529,7 +513,7 @@
                                 </select>
                             </div>
 
-                            <div class="p-5 bg-slate-50 rounded-2xl border border-slate-200 mb-6 space-y-4">
+                            <div class="p-4 bg-gray-50 rounded-xl border border-gray-200 mb-5 space-y-3">
                                 <p class="text-sm font-bold text-slate-900 mb-1">Autorisations & communications</p>
                                 <label class="flex items-start gap-3 cursor-pointer group">
                                     <input type="checkbox" name="bulletin" value="1"
@@ -551,7 +535,7 @@
                                 </label>
                             </div>
 
-                            <div class="flex items-center justify-between pt-5 border-t border-gray-100">
+                            <div class="flex items-center justify-between pt-4 border-t border-gray-100 mt-1">
                                 @if ($hasPrev)
                                     <a href="{{ route('adhesion.show', ['token' => $token, 'step' => $prevStep]) }}"
                                         class="{{ $btnBack }}">
@@ -575,10 +559,10 @@
                         </form>
                     </div>
                 @elseif($step === 4)
-                    <div class="p-6 md:p-8">
-                        <div class="mb-6">
-                            <h2 class="text-2xl font-bold text-slate-900">Informations médicales 🏥</h2>
-                            <p class="text-gray-500 mt-1">Sécurité de l'enfant lors des activités</p>
+                    <div class="p-5 md:p-6">
+                        <div class="mb-5">
+                            <h2 class="text-xl font-bold text-gray-900">Informations médicales 🏥</h2>
+                            <p class="text-gray-400 mt-1 text-sm">Sécurité de l'enfant lors des activités</p>
                         </div>
 
                         <form action="{{ route('adhesion.next', $token) }}" method="POST"
@@ -586,7 +570,7 @@
                             @csrf
                             <input type="hidden" name="current_step" value="4">
 
-                            <div class="mb-6">
+                            <div class="mb-5">
                                 <label class="{{ $label }}">📷 Photo des vaccins sur le carnet de santé</label>
                                 @if (!empty($formData['carnet_sante_path']))
                                     <div
@@ -596,17 +580,17 @@
                                             le remplacer ci-dessous.</span>
                                     </div>
                                 @endif
-                                <div class="border-2 border-dashed border-gray-300 rounded-2xl p-8 text-center hover:border-teal-600 hover:bg-teal-50/50 transition-all cursor-pointer group"
+                                <div class="border-2 border-dashed border-gray-200 rounded-xl p-6 text-center hover:border-teal-400 hover:bg-teal-50/40 transition-all cursor-pointer group"
                                     x-data="{ preview: null }" @click="$refs.fileInput.click()">
                                     <input type="file" name="carnet_sante" accept="image/*,.pdf" class="hidden"
                                         x-ref="fileInput"
                                         @change="preview = $event.target.files[0] ? URL.createObjectURL($event.target.files[0]) : null">
                                     <template x-if="!preview">
                                         <div>
-                                            <div class="text-5xl mb-3 group-hover:scale-110 transition-transform">📁</div>
-                                            <p class="text-base font-bold text-slate-700">Cliquez pour déposer l'image
+                                            <div class="text-4xl mb-2 group-hover:scale-110 transition-transform">📁</div>
+                                            <p class="text-sm font-semibold text-gray-600">Cliquez pour déposer l'image
                                             </p>
-                                            <p class="text-sm text-gray-400 mt-1 font-medium">JPG, PNG ou PDF — max 10 Mo
+                                            <p class="text-xs text-gray-400 mt-1">JPG, PNG ou PDF — max 10 Mo
                                             </p>
                                         </div>
                                     </template>
@@ -659,7 +643,7 @@
                                         class="{{ $field }}">{{ $formData['conduite_a_tenir'] ?? '' }}</textarea>
                                 </div>
 
-                                <div class="mb-6">
+                                <div class="mb-5">
                                     <label class="{{ $label }}">🍽️ Restrictions alimentaires</label>
                                     <textarea name="restrictions_alimentaires" rows="2"
                                         placeholder="Ex : végétarien, sans porc, sans gluten, halal, kosher…"
@@ -667,7 +651,7 @@
                                 </div>
                             </div>
 
-                            <div class="flex items-center justify-between pt-5 border-t border-gray-100">
+                            <div class="flex items-center justify-between pt-4 border-t border-gray-100 mt-1">
                                 @if ($hasPrev)
                                     <a href="{{ route('adhesion.show', ['token' => $token, 'step' => $prevStep]) }}"
                                         class="{{ $btnBack }}">
@@ -691,10 +675,10 @@
                         </form>
                     </div>
                 @elseif($step === 5)
-                    <div class="p-6 md:p-8">
-                        <div class="mb-6">
-                            <h2 class="text-2xl font-bold text-slate-900">Situation actuelle 💼</h2>
-                            <p class="text-gray-500 mt-1">Indiquez votre niveau scolaire ou situation professionnelle</p>
+                    <div class="p-5 md:p-6">
+                        <div class="mb-5">
+                            <h2 class="text-xl font-bold text-gray-900">Situation actuelle 💼</h2>
+                            <p class="text-gray-400 mt-1 text-sm">Indiquez votre niveau scolaire ou situation professionnelle</p>
                         </div>
 
                         <form action="{{ route('adhesion.next', $token) }}" method="POST">
@@ -712,7 +696,7 @@
                                                 <div :class="occupation === '{{ $o['val'] }}' ?
                                                     'border-teal-600 bg-teal-50 ring-2 ring-teal-600/20' :
                                                     'border-gray-200 group-hover:border-slate-900'"
-                                                    class="border-2 rounded-2xl p-4 text-center transition-all">
+                                                    class="border-2 rounded-xl p-3 text-center transition-all">
                                                     <div class="font-bold text-sm text-slate-900">{{ $o['val'] }}
                                                     </div>
                                                     <div class="text-xs text-gray-500 font-medium mt-1">
@@ -752,7 +736,7 @@
                                                 {{ ($formData['occupation'] ?? '') === $o['val'] ? 'checked' : '' }}
                                                 class="sr-only peer">
                                             <div
-                                                class="border-2 rounded-xl p-3 text-center transition-all peer-checked:border-teal-600 peer-checked:bg-teal-50 peer-checked:ring-2 ring-teal-600/20 border-gray-200 group-hover:border-slate-900">
+                                                class="border-2 rounded-lg p-3 text-center transition-all peer-checked:border-teal-500 peer-checked:bg-teal-50 peer-checked:ring-2 ring-teal-500/20 border-gray-200 group-hover:border-teal-400">
                                                 <div class="text-2xl mb-1">{{ $o['icon'] }}</div>
                                                 <div class="font-bold text-xs text-slate-900">{{ $o['val'] }}</div>
                                             </div>
@@ -761,7 +745,7 @@
                                 </div>
                             @endif
 
-                            <div class="flex items-center justify-between pt-5 border-t border-gray-100">
+                            <div class="flex items-center justify-between pt-4 border-t border-gray-100 mt-1">
                                 @if ($hasPrev)
                                     <a href="{{ route('adhesion.show', ['token' => $token, 'step' => $prevStep]) }}"
                                         class="{{ $btnBack }}">
@@ -785,17 +769,17 @@
                         </form>
                     </div>
                 @elseif($step === 6)
-                    <div class="p-6 md:p-8">
+                    <div class="p-5 md:p-6">
                         @php $typeActivite = $formData['type_activite'] ?? ''; @endphp
-                        <div class="mb-6">
-                            <h2 class="text-2xl font-bold text-slate-900">
+                        <div class="mb-5">
+                            <h2 class="text-xl font-bold text-gray-900">
                                 @if ($typeActivite === 'atelier')
                                     Choisissez votre atelier 🔧
                                 @else
                                     Choisissez votre stage 🎭
                                 @endif
                             </h2>
-                            <p class="text-gray-500 mt-1">
+                            <p class="text-gray-400 mt-1 text-sm">
                                 @if ($typeActivite === 'atelier')
                                     Sélectionnez le ou les ateliers auxquels vous souhaitez vous inscrire
                                 @else
@@ -832,14 +816,14 @@
                                             $villeKey = Str::slug($ville);
                                             $hasSelected = $villeActivites->contains(fn($a) => in_array($a->id, $selectedActivites));
                                         @endphp
-                                        <div class="border-2 rounded-2xl overflow-hidden transition-all
-                                            {{ $hasSelected ? 'border-teal-500' : 'border-gray-200' }}">
+                                        <div class="border rounded-xl overflow-hidden transition-all
+                                            {{ $hasSelected ? 'border-teal-400' : 'border-gray-200' }}">
 
                                             <button type="button"
                                                 @click="openVilles.includes('{{ $villeKey }}')
                                                     ? openVilles = openVilles.filter(v => v !== '{{ $villeKey }}')
                                                     : openVilles.push('{{ $villeKey }}')"
-                                                class="w-full flex items-center justify-between px-5 py-4 bg-white hover:bg-gray-50 transition-colors">
+                                                class="w-full flex items-center justify-between px-4 py-3 bg-white hover:bg-gray-50 transition-colors">
                                                 <div class="flex items-center gap-3">
                                                     <span class="text-xl">📍</span>
                                                     <span class="font-bold text-slate-900 text-base">{{ $ville }}</span>
@@ -863,7 +847,7 @@
                                                  x-transition:enter="transition ease-out duration-200"
                                                  x-transition:enter-start="opacity-0 -translate-y-1"
                                                  x-transition:enter-end="opacity-100 translate-y-0"
-                                                 class="px-4 pb-4 pt-2 bg-gray-50/50 space-y-3 border-t border-gray-100">
+                                                 class="px-3 pb-3 pt-2 bg-gray-50/50 space-y-2 border-t border-gray-100">
                                                 @foreach ($villeActivites as $activite)
                                                     @php
                                                         $horaires = is_string($activite->horaires)
@@ -957,7 +941,7 @@
                                 </div>
                             @endif
 
-                            <div class="flex items-center justify-between pt-5 border-t border-gray-100">
+                            <div class="flex items-center justify-between pt-4 border-t border-gray-100 mt-1">
                                 @if ($hasPrev)
                                     <a href="{{ route('adhesion.show', ['token' => $token, 'step' => $prevStep]) }}"
                                         class="{{ $btnBack }}">
@@ -981,10 +965,10 @@
                         </form>
                     </div>
                 @elseif($step === 7)
-                    <div class="p-6 md:p-8">
-                        <div class="mb-6">
-                            <h2 class="text-2xl font-bold text-slate-900">Implication bénévole 🤝</h2>
-                            <p class="text-gray-500 mt-1">Souhaitez-vous vous investir dans l'association ? (facultatif)
+                    <div class="p-5 md:p-6">
+                        <div class="mb-5">
+                            <h2 class="text-xl font-bold text-gray-900">Implication bénévole 🤝</h2>
+                            <p class="text-gray-400 mt-1 text-sm">Souhaitez-vous vous investir dans l'association ? (facultatif)
                             </p>
                         </div>
 
@@ -995,7 +979,7 @@
                             <div class="mb-8">
                                 <h3 class="font-bold text-slate-900 mb-4 flex items-center gap-3">
                                     <span
-                                        class="w-8 h-8 rounded-xl bg-slate-900 text-white text-sm flex items-center justify-center font-bold shadow-md">1</span>
+                                        class="w-7 h-7 rounded-lg bg-teal-600 text-white text-xs flex items-center justify-center font-bold">1</span>
                                     Actions bénévoles
                                 </h3>
                                 @php
@@ -1013,7 +997,7 @@
                                 <div class="space-y-3">
                                     @foreach ($benevoleOptions as $option => $icon)
                                         <label
-                                            class="flex items-center gap-4 p-4 border-2 border-gray-100 rounded-xl cursor-pointer hover:border-teal-600 hover:bg-teal-50 transition-all group">
+                                            class="flex items-center gap-3 p-3.5 border border-gray-200 rounded-lg cursor-pointer hover:border-teal-400 hover:bg-teal-50/60 transition-all group">
                                             <input type="checkbox" name="actions_benevoles[]"
                                                 value="{{ $option }}"
                                                 {{ in_array($option, $actionsSelectionnees) ? 'checked' : '' }}
@@ -1027,10 +1011,10 @@
                                 </div>
                             </div>
 
-                            <div class="p-6 bg-slate-50 rounded-2xl border border-slate-200 mb-6">
+                            <div class="p-4 bg-gray-50 rounded-xl border border-gray-200 mb-5">
                                 <h3 class="font-bold text-slate-900 mb-3 flex items-center gap-3">
                                     <span
-                                        class="w-8 h-8 rounded-xl bg-slate-900 text-white text-sm flex items-center justify-center font-bold shadow-md">2</span>
+                                        class="w-7 h-7 rounded-lg bg-teal-600 text-white text-xs flex items-center justify-center font-bold">2</span>
                                     Participation aux manifestations
                                 </h3>
                                 <p class="text-sm text-gray-600 mb-5 font-medium leading-relaxed">
@@ -1041,14 +1025,14 @@
                                 </p>
                                 <div class="flex flex-col sm:flex-row gap-4">
                                     <label
-                                        class="flex items-center gap-3 p-3 bg-white border border-gray-200 rounded-xl cursor-pointer hover:border-teal-600 transition-all flex-1">
+                                        class="flex items-center gap-3 p-3 bg-white border border-gray-200 rounded-lg cursor-pointer hover:border-teal-400 transition-all flex-1">
                                         <input type="radio" name="participation_manif" value="1"
                                             {{ ($formData['participation_manif'] ?? '') === '1' ? 'checked' : '' }}
                                             class="{{ $radio }}">
                                         <span class="text-sm font-bold text-slate-900">✅ Oui, intéressé·e</span>
                                     </label>
                                     <label
-                                        class="flex items-center gap-3 p-3 bg-white border border-gray-200 rounded-xl cursor-pointer hover:border-slate-900 transition-all flex-1">
+                                        class="flex items-center gap-3 p-3 bg-white border border-gray-200 rounded-lg cursor-pointer hover:border-gray-400 transition-all flex-1">
                                         <input type="radio" name="participation_manif" value="0"
                                             {{ ($formData['participation_manif'] ?? '') === '0' ? 'checked' : '' }}
                                             class="{{ $radio }}">
@@ -1057,7 +1041,7 @@
                                 </div>
                             </div>
 
-                            <div class="flex items-center justify-between pt-5 border-t border-gray-100">
+                            <div class="flex items-center justify-between pt-4 border-t border-gray-100 mt-1">
                                 @if ($hasPrev)
                                     <a href="{{ route('adhesion.show', ['token' => $token, 'step' => $prevStep]) }}"
                                         class="{{ $btnBack }}">
@@ -1081,10 +1065,10 @@
                         </form>
                     </div>
                 @elseif($step === 8)
-                    <div class="p-6 md:p-8">
-                        <div class="mb-6">
-                            <h2 class="text-2xl font-bold text-slate-900">Fiche parents et/ou tuteur·trice·s 👨‍👩‍👧</h2>
-                            <p class="text-gray-500 mt-1">Responsables légaux de <strong
+                    <div class="p-5 md:p-6">
+                        <div class="mb-5">
+                            <h2 class="text-xl font-bold text-gray-900">Fiche parents et/ou tuteur·trice·s 👨‍👩‍👧</h2>
+                            <p class="text-gray-400 mt-1 text-sm">Responsables légaux de <strong
                                     class="text-slate-900">{{ ($formData['prenom'] ?? '') . ' ' . ($formData['nom'] ?? '') }}</strong>
                             </p>
                         </div>
@@ -1095,7 +1079,7 @@
 
                             <div x-data="tuteurManager()" x-init="init()">
                                 <template x-for="(tuteur, i) in tuteurs" :key="i">
-                                    <div class="border-2 rounded-3xl p-6 mb-5 bg-white relative transition-colors"
+                                    <div class="border-2 rounded-xl p-4 mb-4 bg-white relative transition-colors"
                                         :class="{
                                             'border-slate-300 hover:border-slate-400': tuteur.type === 'parent_tuteur',
                                             'border-teal-300 hover:border-teal-400 bg-teal-50/30': tuteur.type === 'autre_autorise',
@@ -1214,26 +1198,26 @@
                                     </div>
                                 </template>
 
-                                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-2">
+                                <div class="grid grid-cols-3 gap-2 mt-3">
                                     <button type="button" @click="addTuteur('parent_tuteur')"
-                                        class="border-2 border-dashed border-slate-400 text-slate-700 bg-slate-50 font-bold rounded-2xl py-4 px-3 hover:bg-slate-900 hover:text-white hover:border-slate-900 transition-colors flex flex-col items-center justify-center gap-2 text-sm text-center">
-                                        <span class="text-2xl">👨‍👩‍👧</span>
-                                        Ajouter un·e<br>parent / tuteur·trice
+                                        class="border border-dashed border-gray-300 text-gray-600 bg-gray-50 font-semibold rounded-lg py-3 px-2 hover:bg-gray-900 hover:text-white hover:border-gray-900 transition-colors flex flex-col items-center gap-1 text-xs text-center">
+                                        <span class="text-lg">👨‍👩‍👧</span>
+                                        Parent / tuteur
                                     </button>
                                     <button type="button" @click="addTuteur('autre_autorise')"
-                                        class="border-2 border-dashed border-teal-500 text-teal-700 bg-teal-50 font-bold rounded-2xl py-4 px-3 hover:bg-teal-600 hover:text-white hover:border-teal-600 transition-colors flex flex-col items-center justify-center gap-2 text-sm text-center">
-                                        <span class="text-2xl">✅</span>
-                                        Ajouter une personne<br>autorisée
+                                        class="border border-dashed border-teal-300 text-teal-700 bg-teal-50 font-semibold rounded-lg py-3 px-2 hover:bg-teal-600 hover:text-white hover:border-teal-600 transition-colors flex flex-col items-center gap-1 text-xs text-center">
+                                        <span class="text-lg">✅</span>
+                                        Personne autorisée
                                     </button>
                                     <button type="button" @click="addTuteur('non_autorise')"
-                                        class="border-2 border-dashed border-red-400 text-red-600 bg-red-50 font-bold rounded-2xl py-4 px-3 hover:bg-red-500 hover:text-white hover:border-red-500 transition-colors flex flex-col items-center justify-center gap-2 text-sm text-center">
-                                        <span class="text-2xl">🚫</span>
-                                        Ajouter une personne<br>non autorisée
+                                        class="border border-dashed border-red-300 text-red-600 bg-red-50 font-semibold rounded-lg py-3 px-2 hover:bg-red-500 hover:text-white hover:border-red-500 transition-colors flex flex-col items-center gap-1 text-xs text-center">
+                                        <span class="text-lg">🚫</span>
+                                        Non autorisée
                                     </button>
                                 </div>
                             </div>
 
-                            <div class="flex items-center justify-between pt-5 border-t border-gray-100">
+                            <div class="flex items-center justify-between pt-4 border-t border-gray-100 mt-1">
                                 @if ($hasPrev)
                                     <a href="{{ route('adhesion.show', ['token' => $token, 'step' => $prevStep]) }}"
                                         class="{{ $btnBack }}">
@@ -1257,17 +1241,17 @@
                         </form>
                     </div>
                 @elseif($step === 9)
-                    <div class="p-6 md:p-8">
-                        <div class="mb-6">
-                            <h2 class="text-2xl font-bold text-slate-900">Votre signature ✍️</h2>
-                            <p class="text-gray-500 mt-1">Signez ci-dessous pour valider la fiche d'adhésion</p>
+                    <div class="p-5 md:p-6">
+                        <div class="mb-5">
+                            <h2 class="text-xl font-bold text-gray-900">Votre signature ✍️</h2>
+                            <p class="text-gray-400 mt-1 text-sm">Signez ci-dessous pour valider la fiche d'adhésion</p>
                         </div>
 
                         <form action="{{ route('adhesion.next', $token) }}" method="POST" id="form-signature">
                             @csrf
                             <input type="hidden" name="current_step" value="9">
 
-                            <div class="p-5 bg-amber-50 rounded-2xl border border-amber-200 mb-6 flex items-start gap-4">
+                            <div class="p-4 bg-amber-50 rounded-xl border border-amber-100 mb-5 flex items-start gap-3">
                                 <span class="text-2xl">⚠️</span>
                                 <p class="text-sm font-bold text-amber-800 leading-relaxed">
                                     En signant ce formulaire, vous certifiez l'exactitude des informations renseignées et
@@ -1275,7 +1259,7 @@
                                 </p>
                             </div>
 
-                            <div class="mb-6">
+                            <div class="mb-5">
                                 <label class="{{ $label }}">📅 Date *</label>
                                 <input type="date" name="date_signature_adherent"
                                     value="{{ $formData['date_signature_adherent'] ?? date('Y-m-d') }}" required
@@ -1298,7 +1282,7 @@
                                     value="{{ $formData['signature_adherent'] ?? '' }}">
                             </div>
 
-                            <div class="flex items-center justify-between pt-5 border-t border-gray-100">
+                            <div class="flex items-center justify-between pt-4 border-t border-gray-100 mt-1">
                                 @if ($hasPrev)
                                     <a href="{{ route('adhesion.show', ['token' => $token, 'step' => $prevStep]) }}"
                                         class="{{ $btnBack }}">
@@ -1326,10 +1310,10 @@
                         </form>
                     </div>
                 @elseif($step === 10)
-                    <div class="p-6 md:p-8">
-                        <div class="mb-6">
-                            <h2 class="text-2xl font-bold text-slate-900">Choix du paiement 💳</h2>
-                            <p class="text-gray-500 mt-1">Comment souhaitez-vous régler votre adhésion ?</p>
+                    <div class="p-5 md:p-6">
+                        <div class="mb-5">
+                            <h2 class="text-xl font-bold text-gray-900">Choix du paiement 💳</h2>
+                            <p class="text-gray-400 mt-1 text-sm">Comment souhaitez-vous régler votre adhésion ?</p>
                         </div>
 
                         @error('helloasso')
@@ -1351,7 +1335,7 @@
                                             x-model="modePaiement" class="sr-only">
                                         <div :class="modePaiement === 'helloasso' ?
                                             'border-teal-600 bg-teal-50 ring-2 ring-teal-600/20' :
-                                            'border-gray-200 group-hover:border-slate-900'"
+                                            'border-gray-200 group-hover:border-teal-400'"
                                             class="{{ $card }} items-center text-center">
                                             <div class="text-4xl mb-3">🌐</div>
                                             <h3 class="text-lg font-bold text-slate-900">HelloAsso</h3>
@@ -1366,7 +1350,7 @@
                                             x-model="modePaiement" class="sr-only">
                                         <div :class="modePaiement === 'interne' ?
                                             'border-teal-600 bg-teal-50 ring-2 ring-teal-600/20' :
-                                            'border-gray-200 group-hover:border-slate-900'"
+                                            'border-gray-200 group-hover:border-teal-400'"
                                             class="{{ $card }} items-center text-center">
                                             <div class="text-4xl mb-3">🤝</div>
                                             <h3 class="text-lg font-bold text-slate-900">Paiement en personne</h3>
@@ -1416,7 +1400,7 @@
                                     </p>
                                 </div>
 
-                                <div class="flex items-center justify-between pt-5 border-t border-gray-100">
+                                <div class="flex items-center justify-between pt-4 border-t border-gray-100 mt-1">
                                     @if ($hasPrev)
                                         <a href="{{ route('adhesion.show', ['token' => $token, 'step' => $prevStep]) }}"
                                             class="{{ $btnBack }}">
@@ -1441,9 +1425,9 @@
                         </form>
                     </div>
                 @elseif($step === 11)
-                    <div class="p-8 md:p-12 text-center">
+                    <div class="p-6 md:p-8 text-center">
                         <div
-                            class="w-24 h-24 rounded-full flex items-center justify-center mx-auto mb-6 text-5xl bg-teal-50 shadow-inner">
+                            class="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4 text-3xl bg-teal-50 border border-teal-100">
                             ✅
                         </div>
 
@@ -1454,15 +1438,15 @@
                                 : ($formData['prenom'] ?? '') . ' ' . ($formData['nom'] ?? '');
                         @endphp
 
-                        <h2 class="text-3xl font-black text-slate-900 mb-3">Demande envoyée !</h2>
+                        <h2 class="text-2xl font-bold text-gray-900 mb-2">Demande envoyée !</h2>
 
                         @if ($prenomNom)
-                            <p class="text-slate-600 text-lg mb-2">
+                            <p class="text-gray-600 text-base mb-2">
                                 Merci <strong class="text-teal-600">{{ $prenomNom }}</strong> !
                             </p>
                         @endif
 
-                        <p class="text-gray-500 font-medium mb-8 max-w-lg mx-auto leading-relaxed">
+                        <p class="text-gray-400 text-sm mb-6 max-w-md mx-auto leading-relaxed">
                             @if ($isAdherentExistant)
                                 Votre demande d'inscription pour cette nouvelle activité a bien été transmise à notre
                                 équipe. Elle sera traitée dans les plus brefs délais.
@@ -1473,46 +1457,46 @@
                         </p>
 
                         @if (($formData['mode_paiement'] ?? '') === 'interne')
-                            <div class="p-6 bg-slate-50 border border-slate-200 rounded-3xl mb-8 text-left">
-                                <h4 class="font-bold text-slate-900 mb-2 flex items-center gap-2 text-lg">
+                            <div class="p-4 bg-gray-50 border border-gray-200 rounded-xl mb-6 text-left">
+                                <h4 class="font-semibold text-gray-800 mb-2 flex items-center gap-2 text-sm">
                                     <span>💳</span> Étape suivante : règlement
                                 </h4>
-                                <p class="text-sm font-medium text-slate-700 mb-4">
+                                <p class="text-sm text-gray-600 mb-3">
                                     Vous avez choisi le paiement en personne. Contactez-nous pour fixer un rendez-vous :
                                 </p>
                                 <a href="mailto:contact@savoirsvivants.fr"
-                                    class="inline-flex items-center gap-2 bg-slate-900 text-white text-sm font-bold px-5 py-3 rounded-xl hover:bg-teal-600 shadow-md transition-colors">
+                                    class="inline-flex items-center gap-2 bg-teal-600 text-white text-sm font-semibold px-4 py-2 rounded-lg hover:bg-teal-700 transition-colors">
                                     ✉️ contact@savoirsvivants.fr
                                 </a>
                             </div>
                         @endif
 
-                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 text-left mb-8">
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 text-left mb-6">
                             <div
-                                class="p-5 bg-white rounded-2xl border border-gray-200 text-center shadow-sm {{ $isAdherentExistant ? 'sm:col-span-3 sm:max-w-xs sm:mx-auto' : '' }}">
-                                <div class="text-3xl mb-2">📧</div>
-                                <p class="text-xs font-semibold text-gray-500 uppercase tracking-wide">Email de
+                                class="p-4 bg-white rounded-xl border border-gray-100 text-center {{ $isAdherentExistant ? 'sm:col-span-3 sm:max-w-xs sm:mx-auto' : '' }}">
+                                <div class="text-2xl mb-1.5">📧</div>
+                                <p class="text-xs font-semibold text-gray-400 uppercase tracking-wide">Email de
                                     confirmation</p>
                             </div>
 
                             @if (!$isAdherentExistant)
-                                <div class="p-5 bg-white rounded-2xl border border-gray-200 text-center shadow-sm">
-                                    <div class="text-3xl mb-2">🪪</div>
-                                    <p class="text-xs font-semibold text-gray-500 uppercase tracking-wide">Numéro
+                                <div class="p-4 bg-white rounded-xl border border-gray-100 text-center">
+                                    <div class="text-2xl mb-1.5">🪪</div>
+                                    <p class="text-xs font-semibold text-gray-400 uppercase tracking-wide">Numéro
                                         d'adhérent</p>
-                                    <p class="text-sm font-bold text-slate-900 mt-1">À réception du mail</p>
+                                    <p class="text-xs font-bold text-gray-700 mt-1">À réception du mail</p>
                                 </div>
-                                <div class="p-5 bg-white rounded-2xl border border-gray-200 text-center shadow-sm">
-                                    <div class="text-3xl mb-2">🎉</div>
-                                    <p class="text-xs font-semibold text-gray-500 uppercase tracking-wide">Bienvenue !</p>
-                                    <p class="text-sm font-bold text-teal-600 mt-1">Après validation</p>
+                                <div class="p-4 bg-white rounded-xl border border-gray-100 text-center">
+                                    <div class="text-2xl mb-1.5">🎉</div>
+                                    <p class="text-xs font-semibold text-gray-400 uppercase tracking-wide">Bienvenue !</p>
+                                    <p class="text-xs font-bold text-teal-600 mt-1">Après validation</p>
                                 </div>
                             @endif
                         </div>
 
-                        <p class="text-sm font-bold text-gray-400">
-                            Une question ? Écrivez-nous à <a href="mailto:contact@savoirsvivants.fr"
-                                class="text-teal-600 hover:text-slate-900 transition-colors">contact@savoirsvivants.fr</a>
+                        <p class="text-xs text-gray-400">
+                            Une question ? <a href="mailto:contact@savoirsvivants.fr"
+                                class="text-teal-600 hover:text-teal-700 font-medium transition-colors">contact@savoirsvivants.fr</a>
                         </p>
                     </div>
                 @endif
