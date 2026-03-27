@@ -99,6 +99,36 @@ class AdherentFormulaireController extends Controller
         return ($idx > 0) ? $path[$idx - 1] : 1;
     }
 
+    private function classesFiltrer(array $formData): \Closure
+    {
+        $occupation = $formData['occupation'] ?? null;
+
+        // Correspondance niveau scolaire → classes d'activités éligibles
+        $niveaux = Activite::CLASSES_NIVEAUX;
+        $classesEligibles = match($occupation) {
+            'Maternelle'         => $niveaux['Maternelle'],
+            'Primaire'           => $niveaux['Primaire'],
+            'Collège'            => $niveaux['Collège'],
+            'Lycée'              => $niveaux['Lycée'],
+            // L'enseignement à domicile peut couvrir n'importe quel niveau : on ne filtre pas
+            'École à la maison'  => null,
+            // Les adultes voient les activités "Adulte"/"Senior" ou sans restriction de classes
+            default              => !empty($occupation) ? array_merge($niveaux['Autre']) : null,
+        };
+
+        return function ($activite) use ($classesEligibles) {
+            // Activité sans restriction de classes → visible par tous
+            if (empty($activite->classes)) {
+                return true;
+            }
+            // Occupation inconnue ou École à la maison → on affiche tout
+            if ($classesEligibles === null) {
+                return true;
+            }
+            return count(array_intersect($activite->classes, $classesEligibles)) > 0;
+        };
+    }
+
     private function stepMeta(): array
     {
         return [
@@ -147,8 +177,8 @@ class AdherentFormulaireController extends Controller
         }
 
         $activites = Activite::where('is_archived', false)->get();
-        $ateliers  = $activites->where('type', 'activite')->values();
-        $stages    = $activites->where('type', 'stage')->values();
+        $ateliers  = $activites->where('type', 'activite')->values()->filter($this->classesFiltrer($formData))->values();
+        $stages    = $activites->where('type', 'stage')->values()->filter($this->classesFiltrer($formData))->values();
 
         $stepMeta   = $this->stepMeta();
         $isMineur   = $this->isMineur($formData['date_naiss'] ?? null);

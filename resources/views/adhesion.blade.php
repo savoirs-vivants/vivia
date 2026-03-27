@@ -804,11 +804,28 @@
                                 }
                             @endphp
 
+                            @php
+                                $occupation = $formData['occupation'] ?? null;
+                                $hasFilter  = !empty($occupation) && $occupation !== 'École à la maison';
+                            @endphp
+
+                            @if ($hasFilter)
+                                <div class="flex items-center gap-2 mb-4 px-1">
+                                    <span class="text-base">🎓</span>
+                                    <p class="text-xs text-gray-500">
+                                        Activités affichées pour le niveau
+                                        <strong class="text-gray-700">{{ $occupation }}</strong>.
+                                        Si vous pensez qu'il manque des activités,
+                                        <a href="mailto:contact@savoirsvivants.fr" class="text-teal-600 underline underline-offset-2">contactez-nous</a>.
+                                    </p>
+                                </div>
+                            @endif
+
                             @if ($liste->isEmpty())
-                                <div class="p-8 text-center bg-slate-50 rounded-2xl border border-slate-200 mb-6">
-                                    <div class="text-5xl mb-3">😕</div>
-                                    <p class="text-slate-900 font-bold text-lg">Aucune activité disponible pour le moment.</p>
-                                    <p class="text-gray-500 text-sm mt-2">Contactez-nous pour plus d'informations.</p>
+                                <div class="p-6 text-center bg-gray-50 rounded-xl border border-gray-200 mb-5">
+                                    <div class="text-4xl mb-2">😕</div>
+                                    <p class="text-gray-800 font-semibold">Aucune activité disponible pour votre niveau.</p>
+                                    <p class="text-gray-400 text-sm mt-1">Contactez-nous pour plus d'informations.</p>
                                 </div>
                             @elseif ($typeActivite === 'atelier')
                                 @php
