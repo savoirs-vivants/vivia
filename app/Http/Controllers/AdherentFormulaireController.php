@@ -172,12 +172,35 @@ class AdherentFormulaireController extends Controller
             return redirect()->route('adhesion.show', ['token' => $token, 'step' => $fallbackStep]);
         }
 
+        $activitesDejaInscritesIds = [];
+        if (($formData['is_adherent'] ?? 'non') === 'oui' && !empty($formData['numero_adherent'])) {
+            $adherentExistant = Adherent::where('numero_adherent', $formData['numero_adherent'])->first();
+            if ($adherentExistant) {
+                if (empty($formData['date_naiss'])) {
+                    $formData['date_naiss'] = $adherentExistant->date_naiss?->format('Y-m-d');
+                }
+                $year   = now()->month >= 9 ? now()->year : now()->year - 1;
+                $saison = $year . '-' . ($year + 1);
+                $activitesDejaInscritesIds = $adherentExistant->activites()
+                    ->wherePivot('saison', $saison)
+                    ->wherePivot('est_un_abandon', 0)
+                    ->pluck('activites.id')
+                    ->toArray();
+            }
+        }
+
         $classeAdherent = $this->classeDepuisAge($formData);
         $filtre         = $this->classesFiltrer($formData);
 
         $activites = Activite::where('is_archived', false)->get();
-        $ateliers  = $activites->where('type', 'activite')->values()->filter($filtre)->values();
-        $stages    = $activites->where('type', 'stage')->values()->filter($filtre)->values();
+        $ateliers  = $activites->where('type', 'activite')->values()
+            ->filter($filtre)
+            ->filter(fn($a) => !in_array($a->id, $activitesDejaInscritesIds))
+            ->values();
+        $stages    = $activites->where('type', 'stage')->values()
+            ->filter($filtre)
+            ->filter(fn($a) => !in_array($a->id, $activitesDejaInscritesIds))
+            ->values();
 
         $stepMeta    = $this->stepMeta();
         $isMineur    = $this->isMineur($formData['date_naiss'] ?? null);
