@@ -99,30 +99,53 @@ class AdherentFormulaireController extends Controller
         return ($idx > 0) ? $path[$idx - 1] : 1;
     }
 
+    private function classeDepuisAge(array $formData): ?string
+    {
+        $dateNaiss = $formData['date_naiss'] ?? null;
+        if (empty($dateNaiss)) {
+            return null;
+        }
+
+        $anneeNaissance = (int) Carbon::parse($dateNaiss)->format('Y');
+
+        $now = now();
+        $anneeScolaire = $now->month >= 9 ? $now->year : $now->year - 1;
+        $ageScolaire   = $anneeScolaire - $anneeNaissance;
+
+        return match(true) {
+            $ageScolaire === 3  => 'PS',
+            $ageScolaire === 4  => 'MS',
+            $ageScolaire === 5  => 'GS',
+            $ageScolaire === 6  => 'CP',
+            $ageScolaire === 7  => 'CE1',
+            $ageScolaire === 8  => 'CE2',
+            $ageScolaire === 9  => 'CM1',
+            $ageScolaire === 10 => 'CM2',
+            $ageScolaire === 11 => '6ème',
+            $ageScolaire === 12 => '5ème',
+            $ageScolaire === 13 => '4ème',
+            $ageScolaire === 14 => '3ème',
+            $ageScolaire === 15 => 'Seconde',
+            $ageScolaire === 16 => 'Première',
+            $ageScolaire === 17 => 'Terminale',
+            $ageScolaire >= 18  => 'Adulte',
+            default             => null,
+        };
+    }
+
     private function classesFiltrer(array $formData): \Closure
     {
-        $occupation = $formData['occupation'] ?? null;
+        $classe = $this->classeDepuisAge($formData);
 
-        // Correspondance niveau scolaire → classes d'activités éligibles
-        $niveaux = Activite::CLASSES_NIVEAUX;
-        $classesEligibles = match($occupation) {
-            'Maternelle'         => $niveaux['Maternelle'],
-            'Primaire'           => $niveaux['Primaire'],
-            'Collège'            => $niveaux['Collège'],
-            'Lycée'              => $niveaux['Lycée'],
-            // L'enseignement à domicile peut couvrir n'importe quel niveau : on ne filtre pas
-            'École à la maison'  => null,
-            // Les adultes voient les activités "Adulte"/"Senior" ou sans restriction de classes
-            default              => !empty($occupation) ? array_merge($niveaux['Autre']) : null,
-        };
+        if ($classe === null) {
+            return fn() => true;
+        }
+
+        // Les adultes voient aussi les activités "Senior"
+        $classesEligibles = $classe === 'Adulte' ? ['Adulte', 'Senior'] : [$classe];
 
         return function ($activite) use ($classesEligibles) {
-            // Activité sans restriction de classes → visible par tous
             if (empty($activite->classes)) {
-                return true;
-            }
-            // Occupation inconnue ou École à la maison → on affiche tout
-            if ($classesEligibles === null) {
                 return true;
             }
             return count(array_intersect($activite->classes, $classesEligibles)) > 0;
@@ -176,9 +199,12 @@ class AdherentFormulaireController extends Controller
             return redirect()->route('adhesion.show', ['token' => $token, 'step' => $fallbackStep]);
         }
 
+        $classeAdherent = $this->classeDepuisAge($formData);
+        $filtre         = $this->classesFiltrer($formData);
+
         $activites = Activite::where('is_archived', false)->get();
-        $ateliers  = $activites->where('type', 'activite')->values()->filter($this->classesFiltrer($formData))->values();
-        $stages    = $activites->where('type', 'stage')->values()->filter($this->classesFiltrer($formData))->values();
+        $ateliers  = $activites->where('type', 'activite')->values()->filter($filtre)->values();
+        $stages    = $activites->where('type', 'stage')->values()->filter($filtre)->values();
 
         $stepMeta   = $this->stepMeta();
         $isMineur   = $this->isMineur($formData['date_naiss'] ?? null);
@@ -190,7 +216,7 @@ class AdherentFormulaireController extends Controller
         return view('adhesion', compact(
             'step', 'formData', 'token', 'ateliers', 'stages',
             'path', 'stepMeta', 'isMineur', 'currentNum', 'totalSteps',
-            'prevStep', 'hasPrev'
+            'prevStep', 'hasPrev', 'classeAdherent'
         ));
     }
 

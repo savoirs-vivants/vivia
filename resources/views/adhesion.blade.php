@@ -804,19 +804,12 @@
                                 }
                             @endphp
 
-                            @php
-                                $occupation = $formData['occupation'] ?? null;
-                                $hasFilter  = !empty($occupation) && $occupation !== 'École à la maison';
-                            @endphp
-
-                            @if ($hasFilter)
+                            @if ($classeAdherent)
                                 <div class="flex items-center gap-2 mb-4 px-1">
                                     <span class="text-base">🎓</span>
                                     <p class="text-xs text-gray-500">
-                                        Activités affichées pour le niveau
-                                        <strong class="text-gray-700">{{ $occupation }}</strong>.
-                                        Si vous pensez qu'il manque des activités,
-                                        <a href="mailto:contact@savoirsvivants.fr" class="text-teal-600 underline underline-offset-2">contactez-nous</a>.
+                                        Activités adaptées à la classe
+                                        <strong class="text-gray-700">{{ $classeAdherent }}</strong>.
                                     </p>
                                 </div>
                             @endif
