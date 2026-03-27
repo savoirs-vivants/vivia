@@ -33,6 +33,9 @@ Route::post('/adhesion/recup-numero', [App\Http\Controllers\AdherentFormulaireCo
 Route::get('/adhesion/{token}',  [App\Http\Controllers\AdherentFormulaireController::class, 'show'])->name('adhesion.show');
 Route::post('/adhesion/{token}', [App\Http\Controllers\AdherentFormulaireController::class, 'next'])->name('adhesion.next');
 Route::get('/adhesion/{token}/helloasso/{status}', [App\Http\Controllers\AdherentFormulaireController::class, 'helloassoReturn'])->name('adhesion.helloasso.return');
+Route::post('/adhesion/{token}/helloasso2', [App\Http\Controllers\AdherentFormulaireController::class, 'helloassoCheckout2'])->name('adhesion.helloasso2.checkout');
+Route::get('/adhesion/{token}/helloasso2/{status}', [App\Http\Controllers\AdherentFormulaireController::class, 'helloassoReturn2'])->name('adhesion.helloasso2.return');
+Route::post('/adhesion/helloasso/webhook', [App\Http\Controllers\AdherentFormulaireController::class, 'helloassoWebhook'])->name('adhesion.helloasso.webhook');
 
 
 Route::middleware('auth')->group(function () {

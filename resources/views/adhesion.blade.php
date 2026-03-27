@@ -1324,7 +1324,46 @@
                         </form>
                     </div>
                 @elseif($step === 10)
-                    <div class="p-5 md:p-6">
+                    <div class="p-5 md:p-6" x-data="{ modalAdhesion: {{ $paiement1Done ? 'true' : 'false' }} }">
+
+                        <div x-show="modalAdhesion" x-transition
+                             class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4"
+                             style="display: none;">
+                            <div class="bg-white rounded-2xl shadow-xl w-full max-w-md p-6" @click.outside="false">
+                                <div class="text-center mb-5">
+                                    <div class="w-14 h-14 rounded-2xl bg-teal-50 border border-teal-100 flex items-center justify-center text-3xl mx-auto mb-3">✅</div>
+                                    <h3 class="text-lg font-bold text-gray-900">Activité réglée !</h3>
+                                    <p class="text-gray-500 text-sm mt-1">Votre inscription à l'atelier est bien enregistrée.</p>
+                                </div>
+
+                                <div class="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-5 flex items-start gap-3">
+                                    <span class="text-xl shrink-0">📋</span>
+                                    <div>
+                                        <p class="text-sm font-semibold text-amber-900">Une dernière étape</p>
+                                        <p class="text-sm text-amber-700 mt-0.5 leading-relaxed">
+                                            Pour être pleinement membre de l'association, vous devez également régler la <strong>cotisation annuelle</strong> via la page officielle HelloAsso. Vous serez redirigé vers le formulaire d'adhésion.
+                                        </p>
+                                    </div>
+                                </div>
+
+                                @error('helloasso2')
+                                    <div class="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700 font-medium">
+                                        ❌ {{ $message }}
+                                    </div>
+                                @enderror
+
+                                <form action="{{ route('adhesion.helloasso2.checkout', $token) }}" method="POST">
+                                    @csrf
+                                    <button type="submit"
+                                        class="w-full inline-flex items-center justify-center gap-2 bg-teal-600 text-white font-semibold px-6 py-3 rounded-lg hover:bg-teal-700 transition text-sm shadow-sm">
+                                        Payer la cotisation sur HelloAsso →
+                                    </button>
+                                </form>
+
+                                <p class="text-center text-xs text-gray-400 mt-3">Paiement sécurisé via HelloAsso</p>
+                            </div>
+                        </div>
+
                         <div class="mb-5">
                             <h2 class="text-xl font-bold text-gray-900">Choix du paiement 💳</h2>
                             <p class="text-gray-400 mt-1 text-sm">Comment souhaitez-vous régler votre adhésion ?</p>

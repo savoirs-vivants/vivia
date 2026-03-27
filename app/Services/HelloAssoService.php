@@ -55,17 +55,17 @@ class HelloAssoService
         });
     }
 
-    public function createCheckout(int $amountInCents, array $payer, string $tokenRequete): string
+    public function createCheckout(int $amountInCents, array $payer, string $tokenRequete, string $returnRoute = 'adhesion.helloasso.return', string $itemName = 'Adhésion - Savoirs Vivants'): string
     {
         $accessToken = $this->getAccessToken();
 
         $payload = [
             'totalAmount'      => $amountInCents,
             'initialAmount'    => $amountInCents,
-            'itemName'         => 'Adhésion - Savoirs Vivants',
-            'backUrl'          => route('adhesion.helloasso.return', ['token' => $tokenRequete, 'status' => 'cancel']),
-            'errorUrl'         => route('adhesion.helloasso.return', ['token' => $tokenRequete, 'status' => 'error']),
-            'returnUrl'        => route('adhesion.helloasso.return', ['token' => $tokenRequete, 'status' => 'success']),
+            'itemName'         => $itemName,
+            'backUrl'          => route($returnRoute, ['token' => $tokenRequete, 'status' => 'cancel']),
+            'errorUrl'         => route($returnRoute, ['token' => $tokenRequete, 'status' => 'error']),
+            'returnUrl'        => route($returnRoute, ['token' => $tokenRequete, 'status' => 'success']),
             'containsDonation' => false,
             'payer'            => [
                 'firstName' => $payer['prenom'],

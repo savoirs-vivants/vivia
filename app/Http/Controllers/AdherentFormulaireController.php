@@ -49,35 +49,20 @@ class AdherentFormulaireController extends Controller
 
         if ($isAdherent) {
             $path = [1, 12, 2];
-
-            if ($needsActivite) {
-                $path[] = 6;
-            }
-
-            if (! $isClubMaker) {
-                $path[] = 10;
-            }
-
+            if ($needsActivite) $path[] = 6;
+            if (! $isClubMaker) $path[] = 10;
             $path[] = 11;
             return $path;
         }
 
         $path = [1, 12, 2, 3];
-        if ($isMineur) {
-            $path[] = 4;
-        }
+        if ($isMineur) $path[] = 4;
         $path[] = 5;
-        if ($needsActivite) {
-            $path[] = 6;
-        }
+        if ($needsActivite) $path[] = 6;
         $path[] = 7;
-        if ($isMineur) {
-            $path[] = 8;
-        }
+        if ($isMineur) $path[] = 8;
         $path[] = 9;
-        if (! $isClubMaker) {
-            $path[] = 10;
-        }
+        if (! $isClubMaker) $path[] = 10;
         $path[] = 11;
 
         return $path;
@@ -87,7 +72,6 @@ class AdherentFormulaireController extends Controller
     {
         $path = $this->getUserPath($formData);
         $idx  = array_search($current, $path);
-
         return isset($path[$idx + 1]) ? $path[$idx + 1] : 11;
     }
 
@@ -95,19 +79,15 @@ class AdherentFormulaireController extends Controller
     {
         $path = $this->getUserPath($formData);
         $idx  = array_search($current, $path);
-
         return ($idx > 0) ? $path[$idx - 1] : 1;
     }
 
     private function classeDepuisAge(array $formData): ?string
     {
         $dateNaiss = $formData['date_naiss'] ?? null;
-        if (empty($dateNaiss)) {
-            return null;
-        }
+        if (empty($dateNaiss)) return null;
 
         $anneeNaissance = (int) Carbon::parse($dateNaiss)->format('Y');
-
         $now = now();
         $anneeScolaire = $now->month >= 9 ? $now->year : $now->year - 1;
         $ageScolaire   = $anneeScolaire - $anneeNaissance;
@@ -136,18 +116,11 @@ class AdherentFormulaireController extends Controller
     private function classesFiltrer(array $formData): \Closure
     {
         $classe = $this->classeDepuisAge($formData);
+        if ($classe === null) return fn() => true;
 
-        if ($classe === null) {
-            return fn() => true;
-        }
-
-        // Les adultes voient aussi les activités "Senior"
         $classesEligibles = $classe === 'Adulte' ? ['Adulte', 'Senior'] : [$classe];
-
         return function ($activite) use ($classesEligibles) {
-            if (empty($activite->classes)) {
-                return true;
-            }
+            if (empty($activite->classes)) return true;
             return count(array_intersect($activite->classes, $classesEligibles)) > 0;
         };
     }
@@ -206,17 +179,18 @@ class AdherentFormulaireController extends Controller
         $ateliers  = $activites->where('type', 'activite')->values()->filter($filtre)->values();
         $stages    = $activites->where('type', 'stage')->values()->filter($filtre)->values();
 
-        $stepMeta   = $this->stepMeta();
-        $isMineur   = $this->isMineur($formData['date_naiss'] ?? null);
-        $currentNum = $requestedIdx + 1;
-        $totalSteps = count($path);
-        $prevStep   = $this->getPrevStep($step, $formData);
-        $hasPrev    = ($step !== 1);
+        $stepMeta    = $this->stepMeta();
+        $isMineur    = $this->isMineur($formData['date_naiss'] ?? null);
+        $currentNum  = $requestedIdx + 1;
+        $totalSteps  = count($path);
+        $prevStep    = $this->getPrevStep($step, $formData);
+        $hasPrev     = ($step !== 1);
+        $paiement1Done = (bool) $request->session()->pull("paiement1_done_{$token}", false);
 
         return view('adhesion', compact(
             'step', 'formData', 'token', 'ateliers', 'stages',
             'path', 'stepMeta', 'isMineur', 'currentNum', 'totalSteps',
-            'prevStep', 'hasPrev', 'classeAdherent'
+            'prevStep', 'hasPrev', 'classeAdherent', 'paiement1Done'
         ));
     }
 
@@ -248,7 +222,6 @@ class AdherentFormulaireController extends Controller
             ]);
         } catch (\Exception $e) {
             Log::error('envoyerCodeRecup error: ' . $e->getMessage());
-
             return response()->json([
                 'message' => 'Une erreur serveur est survenue. Veuillez réessayer.',
                 'status'  => 'error'
@@ -278,44 +251,67 @@ class AdherentFormulaireController extends Controller
         }
 
         if ($step === 10 && $request->input('mode_paiement') === 'helloasso') {
-            $totalEuros   = 0;
-            $service      = new HelloAssoService();
-            $activitesIds = $formData['activites_selectionnees'] ?? [];
-            $hasActivites = !empty($activitesIds);
+            $service = new HelloAssoService();
 
+            $activitesIds      = $formData['activites_selectionnees'] ?? [];
+            $hasActivites      = !empty($activitesIds);
+            $estNouvelAdherent = ($formData['is_adherent'] ?? 'non') === 'non';
+
+            $totalActiviteEuros = 0;
             if ($hasActivites) {
-                $activites   = \App\Models\Activite::whereIn('id', $activitesIds)->get();
-                $totalEuros += $activites->sum('tarif');
-            } else {
-                if (($formData['is_adherent'] ?? 'non') === 'non') {
-                    $formSlug    = env('HELLOASSO_MEMBERSHIP_FORM_SLUG');
-                    $totalEuros += $service->getBaseMembershipPrice($formSlug);
-                }
+                $activites = \App\Models\Activite::whereIn('id', $activitesIds)->get();
+                $totalActiviteEuros = $activites->sum('tarif');
             }
 
-            if ($totalEuros > 0) {
-                $formData['mode_paiement']   = 'helloasso';
-                $formData['_last_completed'] = 10;
-                $request->session()->put("adhesion_{$token}", $formData);
+            $formData['mode_paiement']   = 'helloasso';
+            $formData['_last_completed'] = 10;
+            $request->session()->put("adhesion_{$token}", $formData);
 
+            $payerInfo = [
+                'prenom' => $formData['prenom'] ?? 'Prénom',
+                'nom'    => $formData['nom'] ?? 'Nom',
+                'mail'   => $formData['mail'] ?? 'email@defaut.fr',
+            ];
+
+            if ($totalActiviteEuros > 0) {
                 try {
                     $urlPaiement = $service->createCheckout(
-                        $totalEuros * 100,
-                        [
-                            'prenom' => $formData['prenom'] ?? 'Prénom',
-                            'nom'    => $formData['nom'] ?? 'Nom',
-                            'mail'   => $formData['mail'] ?? 'email@defaut.fr',
-                        ],
-                        $token
+                        (int) round($totalActiviteEuros * 100),
+                        $payerInfo,
+                        $token,
+                        'adhesion.helloasso.return',
+                        'Inscription Activité - Savoirs Vivants'
                     );
-
                     return redirect($urlPaiement);
-
                 } catch (\Exception $e) {
-                    \Illuminate\Support\Facades\Log::error('HelloAsso Error: ' . $e->getMessage());
+                    Log::error('HelloAsso Error (Checkout 1): ' . $e->getMessage());
                     return back()->withErrors(['helloasso' => 'Le service de paiement est indisponible pour le moment.']);
                 }
             }
+            elseif ($estNouvelAdherent) {
+                try {
+                    $formSlug = env('HELLOASSO_MEMBERSHIP_FORM_SLUG');
+                    $price    = $service->getBaseMembershipPrice($formSlug);
+
+                    if ($price > 0) {
+                        $urlPaiement = $service->createCheckout(
+                            (int) round($price * 100),
+                            $payerInfo,
+                            $token,
+                            'adhesion.helloasso2.return',
+                            'Adhésion Annuelle - Savoirs Vivants'
+                        );
+                        return redirect($urlPaiement);
+                    }
+                } catch (\Exception $e) {
+                    Log::error('HelloAsso Error (Checkout 2 direct): ' . $e->getMessage());
+                    return back()->withErrors(['helloasso' => 'Le service de paiement est indisponible pour le moment.']);
+                }
+            }
+
+            $formData['_last_completed'] = 11;
+            $request->session()->put("adhesion_{$token}", $formData);
+            return redirect()->route('adhesion.show', ['token' => $token, 'step' => 11]);
         }
 
         if ($request->hasFile('carnet_sante')) {
@@ -326,11 +322,9 @@ class AdherentFormulaireController extends Controller
         $exclude  = ['_token', 'current_step', 'carnet_sante'];
         $newData  = $request->except($exclude);
         $formData = array_merge($formData, $newData);
-
         $formData['_last_completed'] = max((int) ($formData['_last_completed'] ?? 0), $step);
 
         $request->session()->put("adhesion_{$token}", $formData);
-
         $next = $this->getNextStep($step, $formData);
 
         return redirect()->route('adhesion.show', ['token' => $token, 'step' => $next]);
@@ -340,13 +334,95 @@ class AdherentFormulaireController extends Controller
     {
         if ($status === 'cancel' || $status === 'error') {
             return redirect()->route('adhesion.show', ['token' => $token, 'step' => 10])
-                             ->withErrors(['helloasso' => 'Le paiement a été annulé ou a échoué. Vous pouvez réessayer ou choisir un autre moyen de paiement.']);
+                             ->withErrors(['helloasso' => 'Le paiement de l\'activité a été annulé ou a échoué. Vous pouvez réessayer.']);
         }
 
         $formData = $request->session()->get("adhesion_{$token}", []);
         $formData['_last_completed'] = max((int)($formData['_last_completed'] ?? 0), 10);
         $request->session()->put("adhesion_{$token}", $formData);
 
+        $estNouvelAdherent = ($formData['is_adherent'] ?? 'non') === 'non';
+
+        if ($estNouvelAdherent) {
+            $request->session()->put("paiement1_done_{$token}", true);
+            return redirect()->route('adhesion.show', ['token' => $token, 'step' => 10]);
+        }
+
         return redirect()->route('adhesion.show', ['token' => $token, 'step' => 11]);
+    }
+
+    public function helloassoCheckout2(Request $request, string $token)
+    {
+        abort_if(!$request->session()->has("adhesion_{$token}"), 403);
+
+        $isSandbox  = config('services.helloasso.sandbox', true);
+        $basePublic = $isSandbox
+            ? 'https://www.helloasso-sandbox.com'
+            : 'https://www.helloasso.com';
+        $orgSlug  = config('services.helloasso.org_slug');
+        $formSlug = env('HELLOASSO_MEMBERSHIP_FORM_SLUG');
+
+        $url = "{$basePublic}/associations/{$orgSlug}/adhesions/{$formSlug}";
+
+        Log::info("HelloAsso checkout2 : redirection vers la page officielle d'adhésion", ['url' => $url]);
+
+        return redirect($url);
+    }
+
+    public function helloassoReturn2(Request $request, $token, $status)
+    {
+        if ($status === 'cancel' || $status === 'error') {
+            $request->session()->put("paiement1_done_{$token}", true);
+            return redirect()->route('adhesion.show', ['token' => $token, 'step' => 10])
+                             ->withErrors(['helloasso2' => 'Le paiement de la cotisation a été annulé. Vous pouvez réessayer.']);
+        }
+
+        $formData = $request->session()->get("adhesion_{$token}", []);
+        $formData['_last_completed'] = 11;
+        $request->session()->put("adhesion_{$token}", $formData);
+
+        return redirect()->route('adhesion.show', ['token' => $token, 'step' => 11]);
+    }
+    public function helloassoWebhook(Request $request)
+    {
+        $payload = $request->all();
+
+        Log::info('HelloAsso webhook reçu', $payload);
+
+        $eventType = $payload['eventType'] ?? null;
+        $state     = $payload['data']['state'] ?? null;
+
+        if ($eventType !== 'Payment' || $state !== 'Authorized') {
+            return response()->json(['status' => 'ignored'], 200);
+        }
+
+        $email     = $payload['data']['payer']['email']  ?? null;
+        $firstName = $payload['data']['payer']['firstName'] ?? null;
+        $lastName  = $payload['data']['payer']['lastName']  ?? null;
+        $amount    = ($payload['data']['amount'] ?? 0) / 100;
+        $formSlug  = $payload['data']['order']['formSlug'] ?? null;
+        $orderId   = $payload['data']['order']['id'] ?? null;
+
+        Log::info('HelloAsso paiement adhésion reçu', [
+            'email'     => $email,
+            'nom'       => "{$firstName} {$lastName}",
+            'montant'   => $amount,
+            'formSlug'  => $formSlug,
+            'orderId'   => $orderId,
+        ]);
+
+        if ($email) {
+            $adherent = \App\Models\Adherent::where('mail', $email)->first();
+            if ($adherent) {
+                Log::info('HelloAsso webhook : adhérent trouvé', [
+                    'id'             => $adherent->id,
+                    'numero_adherent'=> $adherent->numero_adherent,
+                ]);
+            } else {
+                Log::warning('HelloAsso webhook : aucun adhérent trouvé pour ' . $email);
+            }
+        }
+
+        return response()->json(['status' => 'ok'], 200);
     }
 }
