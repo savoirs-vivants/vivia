@@ -6,13 +6,22 @@
 
     @php
         $horairesPlats = [];
+        $stageData = [];
+
         if (is_array($activite->horaires)) {
-            foreach ($activite->horaires as $jour => $plagesStr) {
-                $plages = explode(', ', $plagesStr);
-                foreach ($plages as $p) {
-                    $parts = explode('-', $p);
-                    if (count($parts) === 2) {
-                        $horairesPlats[] = ['jour' => $jour, 'debut' => $parts[0], 'fin' => $parts[1]];
+            if ($activite->type === 'stage' && isset($activite->horaires['stage'])) {
+                $stageData = $activite->horaires['stage'];
+            } else {
+                foreach ($activite->horaires as $jour => $plagesStr) {
+                    if ($jour === 'stage') {
+                        continue;
+                    }
+                    $plages = explode(', ', $plagesStr);
+                    foreach ($plages as $p) {
+                        $parts = explode('-', $p);
+                        if (count($parts) === 2) {
+                            $horairesPlats[] = ['jour' => $jour, 'debut' => trim($parts[0]), 'fin' => trim($parts[1])];
+                        }
                     }
                 }
             }
@@ -25,7 +34,7 @@
             });
     @endphp
 
-    <div class="max-w-3xl mx-auto">
+    <div class="max-w-3xl mx-auto" x-data="{ typeActivite: '{{ old('type', $activite->type) }}' }">
         <div class="flex items-center gap-2 text-xs text-gray-400 mb-6 pl-1">
             <a href="{{ route('activites.index') }}" class="hover:text-[#222A60] transition-colors font-medium">Activités</a>
             <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -58,13 +67,12 @@
                         <div class="grid grid-cols-2 gap-4">
                             <label class="relative cursor-pointer group">
                                 <input type="radio" name="type" value="activite" class="peer sr-only"
-                                    {{ old('type', $activite->type) === 'activite' ? 'checked' : '' }}
-                                    onchange="updateTypeUI()">
-                                <div class="p-4 rounded-xl border-2 border-gray-100 bg-white transition-all peer-checked:border-[#222A60] peer-checked:bg-[#222A60]/5 hover:border-gray-200"
-                                    id="card-activite">
+                                    x-model="typeActivite">
+                                <div
+                                    class="p-4 rounded-xl border-2 border-gray-100 bg-white transition-all peer-checked:border-[#222A60] peer-checked:bg-[#222A60]/5 hover:border-gray-200">
                                     <div class="flex items-center gap-3">
-                                        <div class="w-10 h-10 rounded-lg flex items-center justify-center transition-colors bg-[#222A60]/10 text-[#222A60]"
-                                            id="icon-activite">
+                                        <div
+                                            class="w-10 h-10 rounded-lg flex items-center justify-center transition-colors bg-[#222A60]/10 text-[#222A60]">
                                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                                     d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
@@ -79,13 +87,12 @@
 
                             <label class="relative cursor-pointer group">
                                 <input type="radio" name="type" value="stage" class="peer sr-only"
-                                    {{ old('type', $activite->type) === 'stage' ? 'checked' : '' }}
-                                    onchange="updateTypeUI()">
-                                <div class="p-4 rounded-xl border-2 border-gray-100 bg-white transition-all peer-checked:border-amber-500 peer-checked:bg-amber-50 hover:border-gray-200"
-                                    id="card-stage">
+                                    x-model="typeActivite">
+                                <div
+                                    class="p-4 rounded-xl border-2 border-gray-100 bg-white transition-all peer-checked:border-amber-500 peer-checked:bg-amber-50 hover:border-gray-200">
                                     <div class="flex items-center gap-3">
-                                        <div class="w-10 h-10 rounded-lg flex items-center justify-center transition-colors bg-gray-100 text-gray-400"
-                                            id="icon-stage">
+                                        <div
+                                            class="w-10 h-10 rounded-lg flex items-center justify-center transition-colors bg-gray-100 text-gray-400">
                                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                                     d="M13 10V3L4 14h7v7l9-11h-7z" />
@@ -106,18 +113,19 @@
                                 l'événement <span class="text-rose-500">*</span></label>
                             <input type="text" name="nom" value="{{ old('nom', $activite->nom) }}" required
                                 class="w-full px-4 py-3 bg-gray-50 border border-gray-100 rounded-xl text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-[#16987C]/30 focus:border-[#16987C]/40">
+                            @error('nom')
+                                <span class="text-xs text-rose-500 mt-1">{{ $message }}</span>
+                            @enderror
                         </div>
 
-                        {{-- BLOC : Gestionnaires avec recherche dynamique --}}
                         <div class="md:col-span-2" x-data="gestionnaireSearch()">
-                            <label class="block text-xs font-black text-gray-400 uppercase tracking-widest mb-2">
-                                Gestionnaire(s) associé(s) <span class="text-rose-500">*</span>
-                            </label>
-
+                            <label
+                                class="block text-xs font-black text-gray-400 uppercase tracking-widest mb-2">Gestionnaire(s)
+                                associé(s) <span class="text-rose-500">*</span></label>
                             <div class="flex flex-wrap gap-2 mb-3">
                                 <template x-for="user in selectedUsers" :key="user.id">
                                     <div
-                                        class="inline-flex items-center gap-2 px-3 py-1.5 bg-[#222A60] text-white text-xs font-bold rounded-lg shadow-sm animate-in fade-in zoom-in duration-200">
+                                        class="inline-flex items-center gap-2 px-3 py-1.5 bg-[#222A60] text-white text-xs font-bold rounded-lg shadow-sm">
                                         <span x-text="user.firstname + ' ' + user.name"></span>
                                         <button type="button" @click="removeUser(user.id)"
                                             class="hover:text-rose-400 transition-colors">
@@ -130,7 +138,6 @@
                                         <input type="hidden" name="gestionnaires[]" :value="user.id">
                                     </div>
                                 </template>
-
                                 <template x-if="selectedUsers.length === 0">
                                     <span class="text-xs text-gray-400 italic">Aucun gestionnaire sélectionné</span>
                                 </template>
@@ -153,10 +160,8 @@
                                     <template x-for="user in results" :key="user.id">
                                         <button type="button" @click="addUser(user)"
                                             class="w-full px-4 py-3 text-left text-sm hover:bg-gray-50 flex items-center justify-between group transition-colors">
-                                            <div>
-                                                <span class="font-bold text-[#0F143A]"
-                                                    x-text="user.firstname + ' ' + user.name"></span>
-                                            </div>
+                                            <div><span class="font-bold text-[#0F143A]"
+                                                    x-text="user.firstname + ' ' + user.name"></span></div>
                                             <svg class="w-4 h-4 text-gray-300 group-hover:text-[#16987C] transition-colors"
                                                 fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3"
@@ -166,7 +171,6 @@
                                     </template>
                                 </div>
                             </div>
-
                             @error('gestionnaires')
                                 <span class="text-xs text-rose-500 mt-1">{{ $message }}</span>
                             @enderror
@@ -194,11 +198,10 @@
                                 class="w-full px-4 py-3 bg-gray-50 border border-gray-100 rounded-xl text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-[#16987C]/30 focus:border-[#16987C]/40">
                         </div>
 
-                        <div class="md:col-span-2 p-5 bg-gray-50/50 rounded-xl border border-gray-100">
-                            <div class="flex items-center justify-between mb-4">
-                                <h3 class="text-sm font-bold text-[#0F143A]">Créneaux horaires</h3>
-                            </div>
-
+                        <div x-show="typeActivite === 'activite'"
+                            class="md:col-span-2 p-5 bg-gray-50/50 rounded-xl border border-gray-100"
+                            style="display: none;">
+                            <h3 class="text-sm font-bold text-[#0F143A] mb-4">Créneaux horaires</h3>
                             <div id="horaires-container" class="space-y-3">
                                 @forelse($horairesPlats as $index => $horaire)
                                     <div
@@ -207,7 +210,7 @@
                                             <select name="jours[]"
                                                 class="w-full px-3 py-2 bg-gray-50 border border-gray-100 rounded-lg text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-[#16987C]/30">
                                                 <option value="">Choisir un jour...</option>
-                                                @foreach (['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche', 'Tous les jours', 'Lundi au Vendredi'] as $jour)
+                                                @foreach (['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche'] as $jour)
                                                     <option value="{{ $jour }}"
                                                         {{ $horaire['jour'] === $jour ? 'selected' : '' }}>
                                                         {{ $jour }}</option>
@@ -238,7 +241,7 @@
                                             <select name="jours[]"
                                                 class="w-full px-3 py-2 bg-gray-50 border border-gray-100 rounded-lg text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-[#16987C]/30">
                                                 <option value="">Choisir un jour...</option>
-                                                @foreach (['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche', 'Tous les jours', 'Lundi au Vendredi'] as $jour)
+                                                @foreach (['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche'] as $jour)
                                                     <option value="{{ $jour }}">{{ $jour }}</option>
                                                 @endforeach
                                             </select>
@@ -250,55 +253,90 @@
                                             <span class="text-xs font-bold text-gray-400">à</span>
                                             <input type="time" name="fins[]"
                                                 class="flex-1 px-3 py-2 bg-gray-50 border border-gray-100 rounded-lg text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-[#16987C]/30">
-                                            <button type="button"
-                                                class="btn-remove-horaire p-2 text-gray-300 hover:text-rose-500 hover:bg-rose-50 rounded-lg transition-colors invisible">
-                                                <svg class="w-4 h-4" fill="none" stroke="currentColor"
-                                                    viewBox="0 0 24 24">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                        d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                                                </svg>
-                                            </button>
                                         </div>
                                     </div>
                                 @endforelse
                             </div>
                         </div>
+
+                        <div x-show="typeActivite === 'stage'"
+                            class="md:col-span-2 p-5 bg-amber-50/30 rounded-xl border border-amber-100"
+                            style="display: none;">
+                            <h3 class="text-sm font-bold text-[#0F143A] mb-4">Dates du stage</h3>
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <div>
+                                    <label
+                                        class="block text-xs font-black text-amber-700 uppercase tracking-widest mb-1">Du
+                                        (Date de début)</label>
+                                    <input type="date" name="date_debut_stage"
+                                        value="{{ old('date_debut_stage', $stageData['date_debut'] ?? '') }}"
+                                        class="w-full px-3 py-2 bg-white border border-amber-200 rounded-lg text-sm text-gray-700 focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400">
+                                </div>
+                                <div>
+                                    <label
+                                        class="block text-xs font-black text-amber-700 uppercase tracking-widest mb-1">Au
+                                        (Date de fin)</label>
+                                    <input type="date" name="date_fin_stage"
+                                        value="{{ old('date_fin_stage', $stageData['date_fin'] ?? '') }}"
+                                        class="w-full px-3 py-2 bg-white border border-amber-200 rounded-lg text-sm text-gray-700 focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400">
+                                </div>
+                                <div>
+                                    <label
+                                        class="block text-xs font-black text-amber-700 uppercase tracking-widest mb-1">Heure
+                                        de début</label>
+                                    <input type="time" name="heure_debut_stage"
+                                        value="{{ old('heure_debut_stage', $stageData['heure_debut'] ?? '') }}"
+                                        class="w-full px-3 py-2 bg-white border border-amber-200 rounded-lg text-sm text-gray-700">
+                                </div>
+                                <div>
+                                    <label
+                                        class="block text-xs font-black text-amber-700 uppercase tracking-widest mb-1">Heure
+                                        de fin</label>
+                                    <input type="time" name="heure_fin_stage"
+                                        value="{{ old('heure_fin_stage', $stageData['heure_fin'] ?? '') }}"
+                                        class="w-full px-3 py-2 bg-white border border-amber-200 rounded-lg text-sm text-gray-700">
+                                </div>
+                            </div>
+                        </div>
                     </div>
 
-                    @include('activites._classes_picker', ['selectedClasses' => old('classes', $activite->classes ?? [])])
+                    @include('activites._classes_picker', [
+                        'selectedClasses' => old('classes', $activite->classes ?? []),
+                    ])
 
-                    @php
-                        $currentDossierAction = old('dossier_action', $activite->id_dossier ? 'existing' : 'none');
-                    @endphp
+                    @php $currentDossierAction = old('dossier_action', $activite->id_dossier ? 'existing' : 'none'); @endphp
                     <div x-data="{ dossierAction: '{{ $currentDossierAction }}' }">
                         <span class="block text-xs font-black text-gray-400 uppercase tracking-widest mb-3">Dossier</span>
                         <div class="space-y-2 p-4 bg-gray-50/50 rounded-xl border border-gray-100">
 
                             <label class="flex items-center gap-3 cursor-pointer group">
-                                <input type="radio" name="dossier_action" value="none" x-model="dossierAction" class="sr-only peer">
-                                <div class="w-4 h-4 rounded-full border-2 border-gray-300 peer-checked:border-[#222A60] peer-checked:bg-[#222A60] flex items-center justify-center flex-shrink-0 transition-colors">
+                                <input type="radio" name="dossier_action" value="none" x-model="dossierAction"
+                                    class="sr-only peer">
+                                <div
+                                    class="w-4 h-4 rounded-full border-2 border-gray-300 peer-checked:border-[#222A60] peer-checked:bg-[#222A60] flex items-center justify-center flex-shrink-0 transition-colors">
                                     <div class="w-1.5 h-1.5 rounded-full bg-white"></div>
                                 </div>
                                 <span class="text-sm text-gray-600 font-medium">Aucun dossier</span>
                             </label>
 
-                            @if($dossiers->isNotEmpty())
-                                <label class="flex items-start gap-3 cursor-pointer group">
-                                    <input type="radio" name="dossier_action" value="existing" x-model="dossierAction" class="sr-only peer">
-                                    <div class="w-4 h-4 rounded-full border-2 border-gray-300 peer-checked:border-[#222A60] peer-checked:bg-[#222A60] flex items-center justify-center flex-shrink-0 transition-colors mt-0.5">
+                            @if (isset($dossiers) && $dossiers->isNotEmpty())
+                                <label class="flex items-start gap-3 cursor-pointer group mt-2">
+                                    <input type="radio" name="dossier_action" value="existing" x-model="dossierAction"
+                                        class="sr-only peer">
+                                    <div
+                                        class="w-4 h-4 rounded-full border-2 border-gray-300 peer-checked:border-[#222A60] peer-checked:bg-[#222A60] flex items-center justify-center flex-shrink-0 transition-colors mt-0.5">
                                         <div class="w-1.5 h-1.5 rounded-full bg-white"></div>
                                     </div>
                                     <div class="flex-1">
                                         <span class="text-sm text-gray-600 font-medium">Dossier existant</span>
-                                        <div x-show="dossierAction === 'existing'" class="mt-2">
+                                        <div x-show="dossierAction === 'existing'" class="mt-2" style="display: none;">
                                             <select name="id_dossier"
                                                 class="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-[#16987C]/30 focus:border-[#16987C]/40">
                                                 <option value="">Choisir un dossier...</option>
-                                                @foreach($dossiers as $d)
+                                                @foreach ($dossiers as $d)
                                                     <option value="{{ $d->id }}"
                                                         {{ old('id_dossier', $activite->id_dossier) == $d->id ? 'selected' : '' }}>
-                                                        {{ $d->nom }}
-                                                    </option>
+                                                        {{ $d->nom }}</option>
                                                 @endforeach
                                             </select>
                                         </div>
@@ -306,16 +344,18 @@
                                 </label>
                             @endif
 
-                            <label class="flex items-start gap-3 cursor-pointer group">
-                                <input type="radio" name="dossier_action" value="new" x-model="dossierAction" class="sr-only peer">
-                                <div class="w-4 h-4 rounded-full border-2 border-gray-300 peer-checked:border-[#222A60] peer-checked:bg-[#222A60] flex items-center justify-center flex-shrink-0 transition-colors mt-0.5">
+                            <label class="flex items-start gap-3 cursor-pointer group mt-2">
+                                <input type="radio" name="dossier_action" value="new" x-model="dossierAction"
+                                    class="sr-only peer">
+                                <div
+                                    class="w-4 h-4 rounded-full border-2 border-gray-300 peer-checked:border-[#222A60] peer-checked:bg-[#222A60] flex items-center justify-center flex-shrink-0 transition-colors mt-0.5">
                                     <div class="w-1.5 h-1.5 rounded-full bg-white"></div>
                                 </div>
                                 <div class="flex-1">
                                     <span class="text-sm text-gray-600 font-medium">Créer un nouveau dossier</span>
-                                    <div x-show="dossierAction === 'new'" class="mt-2">
-                                        <input type="text" name="nouveau_dossier" value="{{ old('nouveau_dossier') }}"
-                                            placeholder="Nom du dossier..."
+                                    <div x-show="dossierAction === 'new'" class="mt-2" style="display: none;">
+                                        <input type="text" name="nouveau_dossier"
+                                            value="{{ old('nouveau_dossier') }}" placeholder="Nom du dossier..."
                                             class="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm text-gray-700 placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-[#16987C]/30 focus:border-[#16987C]/40">
                                     </div>
                                 </div>
@@ -326,9 +366,7 @@
 
                     <div class="flex items-center justify-end gap-3 pt-6 border-t border-gray-50 mt-8">
                         <a href="{{ route('activites.show', $activite) }}"
-                            class="px-5 py-2.5 text-sm font-bold text-gray-500 hover:text-[#0F143A] transition-colors">
-                            Annuler
-                        </a>
+                            class="px-5 py-2.5 text-sm font-bold text-gray-500 hover:text-[#0F143A] transition-colors">Annuler</a>
                         <button type="submit"
                             class="inline-flex items-center gap-2 px-6 py-2.5 bg-[#222A60] hover:bg-[#1a2050] text-white text-sm font-bold rounded-xl transition-all shadow-sm">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -348,7 +386,6 @@
             return {
                 query: '',
                 results: [],
-                // On initialise avec les données PHP converties en JSON
                 selectedUsers: @json($selectedUsers),
 
                 search() {
@@ -359,7 +396,6 @@
                     fetch(`{{ route('users.search') }}?q=${this.query}`)
                         .then(response => response.json())
                         .then(data => {
-                            // On filtre les résultats pour ne pas proposer ceux déjà sélectionnés
                             this.results = data.filter(user => !this.selectedUsers.find(s => s.id === user.id));
                         });
                 },
@@ -376,5 +412,4 @@
             }
         }
     </script>
-
 @endsection

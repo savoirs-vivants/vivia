@@ -77,18 +77,27 @@ class ActiviteController extends Controller
         ]);
 
         $horaires = [];
-        $jours = $request->input('jours', []);
-        $debuts = $request->input('debuts', []);
-        $fins = $request->input('fins', []);
 
-        foreach ($jours as $index => $jour) {
-            if (!empty($jour) && !empty($debuts[$index]) && !empty($fins[$index])) {
-                $plage = $debuts[$index] . '-' . $fins[$index];
+        if ($validated['type'] === 'stage') {
+            $horaires['stage'] = [
+                'date_debut'  => $request->input('date_debut_stage'),
+                'date_fin'    => $request->input('date_fin_stage'),
+                'heure_debut' => $request->input('heure_debut_stage'),
+                'heure_fin'   => $request->input('heure_fin_stage'),
+            ];
+        } else {
+            $jours = $request->input('jours', []);
+            $debuts = $request->input('debuts', []);
+            $fins = $request->input('fins', []);
 
-                if (isset($horaires[$jour])) {
-                    $horaires[$jour] .= ', ' . $plage;
-                } else {
-                    $horaires[$jour] = $plage;
+            foreach ($jours as $index => $jour) {
+                if (!empty($jour) && !empty($debuts[$index]) && !empty($fins[$index])) {
+                    $plage = $debuts[$index] . '-' . $fins[$index];
+                    if (isset($horaires[$jour])) {
+                        $horaires[$jour] .= ', ' . $plage;
+                    } else {
+                        $horaires[$jour] = $plage;
+                    }
                 }
             }
         }
@@ -283,17 +292,27 @@ class ActiviteController extends Controller
         ]);
 
         $horaires = [];
-        $jours = $request->input('jours', []);
-        $debuts = $request->input('debuts', []);
-        $fins = $request->input('fins', []);
 
-        foreach ($jours as $index => $jour) {
-            if (!empty($jour) && !empty($debuts[$index]) && !empty($fins[$index])) {
-                $plage = $debuts[$index] . '-' . $fins[$index];
-                if (isset($horaires[$jour])) {
-                    $horaires[$jour] .= ', ' . $plage;
-                } else {
-                    $horaires[$jour] = $plage;
+        if ($validated['type'] === 'stage') {
+            $horaires['stage'] = [
+                'date_debut'  => $request->input('date_debut_stage'),
+                'date_fin'    => $request->input('date_fin_stage'),
+                'heure_debut' => $request->input('heure_debut_stage'),
+                'heure_fin'   => $request->input('heure_fin_stage'),
+            ];
+        } else {
+            $jours = $request->input('jours', []);
+            $debuts = $request->input('debuts', []);
+            $fins = $request->input('fins', []);
+
+            foreach ($jours as $index => $jour) {
+                if (!empty($jour) && !empty($debuts[$index]) && !empty($fins[$index])) {
+                    $plage = $debuts[$index] . '-' . $fins[$index];
+                    if (isset($horaires[$jour])) {
+                        $horaires[$jour] .= ', ' . $plage;
+                    } else {
+                        $horaires[$jour] = $plage;
+                    }
                 }
             }
         }

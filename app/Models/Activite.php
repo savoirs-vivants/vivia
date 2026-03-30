@@ -154,6 +154,21 @@ class Activite extends Model
             return [];
         }
 
+        if ($this->type === 'stage' || isset($horaires['stage'])) {
+            $data = $horaires['stage'] ?? [];
+            if (empty($data['date_debut']) || empty($data['date_fin'])) {
+                return [];
+            }
+
+            $dateDebut = \Carbon\Carbon::parse($data['date_debut'])->format('d/m/Y');
+            $dateFin   = \Carbon\Carbon::parse($data['date_fin'])->format('d/m/Y');
+            $hDebut    = $data['heure_debut'] ?? '';
+            $hFin      = $data['heure_fin'] ?? '';
+
+            return [
+                "Du {$dateDebut} au {$dateFin} ({$hDebut} - {$hFin})"
+            ];
+        }
         return array_map(
             fn($jour, $plage) => "{$jour} {$plage}",
             array_keys($horaires),
