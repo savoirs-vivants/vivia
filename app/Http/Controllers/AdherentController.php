@@ -160,4 +160,15 @@ class AdherentController extends Controller
             ->route('adherents.index', ['tab' => $tab])
             ->with('success', $adherent->prenom . ' ' . $adherent->nom . ' — ' . strtolower($statut) . '.');
     }
+
+    public function downloadPdf(Adherent $adherent)
+    {
+        $adherent->load(['tousLesTuteurs', 'activitesActives', 'inscription', 'paiements']);
+
+        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('adherents.pdf', compact('adherent'));
+
+        $fileName = 'fiche_' . \Illuminate\Support\Str::slug($adherent->prenom . '_' . $adherent->nom) . '.pdf';
+
+        return $pdf->download($fileName);
+    }
 }
