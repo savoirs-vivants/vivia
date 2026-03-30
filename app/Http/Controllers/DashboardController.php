@@ -165,7 +165,6 @@ class DashboardController extends Controller
     {
         $seanceData = DB::table('seances')->where('id_seance', $seance)->first();
         abort_if(!$seanceData, 404);
-        abort_if($seanceData->statut === 'terminee', 422, 'Séance déjà terminée.');
 
         $mesActivitesIds = DB::table('activites_gestionnaire')
             ->where('id_users', Auth::id())
@@ -176,23 +175,24 @@ class DashboardController extends Controller
 
         $absents = $request->input('absents', []);
 
+        DB::table('presence')->where('id_seance', $seance)->delete();
+
         foreach ($absents as $absent) {
             $idAdherent = (int) ($absent['id_adherent'] ?? 0);
             if (!$idAdherent) continue;
 
-            DB::table('presence')->updateOrInsert(
-                ['id_adherent' => $idAdherent, 'id_seance' => $seance],
-                [
-                    'statut'     => 'Absent',
-                    'raison'     => $absent['motif'] ?? null,
-                    'created_at' => now(),
-                    'updated_at' => now(),
-                ]
-            );
+            DB::table('presence')->insert([
+                'id_adherent' => $idAdherent,
+                'id_seance'   => $seance,
+                'statut'      => 'Absent',
+                'raison'      => $absent['motif'] ?? null,
+                'created_at'  => now(),
+                'updated_at'  => now(),
+            ]);
         }
 
         DB::table('seances')->where('id_seance', $seance)->update([
-            'statut'     => 'appel_fait',
+            'statut'     => 'terminee',
             'updated_at' => now(),
         ]);
 

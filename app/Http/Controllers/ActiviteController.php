@@ -129,12 +129,19 @@ class ActiviteController extends Controller
 
         $seances = $activite->seances()
             ->with('presences')
-            ->where('date', '<=', now()->toDateString())
+            ->where(function($q) {
+                $q->where('date', '<=', now())
+                  ->orWhere('statut', 'terminee');
+            })
             ->orderByDesc('date')
             ->get();
 
         $seancesAVenir = $activite->seances()
-            ->where('date', '>', now()->toDateString())
+            ->where('date', '>', now())
+            ->where(function($q) {
+                $q->where('statut', '!=', 'terminee')
+                  ->orWhereNull('statut');
+            })
             ->orderBy('date')
             ->get();
 
