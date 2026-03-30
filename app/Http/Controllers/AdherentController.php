@@ -23,11 +23,16 @@ class AdherentController extends Controller
                     ->orWhere('nom',   'like', "%{$search}%")
                     ->orWhere('mail',  'like', "%{$search}%");
             }))
-            ->when(
-                $filterSource && $filterSource !== 'Tous',
-                fn($q) =>
-                $q->whereHas('paiements', fn($q) => $q->where('source', $filterSource))
-            );
+            ->when($filterSource && $filterSource !== 'Tous', function ($q) use ($filterSource) {
+                if ($filterSource === 'Interne') {
+                    $q->where(function ($sub) {
+                        $sub->whereHas('paiements', fn($p) => $p->where('source', 'Interne')->orWhereNull('source'))
+                            ->orWhereDoesntHave('paiements');
+                    });
+                } else {
+                    $q->whereHas('paiements', fn($p) => $p->where('source', $filterSource));
+                }
+            });
 
         $queryPayes = (clone $base)
             ->whereHas('inscriptions', fn($q) => $q->where('a_paye', Inscription::PAYE));

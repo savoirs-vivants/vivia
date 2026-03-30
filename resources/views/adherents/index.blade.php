@@ -180,16 +180,6 @@
                                 <p class="text-xs text-gray-400">Le statut passera en <span class="font-bold text-amber-600">Partiel</span> jusqu'au solde complet.</p>
                             </div>
                         </div>
-
-                        {{-- Commentaire --}}
-                        <div>
-                            <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Note interne</p>
-                            <textarea x-model="commentaire"
-                                      rows="2"
-                                      placeholder="Ex : 1er chèque reçu le 12/03, 2e attendu fin mars..."
-                                      class="w-full px-3 py-2.5 bg-gray-50 border border-gray-100 rounded-xl text-sm text-gray-700 placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-[#16987C]/30 focus:border-[#16987C]/40 transition-all resize-none">
-                            </textarea>
-                        </div>
                     </div>
                 </template>
 
@@ -269,7 +259,7 @@
             @if ($tab === 'attente')
                 <div class="flex items-center gap-2 flex-wrap">
                     <span class="text-xs font-bold text-gray-400 uppercase tracking-widest mr-1">Source</span>
-                    @foreach (['Tous', 'HelloAsso', 'Espèces', 'Chèque', 'Virement'] as $src)
+                    @foreach (['Tous', 'HelloAsso', 'Interne', 'Pass Culture'] as $src)
                         <a href="{{ route('adherents.index', array_merge(request()->all(), ['source' => $src === 'Tous' ? null : $src, 'page' => 1])) }}"
                            class="px-3 py-1.5 rounded-lg text-xs font-bold transition-all duration-150 {{ ($filterSource ?? 'Tous') === $src ? 'bg-[#222A60] text-white shadow-sm' : 'bg-gray-100 text-gray-500 hover:bg-gray-200 hover:text-gray-700' }}">
                             {{ $src }}
@@ -369,20 +359,15 @@
                             @if ($tab === 'attente' || $tab === 'partiel')
                                 <td class="px-4 py-4">
                                     @php
-                                        $source = $adherent->paiements->first()?->source;
+                                        $source = $adherent->paiements->first()?->source ?: 'Interne';
                                         $sourceStyle = match ($source) {
-                                            'HelloAsso' => 'bg-[#16987C]/10 text-[#16987C]',
-                                            'Virement'  => 'bg-blue-50 text-blue-600',
-                                            'Chèque'    => 'bg-amber-50 text-amber-600',
-                                            'Espèces'   => 'bg-orange-50 text-orange-600',
-                                            default     => null,
+                                            'HelloAsso'    => 'bg-[#16987C]/10 text-[#16987C]',
+                                            'Interne'     => 'bg-blue-50 text-blue-600',
+                                            'Pass Culture' => 'bg-purple-50 text-purple-600',
+                                            default        => 'bg-gray-100 text-gray-600',
                                         };
                                     @endphp
-                                    @if ($source && $sourceStyle)
-                                        <span class="inline-flex px-2.5 py-1 rounded-lg text-xs font-bold {{ $sourceStyle }}">{{ $source }}</span>
-                                    @else
-                                        <span class="text-xs text-gray-300">—</span>
-                                    @endif
+                                    <span class="inline-flex px-2.5 py-1 rounded-lg text-xs font-bold {{ $sourceStyle }}">{{ $source }}</span>
                                 </td>
 
                                 <td class="px-4 py-4 text-right">
@@ -399,8 +384,8 @@
                                             / {{ number_format($totalAttendu, 2, ',', ' ') }} €
                                         </span>
                                     @else
-                                        @if ($adherent->montant_total > 0)
-                                            <span class="font-black text-sm text-[#0F143A]">{{ number_format($adherent->montant_total, 2, ',', ' ') }} €</span>
+                                        @if ($adherent->inscription && $adherent->inscription->montant > 0)
+                                            <span class="font-black text-sm text-[#0F143A]">{{ number_format($adherent->inscription->montant, 2, ',', ' ') }} €</span>
                                         @else
                                             <span class="text-xs text-gray-300">—</span>
                                         @endif
@@ -415,6 +400,9 @@
                             <td class="px-6 py-4">
                                 <div class="flex items-center justify-end gap-2">
                                     @if ($tab === 'attente' || $tab === 'partiel')
+                                    @php
+                                            $modalSource = $adherent->paiements->first()?->source ?: 'Interne';
+                                    @endphp
                                         <button
                                             @click="ouvrirModal({{ json_encode([
                                                 'id'          => $adherent->id,
@@ -422,15 +410,14 @@
                                                 'initiales'   => $adherent->initiales,
                                                 'couleur'     => $adherent->couleur_avatar,
                                                 'meta'        => ($adherent->tranche_age ?? 'Adulte') . ' · Inscrit le ' . ($adherent->inscription?->date_inscription?->isoFormat('D MMM YYYY') ?? ''),
-                                                'source'      => $adherent->paiements->first()?->source ?? '',
+                                                'source'      => $modalSource,
                                                 'sourceClass' => match($adherent->paiements->first()?->source) {
                                                     'HelloAsso' => 'bg-[#16987C]/10 text-[#16987C]',
-                                                    'Virement'  => 'bg-blue-50 text-blue-600',
-                                                    'Chèque'    => 'bg-amber-50 text-amber-600',
-                                                    'Espèces'   => 'bg-orange-50 text-orange-600',
+                                                    'Interne'  => 'bg-blue-50 text-blue-600',
+                                                    'Pass Culture'    => 'bg-amber-50 text-amber-600',
                                                     default     => 'bg-gray-100 text-gray-400',
                                                 },
-                                                'montant'      => number_format($adherent->montant_total, 2, ',', ' ') . ' €',
+                                                'montant'      => number_format((float) ($adherent->inscription?->montant ?? 0), 2, ',', ' ') . ' €',
                                                 'refFacture'   => $adherent->paiements->first()?->ref_facture ?? '',
                                                 'datePaiement' => $adherent->paiements->first()?->date_paiement?->isoFormat('D MMM YYYY') ?? '',
                                                 'commentaire'  => $adherent->commentaire ?? '',
