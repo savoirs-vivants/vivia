@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\ActiviteController;
 use App\Http\Controllers\AdherentController;
+use App\Http\Controllers\AdherentFormulaireController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\BackOfficeController;
 use App\Http\Controllers\DashboardController;
@@ -28,15 +29,15 @@ Route::post('/mot-de-passe-oublie', [PasswordResetController::class, 'sendReset'
 Route::get('/reinitialiser/{token}/{email}', [PasswordResetController::class, 'showReset'])->name('password.reset');
 Route::post('/reinitialiser', [PasswordResetController::class, 'reset'])->name('password.update');
 
-Route::get('/adhesion', [App\Http\Controllers\AdherentFormulaireController::class, 'index'])->name('adhesion.index');
-Route::post('/adhesion/recup-numero', [App\Http\Controllers\AdherentFormulaireController::class, 'envoyerCodeRecup'])->name('adhesion.recup');
-Route::get('/adhesion/{token}',  [App\Http\Controllers\AdherentFormulaireController::class, 'show'])->name('adhesion.show');
-Route::post('/adhesion/{token}', [App\Http\Controllers\AdherentFormulaireController::class, 'next'])->name('adhesion.next');
-Route::get('/adhesion/{token}/helloasso/{status}', [App\Http\Controllers\AdherentFormulaireController::class, 'helloassoReturn'])->name('adhesion.helloasso.return');
-Route::post('/adhesion/{token}/helloasso2', [App\Http\Controllers\AdherentFormulaireController::class, 'helloassoCheckout2'])->name('adhesion.helloasso2.checkout');
-Route::get('/adhesion/{token}/helloasso2/{status}', [App\Http\Controllers\AdherentFormulaireController::class, 'helloassoReturn2'])->name('adhesion.helloasso2.return');
-Route::post('/adhesion/{token}/verifier-cotisation', [App\Http\Controllers\AdherentFormulaireController::class, 'verifierCotisation'])->name('adhesion.verifier.cotisation');
-Route::post('/adhesion/helloasso/webhook', [App\Http\Controllers\AdherentFormulaireController::class, 'helloassoWebhook'])->name('adhesion.helloasso.webhook');
+Route::get('/adhesion', [AdherentFormulaireController::class, 'index'])->name('adhesion.index');
+Route::post('/adhesion/recup-numero', [AdherentFormulaireController::class, 'envoyerCodeRecup'])->name('adhesion.recup');
+Route::get('/adhesion/{token}',  [AdherentFormulaireController::class, 'show'])->name('adhesion.show');
+Route::post('/adhesion/{token}', [AdherentFormulaireController::class, 'next'])->name('adhesion.next');
+Route::get('/adhesion/{token}/helloasso/{status}', [AdherentFormulaireController::class, 'helloassoReturn'])->name('adhesion.helloasso.return');
+Route::post('/adhesion/{token}/helloasso2', [AdherentFormulaireController::class, 'helloassoCheckout2'])->name('adhesion.helloasso2.checkout');
+Route::get('/adhesion/{token}/helloasso2/{status}', [AdherentFormulaireController::class, 'helloassoReturn2'])->name('adhesion.helloasso2.return');
+Route::post('/adhesion/{token}/verifier-cotisation', [AdherentFormulaireController::class, 'verifierCotisation'])->name('adhesion.verifier.cotisation');
+Route::post('/adhesion/helloasso/webhook', [AdherentFormulaireController::class, 'helloassoWebhook'])->name('adhesion.helloasso.webhook');
 
 
 Route::middleware('auth')->group(function () {
@@ -56,12 +57,13 @@ Route::middleware('auth')->group(function () {
     Route::get('/adherents/{adherent}', [AdherentController::class, 'show'])->name('adherents.show');
     Route::post('/adherents/{adherent}/commentaire', [AdherentController::class, 'commentaire'])->name('adherents.commentaire');
     Route::post('/adherents/{adherent}/valider', [AdherentController::class, 'valider'])->name('adherents.valider');
+    Route::get('/adherents/{adherent}/pdf', [AdherentController::class, 'downloadPdf'])->name('adherents.pdf');
 
     Route::get('/activites', [ActiviteController::class, 'index'])->name('activites.index');
     Route::get('/activites/create', [ActiviteController::class, 'create'])->name('activites.create');
     Route::post('/activites', [ActiviteController::class, 'store'])->name('activites.store');
     Route::get('/activites/{activite}', [ActiviteController::class, 'show'])->name('activites.show');
-    Route::delete('/activites/{activite}/seances/{seance}/annuler', [App\Http\Controllers\ActiviteController::class, 'annulerSeance'])->name('seances.annuler');
+    Route::delete('/activites/{activite}/seances/{seance}/annuler', [ActiviteController::class, 'annulerSeance'])->name('seances.annuler');
     Route::post('/activites/{activite}/seances/{seance}/presences', [ActiviteController::class, 'storePresences'])->name('activites.presences.store');
     Route::get('/activites/{activite}/edit', [ActiviteController::class, 'edit'])->name('activites.edit');
     Route::put('/activites/{activite}', [ActiviteController::class, 'update'])->name('activites.update');
@@ -71,12 +73,12 @@ Route::middleware('auth')->group(function () {
     Route::post('/dossiers-activite', [DossierActiviteController::class, 'store'])->name('dossiers.store');
     Route::delete('/dossiers-activite/{dossier}', [DossierActiviteController::class, 'destroy'])->name('dossiers.destroy');
 
-    Route::get('/profil/modifier', [App\Http\Controllers\ProfileController::class, 'edit'])->name('profile.edit');
-    Route::put('/profil', [App\Http\Controllers\ProfileController::class, 'update'])->name('profile.update');
-    Route::get('/profil/logs-synchronisation', [App\Http\Controllers\ProfileController::class, 'logs'])->name('profile.logs');
+    Route::get('/profil/modifier', [ProfileController::class, 'edit'])->name('profile.edit');
+    Route::put('/profil', [ProfileController::class, 'update'])->name('profile.update');
+    Route::get('/profil/logs-synchronisation', [ProfileController::class, 'logs'])->name('profile.logs');
 
     Route::get('/statistiques', [StatistiqueController::class, 'index'])->name('statistiques.index');
 
-    Route::get('/users/search', [App\Http\Controllers\ActiviteController::class, 'searchUsers'])->name('users.search');
+    Route::get('/users/search', [ActiviteController::class, 'searchUsers'])->name('users.search');
 
 });
