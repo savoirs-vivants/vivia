@@ -99,7 +99,6 @@ class DashboardController extends Controller
                         'adherents.id',
                         'adherents.nom',
                         'adherents.prenom',
-                        'adherents.id_tuteur'
                     )
                     ->orderBy('adherents.nom')
                     ->orderBy('adherents.prenom')

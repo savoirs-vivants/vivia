@@ -350,8 +350,7 @@ class ActiviteController extends Controller
 
     private function genererSeancesAuto(Activite $activite)
     {
-        $horaires = $activite->horaires;
-
+        $horaires = is_string($activite->horaires) ? json_decode($activite->horaires, true) : $activite->horaires;
         if (empty($horaires)) return;
 
         $joursMap = [
@@ -366,23 +365,35 @@ class ActiviteController extends Controller
 
         $finAnneeScolaire = now()->month >= 9 ? Carbon::create(now()->year + 1, 6, 30) : Carbon::create(now()->year, 8, 30);
 
-        foreach ($horaires as $jour => $plage) {
+        foreach ($horaires as $jour => $plagesStr) {
             if (!isset($joursMap[$jour])) continue;
+
+            $plages = explode(',', $plagesStr);
 
             $dateCourante = now()->next($joursMap[$jour]);
 
             while ($dateCourante->lte($finAnneeScolaire)) {
-                $existe = DB::table('seances')
-                    ->where('id_activite', $activite->id)
-                    ->where('date', $dateCourante->toDateString())
-                    ->exists();
 
-                if (!$existe) {
-                    DB::table('seances')->insert([
-                        'id_activite' => $activite->id,
-                        'date'        => $dateCourante->toDateString(),
-                    ]);
+                foreach ($plages as $plage) {
+                    $plage = trim($plage);
+                    $parts = explode('-', $plage);
+                    $heureDebut = trim($parts[0]);
+
+                    $dateAvecHeure = $dateCourante->format('Y-m-d') . ' ' . $heureDebut . ':00';
+
+                    $existe = DB::table('seances')
+                        ->where('id_activite', $activite->id)
+                        ->where('date', $dateAvecHeure)
+                        ->exists();
+
+                    if (!$existe) {
+                        DB::table('seances')->insert([
+                            'id_activite' => $activite->id,
+                            'date'        => $dateAvecHeure,
+                        ]);
+                    }
                 }
+
                 $dateCourante->addWeek();
             }
         }
