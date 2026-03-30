@@ -500,6 +500,75 @@
 
     </div>
 
+    @if ($tab === 'attente' && $structuresEnAttente->isNotEmpty())
+        <div class="mt-6 bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+            <div class="px-6 py-4 border-b border-gray-100 flex items-center gap-3">
+                <span class="text-lg">🏛️</span>
+                <h3 class="font-bold text-gray-800 text-sm">Structures en attente de validation</h3>
+                <span class="ml-auto px-2.5 py-0.5 bg-rose-100 text-rose-600 text-xs font-black rounded-full">{{ $structuresEnAttente->count() }}</span>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="w-full text-sm">
+                    <thead>
+                        <tr class="bg-gray-50/70">
+                            <th class="px-6 py-3 text-left text-[10px] font-black text-gray-400 uppercase tracking-widest">Structure</th>
+                            <th class="px-4 py-3 text-left text-[10px] font-black text-gray-400 uppercase tracking-widest">Statut</th>
+                            <th class="px-4 py-3 text-left text-[10px] font-black text-gray-400 uppercase tracking-widest">Correspondant</th>
+                            <th class="px-4 py-3 text-left text-[10px] font-black text-gray-400 uppercase tracking-widest">Contact</th>
+                            <th class="px-4 py-3 text-right text-[10px] font-black text-gray-400 uppercase tracking-widest">Montant</th>
+                            <th class="px-4 py-3 text-left text-[10px] font-black text-gray-400 uppercase tracking-widest">Inscription</th>
+                            <th class="px-6 py-3"></th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-50">
+                        @foreach ($structuresEnAttente as $structure)
+                            <tr class="hover:bg-gray-50/70 transition-colors duration-100">
+                                <td class="px-6 py-4">
+                                    <p class="font-bold text-sm text-[#0F143A]">{{ $structure->nom }}</p>
+                                    @if ($structure->sigle)
+                                        <p class="text-xs text-gray-400">{{ $structure->sigle }}</p>
+                                    @endif
+                                </td>
+                                <td class="px-4 py-4">
+                                    @php
+                                        $sjLabel = match($structure->statut_juridique) {
+                                            'tpe_asso' => ['label' => 'TPE/Asso', 'class' => 'bg-indigo-50 text-indigo-600'],
+                                            'esr_pme'  => ['label' => 'ESR/PME',  'class' => 'bg-purple-50 text-purple-600'],
+                                            default    => ['label' => $structure->statut_juridique, 'class' => 'bg-gray-100 text-gray-500'],
+                                        };
+                                    @endphp
+                                    <span class="inline-flex px-2.5 py-1 rounded-lg text-xs font-bold {{ $sjLabel['class'] }}">{{ $sjLabel['label'] }}</span>
+                                    @if ($structure->statut)
+                                        <span class="mt-1 inline-flex px-2 py-0.5 rounded text-[10px] font-semibold bg-gray-100 text-gray-500">{{ ucfirst($structure->statut) }}</span>
+                                    @endif
+                                </td>
+                                <td class="px-4 py-4">
+                                    <p class="text-sm font-semibold text-gray-700">{{ $structure->nom_correspondant ?? '—' }}</p>
+                                </td>
+                                <td class="px-4 py-4">
+                                    @if ($structure->mail)
+                                        <a href="mailto:{{ $structure->mail }}" class="text-xs text-teal-600 hover:underline">{{ $structure->mail }}</a>
+                                    @else
+                                        <span class="text-xs text-gray-300">—</span>
+                                    @endif
+                                </td>
+                                <td class="px-4 py-4 text-right">
+                                    <span class="font-black text-sm text-[#0F143A]">{{ $structure->montant_adhesion }} €</span>
+                                </td>
+                                <td class="px-4 py-4">
+                                    <span class="text-sm text-gray-500">{{ $structure->inscription?->date_inscription?->isoFormat('D MMM YYYY') ?? '—' }}</span>
+                                </td>
+                                <td class="px-6 py-4">
+                                    <span class="inline-flex px-3 py-1.5 bg-amber-100 text-amber-700 rounded-lg text-xs font-bold">En attente</span>
+                                </td>
+                            </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    @endif
+
 </div>
 
 <script>

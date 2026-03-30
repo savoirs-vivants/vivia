@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Adherent;
+use App\Models\AdherentStructure;
 use App\Models\Inscription;
 use App\Models\Presence;
 use Illuminate\Http\Request;
@@ -45,6 +46,19 @@ class AdherentController extends Controller
         $adherentsEnAttente = $queryAttente->orderBy('nom')->paginate(25)->withQueryString();
         $adherentsPartiel   = $queryPartiel->orderBy('nom')->paginate(25)->withQueryString();
 
+        // Structures en attente
+        $structuresEnAttente = AdherentStructure::with(['inscription'])
+            ->whereHas('inscriptions', fn($q) => $q->where('a_paye', Inscription::EN_ATTENTE))
+            ->when($search, fn($q) => $q->where(function ($q) use ($search) {
+                $q->where('nom', 'like', "%{$search}%")
+                  ->orWhere('mail', 'like', "%{$search}%")
+                  ->orWhere('nom_correspondant', 'like', "%{$search}%");
+            }))
+            ->orderBy('nom')
+            ->get();
+
+        $countAttente += $structuresEnAttente->count();
+
         return view('adherents.index', compact(
             'tab',
             'search',
@@ -56,6 +70,7 @@ class AdherentController extends Controller
             'countPayes',
             'countAttente',
             'countPartiel',
+            'structuresEnAttente',
         ));
     }
 
