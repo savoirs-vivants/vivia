@@ -35,6 +35,7 @@ Route::post('/adhesion/{token}', [App\Http\Controllers\AdherentFormulaireControl
 Route::get('/adhesion/{token}/helloasso/{status}', [App\Http\Controllers\AdherentFormulaireController::class, 'helloassoReturn'])->name('adhesion.helloasso.return');
 Route::post('/adhesion/{token}/helloasso2', [App\Http\Controllers\AdherentFormulaireController::class, 'helloassoCheckout2'])->name('adhesion.helloasso2.checkout');
 Route::get('/adhesion/{token}/helloasso2/{status}', [App\Http\Controllers\AdherentFormulaireController::class, 'helloassoReturn2'])->name('adhesion.helloasso2.return');
+Route::post('/adhesion/{token}/verifier-cotisation', [App\Http\Controllers\AdherentFormulaireController::class, 'verifierCotisation'])->name('adhesion.verifier.cotisation');
 Route::post('/adhesion/helloasso/webhook', [App\Http\Controllers\AdherentFormulaireController::class, 'helloassoWebhook'])->name('adhesion.helloasso.webhook');
 
 

@@ -1784,13 +1784,71 @@
                                     </div>
                                 @enderror
 
-                                <form action="{{ route('adhesion.helloasso2.checkout', $token) }}" method="POST">
-                                    @csrf
-                                    <button type="submit"
-                                        class="w-full inline-flex items-center justify-center gap-2 bg-teal-600 text-white font-semibold px-6 py-3 rounded-lg hover:bg-teal-700 transition text-sm shadow-sm">
-                                        Payer la cotisation sur HelloAsso →
+                                <div x-data="cotisationPaiement()" x-init="init()">
+                                    <button
+                                        @click="ouvrirHelloAsso()"
+                                        :disabled="loading"
+                                        x-show="!dejaClique"
+                                        class="w-full inline-flex items-center justify-center gap-2 bg-teal-600 text-white font-semibold px-6 py-3 rounded-lg hover:bg-teal-700 transition text-sm shadow-sm disabled:opacity-60">
+                                        <span x-show="!loading">Payer la cotisation sur HelloAsso →</span>
+                                        <span x-show="loading">Chargement…</span>
                                     </button>
-                                </form>
+
+                                    <div x-show="dejaClique" x-transition class="mt-4 space-y-3">
+                                        <div class="p-4 bg-teal-50 border border-teal-200 rounded-xl text-sm text-teal-800">
+                                            <p class="font-semibold mb-1">La page HelloAsso s'est ouverte dans un nouvel onglet.</p>
+                                            <p class="text-xs text-teal-700">Une fois le paiement finalisé sur HelloAsso, revenez ici et cliquez sur le bouton ci-dessous.</p>
+                                        </div>
+
+                                        <form action="{{ route('adhesion.verifier.cotisation', $token) }}" method="POST">
+                                            @csrf
+                                            <button type="submit"
+                                                class="w-full inline-flex items-center justify-center gap-2 bg-emerald-600 text-white font-semibold px-6 py-3 rounded-lg hover:bg-emerald-700 transition text-sm">
+                                                ✅ J'ai payé — vérifier et continuer
+                                            </button>
+                                        </form>
+
+                                        <button
+                                            @click="dejaClique = false"
+                                            class="w-full text-xs text-gray-400 hover:text-gray-600 underline py-1">
+                                            ← Rouvrir la page HelloAsso
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <script>
+                                function cotisationPaiement() {
+                                    return {
+                                        loading: false,
+                                        dejaClique: {{ !empty($formData['_via_url_checkout']) ? 'true' : 'false' }},
+                                        helloassoUrl: null,
+                                        init() {
+                                        },
+                                        async ouvrirHelloAsso() {
+                                            this.loading = true;
+                                            try {
+                                                const response = await fetch('{{ route('adhesion.helloasso2.checkout', $token) }}', {
+                                                    method: 'POST',
+                                                    headers: {
+                                                        'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                                                        'Accept': 'application/json',
+                                                        'X-Requested-With': 'XMLHttpRequest',
+                                                    },
+                                                });
+                                                const data = await response.json();
+                                                if (data.url) {
+                                                    window.open(data.url, '_blank');
+                                                    this.dejaClique = true;
+                                                }
+                                            } catch (e) {
+                                                console.error(e);
+                                            } finally {
+                                                this.loading = false;
+                                            }
+                                        }
+                                    }
+                                }
+                                </script>
 
                                 <p class="text-center text-xs text-gray-400 mt-3">Paiement sécurisé via HelloAsso</p>
                             </div>

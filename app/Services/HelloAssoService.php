@@ -96,6 +96,46 @@ class HelloAssoService
     }
 
     /**
+     * Récupère le montant du dernier paiement validé sur le formulaire d'adhésion
+     * pour un email donné (recherche dans les X dernières minutes).
+     * Retourne le montant en EUROS, ou null si aucun paiement trouvé.
+     */
+    public function getLastMembershipPayment(string $formSlug, string $email, int $withinMinutes = 60): ?float
+    {
+        $accessToken = $this->getAccessToken();
+
+        $response = Http::withToken($accessToken)
+            ->get("{$this->baseUrl}/organizations/{$this->orgSlug}/forms/Membership/{$formSlug}/payments", [
+                'pageSize' => 20,
+                'pageIndex' => 1,
+            ]);
+
+        if (!$response->successful()) {
+            Log::warning('HelloAsso getLastMembershipPayment : échec', ['status' => $response->status()]);
+            return null;
+        }
+
+        $data = $response->json('data', []);
+        $since = now()->subMinutes($withinMinutes);
+
+        foreach ($data as $payment) {
+            $payerEmail = strtolower($payment['payer']['email'] ?? '');
+            $state      = $payment['state'] ?? null;
+            $date       = isset($payment['date']) ? \Carbon\Carbon::parse($payment['date']) : null;
+
+            if (
+                $state === 'Authorized' &&
+                strtolower($email) === $payerEmail &&
+                $date && $date->greaterThan($since)
+            ) {
+                return ($payment['amount'] ?? 0) / 100;
+            }
+        }
+
+        return null;
+    }
+
+    /**
      * Va lire le prix du premier tarif de la campagne d'adhésion
      * Retourne le prix en EUROS.
      */

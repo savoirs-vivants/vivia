@@ -40,7 +40,7 @@ class AdherentFormulaireController extends Controller
         }
         try {
             return Carbon::parse($dateNaiss)->age < 18;
-        } catch (\Exception $e) {
+        } catch (\Exception) {
             return false;
         }
     }
@@ -478,8 +478,13 @@ class AdherentFormulaireController extends Controller
         }
 
         if ($request->hasFile('carnet_sante')) {
+            \Illuminate\Support\Facades\Storage::disk('public')->makeDirectory('carnets');
             $filePath = $request->file('carnet_sante')->store('carnets', 'public');
-            $formData['carnet_sante_path'] = $filePath;
+            if ($filePath) {
+                $formData['carnet_sante_path'] = $filePath;
+            } else {
+                Log::error('Carnet de santé : échec du store()', ['step' => $step]);
+            }
         }
 
         $exclude  = ['_token', 'current_step', 'carnet_sante'];
@@ -519,12 +524,33 @@ class AdherentFormulaireController extends Controller
 
         $estNouvelAdherent = ($formData['is_adherent'] ?? 'non') === 'non';
 
+        if (!empty($formData['_adherent_id']) && empty($formData['_paiement1_cree'])) {
+            $activiteIds      = array_filter((array) ($formData['activites_selectionnees'] ?? []));
+            $ressourcerieIds  = array_filter((array) ($formData['ressourcerie_selectionnees'] ?? []));
+            $totalActivites   = !empty($activiteIds)     ? \App\Models\Activite::whereIn('id', $activiteIds)->sum('tarif')       : 0;
+            $totalRessourcerie = !empty($ressourcerieIds) ? \App\Models\Ressourcerie::whereIn('id', $ressourcerieIds)->sum('prix') : 0;
+            $montantActivite  = (float) ($totalActivites + $totalRessourcerie);
+
+            if ($montantActivite > 0) {
+                Paiement::create([
+                    'id_adherent'   => $formData['_adherent_id'],
+                    'montant'       => $montantActivite,
+                    'source'        => 'HelloAsso',
+                    'date_paiement' => now()->toDateString(),
+                    'commentaire'   => 'Paiement activité/ressourcerie via HelloAsso',
+                ]);
+                $formData['_paiement1_cree'] = true;
+                $request->session()->put("adhesion_{$token}", $formData);
+            }
+        }
+
         if ($estNouvelAdherent) {
             $request->session()->put("paiement1_done_{$token}", true);
             return redirect()->route('adhesion.show', ['token' => $token, 'step' => 10]);
         }
 
         $formData['_helloasso_ok'] = true;
+        $formData['_last_completed'] = 11;
         $request->session()->put("adhesion_{$token}", $formData);
         return redirect()->route('adhesion.show', ['token' => $token, 'step' => 11]);
     }
@@ -532,6 +558,10 @@ class AdherentFormulaireController extends Controller
     public function helloassoCheckout2(Request $request, string $token)
     {
         abort_if(!$request->session()->has("adhesion_{$token}"), 403);
+
+        $formData = $request->session()->get("adhesion_{$token}", []);
+        $formData['_via_url_checkout'] = true;
+        $request->session()->put("adhesion_{$token}", $formData);
 
         $isSandbox  = config('services.helloasso.sandbox', true);
         $basePublic = $isSandbox
@@ -543,6 +573,10 @@ class AdherentFormulaireController extends Controller
         $url = "{$basePublic}/associations/{$orgSlug}/adhesions/{$formSlug}";
 
         Log::info("HelloAsso checkout2 : redirection vers la page officielle d'adhésion", ['url' => $url]);
+
+        if ($request->expectsJson()) {
+            return response()->json(['url' => $url]);
+        }
 
         return redirect($url);
     }
@@ -559,8 +593,80 @@ class AdherentFormulaireController extends Controller
         $formData['_helloasso_ok']   = true;
         $formData['_last_completed'] = 11;
         $request->session()->put("adhesion_{$token}", $formData);
+        if (!empty($formData['_adherent_id']) && empty($formData['_paiement2_cree'])) {
+            $typeActivite = $formData['type_activite'] ?? '';
+            $cotisation   = ($typeActivite !== 'club_maker') ? 10 : 0;
+
+            if ($cotisation > 0) {
+                Paiement::create([
+                    'id_adherent'   => $formData['_adherent_id'],
+                    'montant'       => $cotisation,
+                    'source'        => 'HelloAsso',
+                    'date_paiement' => now()->toDateString(),
+                    'commentaire'   => 'Cotisation annuelle via HelloAsso',
+                ]);
+                $formData['_paiement2_cree'] = true;
+                $request->session()->put("adhesion_{$token}", $formData);
+            }
+        }
 
         return redirect()->route('adhesion.show', ['token' => $token, 'step' => 11]);
+    }
+
+    /**
+     * Vérifie via l'API HelloAsso si la cotisation a bien été payée sur la page d'adhésion.
+     * Appelé manuellement par l'utilisateur après avoir payé sur HelloAsso (URL).
+     */
+    public function verifierCotisation(Request $request, string $token)
+    {
+        abort_if(!$request->session()->has("adhesion_{$token}"), 403);
+
+        $formData = $request->session()->get("adhesion_{$token}", []);
+
+        if (empty($formData['_adherent_id']) || !empty($formData['_paiement2_cree'])) {
+            return redirect()->route('adhesion.show', ['token' => $token, 'step' => 10])
+                ->with('cotisation_status', empty($formData['_paiement2_cree']) ? 'already_done' : 'no_adherent');
+        }
+
+        $adherent = \App\Models\Adherent::find($formData['_adherent_id']);
+        if (!$adherent || !$adherent->mail) {
+            return redirect()->route('adhesion.show', ['token' => $token, 'step' => 10])
+                ->withErrors(['helloasso2' => 'Impossible de vérifier le paiement : adhérent introuvable.']);
+        }
+
+        try {
+            $service  = new HelloAssoService();
+            $formSlug = env('HELLOASSO_MEMBERSHIP_FORM_SLUG');
+            $montant  = $service->getLastMembershipPayment($formSlug, $adherent->mail);
+
+            if ($montant !== null) {
+                Paiement::create([
+                    'id_adherent'   => $adherent->id,
+                    'montant'       => $montant,
+                    'source'        => 'HelloAsso',
+                    'date_paiement' => now()->toDateString(),
+                    'commentaire'   => 'Cotisation annuelle via HelloAsso',
+                ]);
+
+                $formData['_paiement2_cree']  = true;
+                $formData['_helloasso_ok']    = true;
+                $formData['_last_completed']  = 11;
+                $request->session()->put("adhesion_{$token}", $formData);
+
+                Log::info("Cotisation vérifiée et enregistrée pour adhérent {$adherent->id}, montant {$montant}€");
+
+                return redirect()->route('adhesion.show', ['token' => $token, 'step' => 11]);
+            }
+
+            Log::info("Cotisation non trouvée sur HelloAsso pour {$adherent->mail}");
+            return redirect()->route('adhesion.show', ['token' => $token, 'step' => 10])
+                ->withErrors(['helloasso2' => 'Aucun paiement de cotisation récent trouvé sur HelloAsso. Vérifiez que vous avez bien finalisé le paiement, puis réessayez.']);
+
+        } catch (\Exception $e) {
+            Log::error('verifierCotisation error: ' . $e->getMessage());
+            return redirect()->route('adhesion.show', ['token' => $token, 'step' => 10])
+                ->withErrors(['helloasso2' => 'Erreur lors de la vérification : ' . $e->getMessage()]);
+        }
     }
 
     private function sauvegarderAdherent(array $formData): int
@@ -791,12 +897,22 @@ class AdherentFormulaireController extends Controller
                 Log::info("Inscription de l'adhérent {$adherent->id} validée.");
             }
 
-            \App\Models\Paiement::create([
-                'id_adherent'   => $adherent->id,
-                'montant'       => $amount,
-                'source'        => 'HelloAsso',
-                'date_paiement' => now()->toDateString(),
-            ]);
+            $dejaCreee = \App\Models\Paiement::where('id_adherent', $adherent->id)
+                ->where('source', 'HelloAsso')
+                ->where('montant', $amount)
+                ->whereDate('date_paiement', today())
+                ->exists();
+
+            if (!$dejaCreee) {
+                \App\Models\Paiement::create([
+                    'id_adherent'   => $adherent->id,
+                    'montant'       => $amount,
+                    'source'        => 'HelloAsso',
+                    'date_paiement' => now()->toDateString(),
+                ]);
+            } else {
+                Log::info("HelloAsso webhook : paiement {$amount}€ déjà enregistré pour adhérent {$adherent->id}, ignoré.");
+            }
 
             return response()->json(['status' => 'ok'], 200);
         }
