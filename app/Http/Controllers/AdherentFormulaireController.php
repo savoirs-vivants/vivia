@@ -11,6 +11,8 @@ use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
 use App\Mail\RecupNumeroMail;
 use App\Models\Adherent;
+use App\Models\AdherentStructure;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
 use App\Services\HelloAssoService;
@@ -40,14 +42,30 @@ class AdherentFormulaireController extends Controller
         }
     }
 
+    private function isStructure(array $formData): bool
+    {
+        return in_array($formData['statut_juridique'] ?? '', ['tpe_asso', 'esr_pme']);
+    }
+
+    private function montantStructure(array $formData): int
+    {
+        return ($formData['statut_juridique'] ?? '') === 'esr_pme' ? 200 : 50;
+    }
+
     private function getUserPath(array $formData): array
     {
         $isAdherent    = ($formData['is_adherent']  ?? 'non') === 'oui';
         $activite      =  $formData['type_activite'] ?? '';
         $isMineur      = $this->isMineur($formData['date_naiss'] ?? null);
         $isClubMaker      = ($activite === 'club_maker');
-        $isRessourcerie   = ($activite === 'ressourcerie');
         $needsActivite    = in_array($activite, ['atelier', 'stage', 'ressourcerie']);
+
+        if ($this->isStructure($formData)) {
+            $path = [1, 12, 2];
+            if ($activite === 'ressourcerie') $path[] = 6;
+            $path = array_merge($path, [13, 14, 9, 10, 11]);
+            return $path;
+        }
 
         if ($isAdherent) {
             $path = [1, 12, 2];
@@ -142,6 +160,8 @@ class AdherentFormulaireController extends Controller
             9  => ['label' => 'Signature',      'icon' => '✍️'],
             10 => ['label' => 'Paiement',       'icon' => '💳'],
             11 => ['label' => 'Confirmation',   'icon' => '✅'],
+            13 => ['label' => 'Structure',      'icon' => '🏛️'],
+            14 => ['label' => 'Autorisations',  'icon' => '📜'],
         ];
     }
 
@@ -220,12 +240,30 @@ class AdherentFormulaireController extends Controller
         $totalSteps  = count($path);
         $prevStep    = $this->getPrevStep($step, $formData);
         $hasPrev     = ($step !== 1);
-        $paiement1Done = (bool) $request->session()->pull("paiement1_done_{$token}", false);
+        $paiement1Done    = (bool) $request->session()->pull("paiement1_done_{$token}", false);
+        $isStructure      = $this->isStructure($formData);
+        $montantStructure = $isStructure ? $this->montantStructure($formData) : null;
+
+        $ressourcerieSelectionnees       = null;
+        $totalRessourcerieStructure      = null;
+        if ($isStructure && ($formData['type_activite'] ?? '') === 'ressourcerie' && empty($formData['_ressourcerie_paid'])) {
+            $ids = $formData['ressourcerie_selectionnees'] ?? [];
+            $ressourcerieSelectionnees  = Ressourcerie::whereIn('id', $ids)->get();
+            $totalRessourcerieStructure = $ressourcerieSelectionnees->sum('prix');
+        }
+
+        if ($step === 11 && $isStructure && empty($formData['_structure_id'])) {
+            $structureId = $this->sauvegarderStructure($formData);
+            $formData['_structure_id'] = $structureId;
+            $request->session()->put("adhesion_{$token}", $formData);
+        }
 
         return view('adhesion', compact(
             'step', 'formData', 'token', 'ateliers', 'stages', 'ressourcerie',
             'path', 'stepMeta', 'isMineur', 'currentNum', 'totalSteps',
-            'prevStep', 'hasPrev', 'classeAdherent', 'paiement1Done'
+            'prevStep', 'hasPrev', 'classeAdherent', 'paiement1Done',
+            'isStructure', 'montantStructure',
+            'ressourcerieSelectionnees', 'totalRessourcerieStructure'
         ));
     }
 
@@ -288,6 +326,56 @@ class AdherentFormulaireController extends Controller
         if ($step === 10 && $request->input('mode_paiement') === 'helloasso') {
             $service = new HelloAssoService();
 
+            $formData['mode_paiement']   = 'helloasso';
+            $formData['_last_completed'] = 10;
+            $request->session()->put("adhesion_{$token}", $formData);
+
+            if ($this->isStructure($formData)) {
+                $typeActivite     = $formData['type_activite'] ?? '';
+                $ressourceriePaid = !empty($formData['_ressourcerie_paid']);
+
+                $correspondant = trim($formData['nom_correspondant'] ?? '');
+                $parts = preg_split('/\s+/', $correspondant, 2);
+                $payerInfo = [
+                    'prenom' => $parts[0] ?: 'Correspondant',
+                    'nom'    => ($parts[1] ?? '') ?: ($formData['nom_structure'] ?? 'Structure'),
+                    'mail'   => $formData['mail_structure'] ?? 'email@defaut.fr',
+                ];
+
+                if ($typeActivite === 'ressourcerie' && !$ressourceriePaid) {
+                    $ressourcerieIds   = $formData['ressourcerie_selectionnees'] ?? [];
+                    $totalRessourcerie = \App\Models\Ressourcerie::whereIn('id', $ressourcerieIds)->sum('prix');
+                    try {
+                        $urlPaiement = $service->createCheckout(
+                            (int) round($totalRessourcerie * 100),
+                            $payerInfo,
+                            $token,
+                            'adhesion.helloasso.return',
+                            'Ressourcerie - Savoirs Vivants'
+                        );
+                        return redirect($urlPaiement);
+                    } catch (\Exception $e) {
+                        Log::error('HelloAsso Error (Structure Ressourcerie): ' . $e->getMessage());
+                        return back()->withErrors(['helloasso' => $e->getMessage()]);
+                    }
+                }
+
+                $montantCentimes = $this->montantStructure($formData) * 100;
+                try {
+                    $urlPaiement = $service->createCheckout(
+                        $montantCentimes,
+                        $payerInfo,
+                        $token,
+                        'adhesion.helloasso.return',
+                        'Adhésion Structure - Savoirs Vivants'
+                    );
+                    return redirect($urlPaiement);
+                } catch (\Exception $e) {
+                    Log::error('HelloAsso Error (Structure): ' . $e->getMessage());
+                    return back()->withErrors(['helloasso' => $e->getMessage()]);
+                }
+            }
+
             $activitesIds      = $formData['activites_selectionnees'] ?? [];
             $hasActivites      = !empty($activitesIds);
             $estNouvelAdherent = ($formData['is_adherent'] ?? 'non') === 'non';
@@ -297,10 +385,6 @@ class AdherentFormulaireController extends Controller
                 $activites = \App\Models\Activite::whereIn('id', $activitesIds)->get();
                 $totalActiviteEuros = $activites->sum('tarif');
             }
-
-            $formData['mode_paiement']   = 'helloasso';
-            $formData['_last_completed'] = 10;
-            $request->session()->put("adhesion_{$token}", $formData);
 
             $payerInfo = [
                 'prenom' => $formData['prenom'] ?? 'Prénom',
@@ -369,12 +453,24 @@ class AdherentFormulaireController extends Controller
     {
         if ($status === 'cancel' || $status === 'error') {
             return redirect()->route('adhesion.show', ['token' => $token, 'step' => 10])
-                             ->withErrors(['helloasso' => 'Le paiement de l\'activité a été annulé ou a échoué. Vous pouvez réessayer.']);
+                             ->withErrors(['helloasso' => 'Le paiement a été annulé ou a échoué. Vous pouvez réessayer.']);
         }
 
         $formData = $request->session()->get("adhesion_{$token}", []);
         $formData['_last_completed'] = max((int)($formData['_last_completed'] ?? 0), 10);
         $request->session()->put("adhesion_{$token}", $formData);
+
+        if ($this->isStructure($formData)) {
+            if (($formData['type_activite'] ?? '') === 'ressourcerie' && empty($formData['_ressourcerie_paid'])) {
+                $formData['_ressourcerie_paid'] = true;
+                $request->session()->put("adhesion_{$token}", $formData);
+                $request->session()->put("paiement1_done_{$token}", true);
+                return redirect()->route('adhesion.show', ['token' => $token, 'step' => 10]);
+            }
+            $formData['_last_completed'] = 11;
+            $request->session()->put("adhesion_{$token}", $formData);
+            return redirect()->route('adhesion.show', ['token' => $token, 'step' => 11]);
+        }
 
         $estNouvelAdherent = ($formData['is_adherent'] ?? 'non') === 'non';
 
@@ -418,6 +514,54 @@ class AdherentFormulaireController extends Controller
 
         return redirect()->route('adhesion.show', ['token' => $token, 'step' => 11]);
     }
+    private function sauvegarderStructure(array $formData): int
+    {
+        $statutActivite = match($formData['type_activite'] ?? '') {
+            'ressourcerie' => 'ressourcerie',
+            'soutien'      => 'soutien',
+            default        => 'participation',
+        };
+
+        $structure = AdherentStructure::create([
+            'nom'              => $formData['nom_structure'] ?? '',
+            'sigle'            => $formData['sigle'] ?? null,
+            'adresse'          => $formData['adresse_structure'] ?? null,
+            'code_postal'      => $formData['code_postal_structure'] ?? null,
+            'ville'            => $formData['ville_structure'] ?? null,
+            'date_creation'    => $formData['date_creation_structure'] ?? null,
+            'tel'              => $formData['tel_structure'] ?? null,
+            'tel_portable'     => $formData['tel_portable_structure'] ?? null,
+            'mail'             => $formData['mail_structure'] ?? null,
+            'site_web'         => $formData['site_web'] ?? null,
+            'nom_correspondant'=> $formData['nom_correspondant'] ?? null,
+            'tel_correspondant'=> $formData['tel_correspondant'] ?? null,
+            'bulletin'         => (bool) ($formData['bulletin'] ?? false),
+            'communication'    => (bool) ($formData['communication'] ?? false),
+            'autorisation_photo' => (bool) ($formData['autorisation_photo'] ?? false),
+            'statut'           => $statutActivite,
+            'statut_juridique' => $formData['statut_juridique'] ?? null,
+            'signature'        => $formData['signature_adherent'] ?? null,
+        ]);
+
+        $year   = now()->month >= 9 ? now()->year : now()->year - 1;
+        $saison = $year . '-' . ($year + 1);
+        $aPaye  = ($formData['mode_paiement'] ?? '') === 'helloasso' ? 'Payé' : 'En attente';
+
+        DB::table('inscriptions')->insert([
+            'id_adherent'     => null,
+            'id_structure'    => $structure->id,
+            'saison'          => $saison,
+            'date_inscription'=> now()->toDateString(),
+            'type_adhesion'   => $formData['type_activite'] ?? 'soutien',
+            'a_paye'          => $aPaye,
+            'montant'         => $this->montantStructure($formData),
+            'created_at'      => now(),
+            'updated_at'      => now(),
+        ]);
+
+        return $structure->id;
+    }
+
     public function helloassoWebhook(Request $request)
     {
         $payload = $request->all();

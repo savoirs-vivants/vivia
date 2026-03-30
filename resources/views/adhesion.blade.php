@@ -333,39 +333,70 @@
 
                             <div x-data="{ activite: '{{ $formData['type_activite'] ?? '' }}' }">
                                 @php
-                                    $options = [
-                                        [
-                                            'value' => 'atelier',
-                                            'label' => 'Inscription à un atelier',
-                                            'icon' => '🔧',
-                                            'desc' => 'Ateliers robotiques',
-                                        ],
-                                        [
-                                            'value' => 'ressourcerie',
-                                            'label' => 'Ressourcerie',
-                                            'desc' => 'Louer un Codey Rocky',
-                                        ],
-                                        [
-                                            'value' => 'stage',
-                                            'label' => 'Inscription à un stage',
-                                            'desc' => 'Stages sur plusieurs jours',
-                                        ],
-                                        [
-                                            'value' => 'club_maker',
-                                            'label' => 'Club Maker',
-                                            'desc' => 'Rejoindre le club des makers',
-                                        ],
-                                        [
-                                            'value' => 'soutien',
-                                            'label' => 'Inscription par soutien',
-                                            'desc' => 'Soutenir financièrement l\'association',
-                                        ],
-                                        [
-                                            'value' => 'recherche',
-                                            'label' => 'Recherche participative',
-                                            'desc' => 'Participer à un programme de recherche',
-                                        ],
-                                    ];
+                                    $statutJuridique = $formData['statut_juridique'] ?? 'personne_physique';
+                                    $isStructureStep2 = in_array($statutJuridique, ['tpe_asso', 'esr_pme']);
+
+                                    if ($isStructureStep2) {
+                                        $options = [
+                                            [
+                                                'value' => 'ressourcerie',
+                                                'label' => 'Ressourcerie',
+                                                'icon'  => '🤖',
+                                                'desc'  => 'Louer du matériel pédagogique robotique',
+                                            ],
+                                            [
+                                                'value' => 'soutien',
+                                                'label' => 'Adhésion par soutien',
+                                                'icon'  => '🤝',
+                                                'desc'  => 'Soutenir financièrement l\'association',
+                                            ],
+                                            [
+                                                'value' => 'recherche',
+                                                'label' => 'Programme de recherche',
+                                                'icon'  => '🔬',
+                                                'desc'  => 'Participer à un programme de recherche participative',
+                                            ],
+                                        ];
+                                    } else {
+                                        $options = [
+                                            [
+                                                'value' => 'atelier',
+                                                'label' => 'Inscription à un atelier',
+                                                'icon'  => '🔧',
+                                                'desc'  => 'Ateliers robotiques',
+                                            ],
+                                            [
+                                                'value' => 'ressourcerie',
+                                                'label' => 'Ressourcerie',
+                                                'icon'  => '🤖',
+                                                'desc'  => 'Louer un Codey Rocky',
+                                            ],
+                                            [
+                                                'value' => 'stage',
+                                                'label' => 'Inscription à un stage',
+                                                'icon'  => '📚',
+                                                'desc'  => 'Stages sur plusieurs jours',
+                                            ],
+                                            [
+                                                'value' => 'club_maker',
+                                                'label' => 'Club Maker',
+                                                'icon'  => '⚙️',
+                                                'desc'  => 'Rejoindre le club des makers',
+                                            ],
+                                            [
+                                                'value' => 'soutien',
+                                                'label' => 'Inscription par soutien',
+                                                'icon'  => '🤝',
+                                                'desc'  => 'Soutenir financièrement l\'association',
+                                            ],
+                                            [
+                                                'value' => 'recherche',
+                                                'label' => 'Recherche participative',
+                                                'icon'  => '🔬',
+                                                'desc'  => 'Participer à un programme de recherche',
+                                            ],
+                                        ];
+                                    }
                                 @endphp
 
                                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
@@ -1336,6 +1367,196 @@
                             </div>
                         </form>
                     </div>
+                @elseif($step === 13)
+                    <div class="p-5 md:p-6">
+                        <div class="mb-5">
+                            <h2 class="text-xl font-bold text-gray-900">Informations de la structure 🏛️</h2>
+                            <p class="text-gray-400 mt-1 text-sm">Renseignez les coordonnées de votre organisation</p>
+                        </div>
+
+                        <form action="{{ route('adhesion.next', $token) }}" method="POST">
+                            @csrf
+                            <input type="hidden" name="current_step" value="13">
+
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+                                <div>
+                                    <label class="{{ $label }}">Nom de la structure *</label>
+                                    <input type="text" name="nom_structure"
+                                        value="{{ $formData['nom_structure'] ?? '' }}"
+                                        placeholder="Nom officiel" required class="{{ $field }}">
+                                </div>
+                                <div>
+                                    <label class="{{ $label }}">Sigle <span class="font-normal normal-case text-gray-400">(si applicable)</span></label>
+                                    <input type="text" name="sigle"
+                                        value="{{ $formData['sigle'] ?? '' }}"
+                                        placeholder="Ex : VIVIA" class="{{ $field }}">
+                                </div>
+                            </div>
+
+                            <div class="mb-4">
+                                <label class="{{ $label }}">Adresse *</label>
+                                <input type="text" name="adresse_structure"
+                                    value="{{ $formData['adresse_structure'] ?? '' }}"
+                                    placeholder="Numéro et nom de rue" required class="{{ $field }}">
+                            </div>
+                            <div class="grid grid-cols-2 gap-4 mb-4">
+                                <div>
+                                    <label class="{{ $label }}">Code postal *</label>
+                                    <input type="text" name="code_postal_structure"
+                                        value="{{ $formData['code_postal_structure'] ?? '' }}"
+                                        placeholder="67000" required class="{{ $field }}">
+                                </div>
+                                <div>
+                                    <label class="{{ $label }}">Ville *</label>
+                                    <input type="text" name="ville_structure"
+                                        value="{{ $formData['ville_structure'] ?? '' }}"
+                                        placeholder="Strasbourg" required class="{{ $field }}">
+                                </div>
+                            </div>
+
+                            <div class="mb-4">
+                                <label class="{{ $label }}">📅 Date de création</label>
+                                <input type="date" name="date_creation_structure"
+                                    value="{{ $formData['date_creation_structure'] ?? '' }}"
+                                    class="{{ $field }} max-w-xs">
+                            </div>
+
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+                                <div>
+                                    <label class="{{ $label }}">📞 Téléphone fixe</label>
+                                    <input type="tel" name="tel_structure"
+                                        value="{{ $formData['tel_structure'] ?? '' }}"
+                                        placeholder="03 88 00 00 00" class="{{ $field }}">
+                                </div>
+                                <div>
+                                    <label class="{{ $label }}">📱 Téléphone portable</label>
+                                    <input type="tel" name="tel_portable_structure"
+                                        value="{{ $formData['tel_portable_structure'] ?? '' }}"
+                                        placeholder="06 00 00 00 00" class="{{ $field }}">
+                                </div>
+                            </div>
+
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+                                <div>
+                                    <label class="{{ $label }}">📧 Adresse mail *</label>
+                                    <input type="email" name="mail_structure"
+                                        value="{{ $formData['mail_structure'] ?? '' }}"
+                                        placeholder="contact@structure.fr" required class="{{ $field }}">
+                                </div>
+                                <div>
+                                    <label class="{{ $label }}">🌐 Site web</label>
+                                    <input type="url" name="site_web"
+                                        value="{{ $formData['site_web'] ?? '' }}"
+                                        placeholder="https://www.structure.fr" class="{{ $field }}">
+                                </div>
+                            </div>
+
+                            <div class="border-t border-gray-100 pt-4 mb-4">
+                                <p class="text-xs font-bold text-gray-500 uppercase tracking-wide mb-3">Correspondant(e)</p>
+                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                    <div>
+                                        <label class="{{ $label }}">Nom du/de la correspondant(e) *</label>
+                                        <input type="text" name="nom_correspondant"
+                                            value="{{ $formData['nom_correspondant'] ?? '' }}"
+                                            placeholder="Prénom Nom" required class="{{ $field }}">
+                                    </div>
+                                    <div>
+                                        <label class="{{ $label }}">Tél. si différent</label>
+                                        <input type="tel" name="tel_correspondant"
+                                            value="{{ $formData['tel_correspondant'] ?? '' }}"
+                                            placeholder="06 00 00 00 00" class="{{ $field }}">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="flex items-center justify-between pt-4 border-t border-gray-100 mt-1">
+                                @if ($hasPrev)
+                                    <a href="{{ route('adhesion.show', ['token' => $token, 'step' => $prevStep]) }}"
+                                        class="{{ $btnBack }}">
+                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
+                                                d="M15 19l-7-7 7-7" />
+                                        </svg>
+                                        Précédent
+                                    </a>
+                                @else
+                                    <div></div>
+                                @endif
+                                <button type="submit" class="{{ $btn }}">
+                                    Suivant
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
+                                            d="M9 5l7 7-7 7" />
+                                    </svg>
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+
+                @elseif($step === 14)
+                    <div class="p-5 md:p-6">
+                        <div class="mb-5">
+                            <h2 class="text-xl font-bold text-gray-900">Autorisations & communication 📜</h2>
+                            <p class="text-gray-400 mt-1 text-sm">Gérez vos préférences de contact et autorisations</p>
+                        </div>
+
+                        <form action="{{ route('adhesion.next', $token) }}" method="POST">
+                            @csrf
+                            <input type="hidden" name="current_step" value="14">
+
+                            <div class="space-y-3 mb-6">
+                                <label class="flex items-start gap-3 p-4 border-2 rounded-xl cursor-pointer transition-all
+                                    {{ ($formData['bulletin'] ?? false) ? 'border-teal-500 bg-teal-50' : 'border-gray-200 hover:border-teal-300' }}">
+                                    <input type="checkbox" name="bulletin" value="1"
+                                        {{ ($formData['bulletin'] ?? false) ? 'checked' : '' }}
+                                        class="{{ $check }} mt-0.5">
+                                    <div>
+                                        <span class="font-bold text-gray-800 text-sm">📰 Bulletin d'information</span>
+                                        <p class="text-gray-500 text-xs mt-0.5">Je souhaite recevoir le bulletin de l'association</p>
+                                    </div>
+                                </label>
+                            </div>
+
+                            <div class="p-4 bg-amber-50 border border-amber-100 rounded-xl mb-5">
+                                <h3 class="font-bold text-amber-900 text-sm mb-3 flex items-center gap-2">
+                                    <span>📸</span> Autorisation image
+                                </h3>
+                                <label class="flex items-start gap-3 cursor-pointer">
+                                    <input type="checkbox" name="autorisation_photo" value="1"
+                                        {{ ($formData['autorisation_photo'] ?? false) ? 'checked' : '' }}
+                                        class="{{ $check }} mt-0.5">
+                                    <span class="text-sm text-amber-800 leading-relaxed">
+                                        J'autorise les membres de ma structure à être photographiés et filmés lors des
+                                        activités de l'association, et j'accepte que ces images puissent être utilisées
+                                        à des fins de communication non commerciale.
+                                    </span>
+                                </label>
+                            </div>
+
+                            <div class="flex items-center justify-between pt-4 border-t border-gray-100 mt-1">
+                                @if ($hasPrev)
+                                    <a href="{{ route('adhesion.show', ['token' => $token, 'step' => $prevStep]) }}"
+                                        class="{{ $btnBack }}">
+                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
+                                                d="M15 19l-7-7 7-7" />
+                                        </svg>
+                                        Précédent
+                                    </a>
+                                @else
+                                    <div></div>
+                                @endif
+                                <button type="submit" class="{{ $btn }}">
+                                    Suivant — Signature
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
+                                            d="M9 5l7 7-7 7" />
+                                    </svg>
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+
                 @elseif($step === 9)
                     <div class="p-5 md:p-6">
                         <div class="mb-5">
@@ -1406,6 +1627,135 @@
                         </form>
                     </div>
                 @elseif($step === 10)
+                    @if ($isStructure)
+                    {{-- PAIEMENT STRUCTURE : montant fixe, HelloAsso uniquement --}}
+                    <div class="p-5 md:p-6" x-data="{ modalCotisation: {{ $paiement1Done ? 'true' : 'false' }} }">
+
+                        {{-- Modal cotisation après paiement ressourcerie (phase 1 → phase 2) --}}
+                        <div x-show="modalCotisation" x-transition
+                             class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4"
+                             style="display: none;">
+                            <div class="bg-white rounded-2xl shadow-xl w-full max-w-md p-6" @click.outside="false">
+                                <div class="text-center mb-5">
+                                    <div class="w-14 h-14 rounded-2xl bg-teal-50 border border-teal-100 flex items-center justify-center text-3xl mx-auto mb-3">✅</div>
+                                    <h3 class="text-lg font-bold text-gray-900">Ressourcerie réglée !</h3>
+                                    <p class="text-gray-500 text-sm mt-1">L'accès à la ressourcerie est bien enregistré.</p>
+                                </div>
+
+                                <div class="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-5 flex items-start gap-3">
+                                    <span class="text-xl shrink-0">📋</span>
+                                    <div>
+                                        <p class="text-sm font-semibold text-amber-900">Une dernière étape</p>
+                                        <p class="text-sm text-amber-700 mt-0.5 leading-relaxed">
+                                            Pour finaliser l'adhésion, réglez la <strong>cotisation annuelle ({{ $montantStructure }} €)</strong> via HelloAsso.
+                                        </p>
+                                    </div>
+                                </div>
+
+                                @error('helloasso')
+                                    <div class="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700 font-medium">
+                                        ❌ {{ $message }}
+                                    </div>
+                                @enderror
+
+                                <form action="{{ route('adhesion.next', $token) }}" method="POST">
+                                    @csrf
+                                    <input type="hidden" name="current_step" value="10">
+                                    <input type="hidden" name="mode_paiement" value="helloasso">
+                                    <button type="submit"
+                                        class="w-full inline-flex items-center justify-center gap-2 bg-teal-600 text-white font-semibold px-6 py-3 rounded-lg hover:bg-teal-700 transition text-sm shadow-sm">
+                                        Payer {{ $montantStructure }} € sur HelloAsso 🔒
+                                    </button>
+                                </form>
+
+                                <p class="text-center text-xs text-gray-400 mt-3">Paiement sécurisé via HelloAsso</p>
+                            </div>
+                        </div>
+
+                        <div class="mb-5">
+                            <h2 class="text-xl font-bold text-gray-900">Paiement 💳</h2>
+                            <p class="text-gray-400 mt-1 text-sm">
+                                @if ($totalRessourcerieStructure !== null)
+                                    Réglez votre accès à la ressourcerie via HelloAsso
+                                @else
+                                    Réglez votre cotisation annuelle via HelloAsso
+                                @endif
+                            </p>
+                        </div>
+
+                        @error('helloasso')
+                            <div class="mb-4 p-4 bg-red-50 border border-red-200 rounded-xl flex items-start gap-3">
+                                <span class="text-xl">❌</span>
+                                <p class="text-sm font-bold text-red-800">{{ $message }}</p>
+                            </div>
+                        @enderror
+
+                        @if ($totalRessourcerieStructure !== null)
+                            {{-- Phase 1 : items ressourcerie sélectionnés --}}
+                            <div class="p-5 bg-teal-50 border border-teal-200 rounded-2xl mb-6">
+                                <p class="text-xs font-bold text-teal-700 uppercase tracking-wide mb-3">Items sélectionnés</p>
+                                @foreach ($ressourcerieSelectionnees as $item)
+                                    <div class="flex items-center justify-between py-1.5 border-b border-teal-100 last:border-0">
+                                        <span class="text-sm text-teal-900">{{ $item->nom }}</span>
+                                        <span class="text-sm font-bold text-teal-700">{{ $item->prix }} €</span>
+                                    </div>
+                                @endforeach
+                                <p class="text-xs text-teal-600 mt-2">La cotisation annuelle ({{ $montantStructure }} €) sera réglée dans un second temps.</p>
+                            </div>
+                        @else
+                            {{-- Phase 2 ou structure non-ressourcerie : cotisation --}}
+                            <div class="p-5 bg-teal-50 border border-teal-200 rounded-2xl mb-6">
+                                <div class="flex items-center justify-between mb-2">
+                                    <span class="text-sm font-bold text-teal-900">Cotisation annuelle</span>
+                                    <span class="text-2xl font-bold text-teal-700">{{ $montantStructure }} €</span>
+                                </div>
+                                <p class="text-xs text-teal-700">
+                                    @if (($formData['statut_juridique'] ?? '') === 'esr_pme')
+                                        Tarif ESR / PME
+                                    @else
+                                        Tarif TPE / Association
+                                    @endif
+                                    — paiement sécurisé via HelloAsso
+                                </p>
+                            </div>
+                        @endif
+
+                        <form action="{{ route('adhesion.next', $token) }}" method="POST">
+                            @csrf
+                            <input type="hidden" name="current_step" value="10">
+                            <input type="hidden" name="mode_paiement" value="helloasso">
+
+                            <div class="p-4 bg-blue-50 border border-blue-100 rounded-xl mb-6 flex items-start gap-3">
+                                <span class="text-xl shrink-0">🔒</span>
+                                <p class="text-sm font-medium text-blue-900 leading-relaxed">
+                                    Vous allez être redirigé·e vers la plateforme sécurisée HelloAsso pour procéder au paiement.
+                                </p>
+                            </div>
+
+                            <div class="flex items-center justify-between pt-4 border-t border-gray-100 mt-1">
+                                @if ($hasPrev)
+                                    <a href="{{ route('adhesion.show', ['token' => $token, 'step' => $prevStep]) }}"
+                                        class="{{ $btnBack }}">
+                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
+                                                d="M15 19l-7-7 7-7" />
+                                        </svg>
+                                        Précédent
+                                    </a>
+                                @else
+                                    <div></div>
+                                @endif
+                                <button type="submit" class="{{ $btn }}">
+                                    @if ($totalRessourcerieStructure !== null)
+                                        Payer {{ $totalRessourcerieStructure }} € (ressourcerie) sur HelloAsso 🔒
+                                    @else
+                                        Payer {{ $montantStructure }} € sur HelloAsso 🔒
+                                    @endif
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                    @else
                     <div class="p-5 md:p-6" x-data="{ modalAdhesion: {{ $paiement1Done ? 'true' : 'false' }} }">
 
                         <div x-show="modalAdhesion" x-transition
@@ -1559,6 +1909,7 @@
                             </div>
                         </form>
                     </div>
+                    @endif {{-- fin @if ($isStructure) pour step 10 --}}
                 @elseif($step === 11)
                     <div class="p-6 md:p-8 text-center">
                         <div
