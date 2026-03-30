@@ -76,7 +76,7 @@ class AdherentController extends Controller
 
     public function show(Adherent $adherent)
     {
-        $adherent->load(['tuteur','inscriptions', 'inscription', 'activitesActives', 'paiements']);
+        $adherent->load(['tousLesTuteurs', 'inscriptions', 'inscription', 'activitesActives', 'paiements']);
 
         $idActivites = $adherent->activitesActives->pluck('id');
 
@@ -90,15 +90,19 @@ class AdherentController extends Controller
             ->get()
             ->keyBy('id_seance');
 
-        $presences = $seances->map(function ($seance) use ($absencesMap) {
+        $toutesLesSeances = $seances->map(function ($seance) use ($absencesMap) {
             $presence = $absencesMap->get($seance->id_seance);
             $seance->statut_presence = $presence?->statut ?? 'Présent';
             $seance->raison_presence = $presence?->raison;
             return $seance;
         });
 
-        $totalSeances = $seances->count();
-        $nbAbsences   = $absencesMap->filter(fn($p) => strtolower($p->statut) === 'absent')->count();
+        $presences = $toutesLesSeances->filter(function($s) {
+            return \Carbon\Carbon::parse($s->date)->isPast() || $s->statut === 'terminee';
+        });
+
+        $totalSeances = $presences->count();
+        $nbAbsences   = $presences->filter(fn($p) => strtolower($p->statut_presence) === 'absent')->count();
         $nbPresences  = max(0, $totalSeances - $nbAbsences);
         $tauxPresence = $totalSeances > 0 ? round(($nbPresences / $totalSeances) * 100) : 0;
 
