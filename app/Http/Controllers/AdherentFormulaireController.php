@@ -12,6 +12,9 @@ use Illuminate\Support\Str;
 use App\Mail\RecupNumeroMail;
 use App\Models\Adherent;
 use App\Models\AdherentStructure;
+use App\Models\Inscription;
+use App\Models\Paiement;
+use App\Models\Tuteur;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
@@ -79,7 +82,7 @@ class AdherentFormulaireController extends Controller
         if ($isMineur) $path[] = 4;
         $path[] = 5;
         if ($needsActivite) $path[] = 6;
-        $path[] = 7;
+        if (! $isClubMaker) $path[] = 7;
         if ($isMineur) $path[] = 8;
         $path[] = 9;
         if (! $isClubMaker) $path[] = 10;
@@ -112,7 +115,7 @@ class AdherentFormulaireController extends Controller
         $anneeScolaire = $now->month >= 9 ? $now->year : $now->year - 1;
         $ageScolaire   = $anneeScolaire - $anneeNaissance;
 
-        return match(true) {
+        return match (true) {
             $ageScolaire === 3  => 'PS',
             $ageScolaire === 4  => 'MS',
             $ageScolaire === 5  => 'GS',
@@ -225,7 +228,7 @@ class AdherentFormulaireController extends Controller
             ->values();
 
         $statutJuridique = $formData['statut_juridique'] ?? null;
-        $tarifsRessourcerie = match($statutJuridique) {
+        $tarifsRessourcerie = match ($statutJuridique) {
             'personne_physique' => ['tarif_particulier'],
             'tpe_asso', 'esr_pme' => ['tarif_structure', 'tarif_scolaire'],
             default => ['tarif_particulier', 'tarif_structure', 'tarif_scolaire'],
@@ -252,18 +255,38 @@ class AdherentFormulaireController extends Controller
             $totalRessourcerieStructure = $ressourcerieSelectionnees->sum('prix');
         }
 
-        if ($step === 11 && $isStructure && empty($formData['_structure_id'])) {
-            $structureId = $this->sauvegarderStructure($formData);
-            $formData['_structure_id'] = $structureId;
-            $request->session()->put("adhesion_{$token}", $formData);
+        if ($step === 11) {
+            if ($isStructure && empty($formData['_structure_id'])) {
+                $structureId = $this->sauvegarderStructure($formData);
+                $formData['_structure_id'] = $structureId;
+                $request->session()->put("adhesion_{$token}", $formData);
+            } elseif (!$isStructure && empty($formData['_adherent_id'])) {
+                $adherentId = $this->sauvegarderAdherent($formData);
+                $formData['_adherent_id'] = $adherentId;
+                $request->session()->put("adhesion_{$token}", $formData);
+            }
         }
 
         return view('adhesion', compact(
-            'step', 'formData', 'token', 'ateliers', 'stages', 'ressourcerie',
-            'path', 'stepMeta', 'isMineur', 'currentNum', 'totalSteps',
-            'prevStep', 'hasPrev', 'classeAdherent', 'paiement1Done',
-            'isStructure', 'montantStructure',
-            'ressourcerieSelectionnees', 'totalRessourcerieStructure'
+            'step',
+            'formData',
+            'token',
+            'ateliers',
+            'stages',
+            'ressourcerie',
+            'path',
+            'stepMeta',
+            'isMineur',
+            'currentNum',
+            'totalSteps',
+            'prevStep',
+            'hasPrev',
+            'classeAdherent',
+            'paiement1Done',
+            'isStructure',
+            'montantStructure',
+            'ressourcerieSelectionnees',
+            'totalRessourcerieStructure'
         ));
     }
 
@@ -324,6 +347,16 @@ class AdherentFormulaireController extends Controller
         }
 
         if ($step === 10 && $request->input('mode_paiement') === 'helloasso') {
+
+            if ($this->isStructure($formData)) {
+                if (empty($formData['_structure_id'])) {
+                    $formData['_structure_id'] = $this->sauvegarderStructure($formData);
+                }
+            } else {
+                if (empty($formData['_adherent_id'])) {
+                    $formData['_adherent_id'] = $this->sauvegarderAdherent($formData);
+                }
+            }
             $service = new HelloAssoService();
 
             $formData['mode_paiement']   = 'helloasso';
@@ -386,10 +419,22 @@ class AdherentFormulaireController extends Controller
                 $totalActiviteEuros = $activites->sum('tarif');
             }
 
+            // Pour les réinscriptions, prenom/nom/mail ne sont pas dans formData (step 3 sauté)
+            $payerPrenom = $formData['prenom'] ?? null;
+            $payerNom    = $formData['nom']    ?? null;
+            $payerMail   = $formData['mail']   ?? null;
+            if (($formData['is_adherent'] ?? 'non') === 'oui' && !empty($formData['numero_adherent'])) {
+                $adherentExistant = Adherent::where('numero_adherent', $formData['numero_adherent'])->first();
+                if ($adherentExistant) {
+                    $payerPrenom = $payerPrenom ?: $adherentExistant->prenom;
+                    $payerNom    = $payerNom    ?: $adherentExistant->nom;
+                    $payerMail   = $payerMail   ?: $adherentExistant->mail;
+                }
+            }
             $payerInfo = [
-                'prenom' => $formData['prenom'] ?? 'Prénom',
-                'nom'    => $formData['nom'] ?? 'Nom',
-                'mail'   => $formData['mail'] ?? 'email@defaut.fr',
+                'prenom' => $payerPrenom ?: 'Prénom',
+                'nom'    => $payerNom    ?: 'Nom',
+                'mail'   => $payerMail   ?: 'email@defaut.fr',
             ];
 
             if ($totalActiviteEuros > 0) {
@@ -406,8 +451,7 @@ class AdherentFormulaireController extends Controller
                     Log::error('HelloAsso Error (Checkout 1): ' . $e->getMessage());
                     return back()->withErrors(['helloasso' => 'Le service de paiement est indisponible pour le moment.']);
                 }
-            }
-            elseif ($estNouvelAdherent) {
+            } elseif ($estNouvelAdherent) {
                 try {
                     $formSlug = env('HELLOASSO_MEMBERSHIP_FORM_SLUG');
                     $price    = $service->getBaseMembershipPrice($formSlug);
@@ -453,7 +497,7 @@ class AdherentFormulaireController extends Controller
     {
         if ($status === 'cancel' || $status === 'error') {
             return redirect()->route('adhesion.show', ['token' => $token, 'step' => 10])
-                             ->withErrors(['helloasso' => 'Le paiement a été annulé ou a échoué. Vous pouvez réessayer.']);
+                ->withErrors(['helloasso' => 'Le paiement a été annulé ou a échoué. Vous pouvez réessayer.']);
         }
 
         $formData = $request->session()->get("adhesion_{$token}", []);
@@ -467,6 +511,7 @@ class AdherentFormulaireController extends Controller
                 $request->session()->put("paiement1_done_{$token}", true);
                 return redirect()->route('adhesion.show', ['token' => $token, 'step' => 10]);
             }
+            $formData['_helloasso_ok']   = true;
             $formData['_last_completed'] = 11;
             $request->session()->put("adhesion_{$token}", $formData);
             return redirect()->route('adhesion.show', ['token' => $token, 'step' => 11]);
@@ -479,6 +524,8 @@ class AdherentFormulaireController extends Controller
             return redirect()->route('adhesion.show', ['token' => $token, 'step' => 10]);
         }
 
+        $formData['_helloasso_ok'] = true;
+        $request->session()->put("adhesion_{$token}", $formData);
         return redirect()->route('adhesion.show', ['token' => $token, 'step' => 11]);
     }
 
@@ -505,18 +552,141 @@ class AdherentFormulaireController extends Controller
         if ($status === 'cancel' || $status === 'error') {
             $request->session()->put("paiement1_done_{$token}", true);
             return redirect()->route('adhesion.show', ['token' => $token, 'step' => 10])
-                             ->withErrors(['helloasso2' => 'Le paiement de la cotisation a été annulé. Vous pouvez réessayer.']);
+                ->withErrors(['helloasso2' => 'Le paiement de la cotisation a été annulé. Vous pouvez réessayer.']);
         }
 
         $formData = $request->session()->get("adhesion_{$token}", []);
+        $formData['_helloasso_ok']   = true;
         $formData['_last_completed'] = 11;
         $request->session()->put("adhesion_{$token}", $formData);
 
         return redirect()->route('adhesion.show', ['token' => $token, 'step' => 11]);
     }
+
+    private function sauvegarderAdherent(array $formData): int
+    {
+        $isAdherent  = ($formData['is_adherent'] ?? 'non') === 'oui';
+        $typeActivite = $formData['type_activite'] ?? '';
+        $activiteIds  = array_filter((array) ($formData['activites_selectionnees'] ?? []));
+        $ressourcerieIds = array_filter((array) ($formData['ressourcerie_selectionnees'] ?? []));
+        $year   = now()->month >= 9 ? now()->year : now()->year - 1;
+        $saison = $year . '-' . ($year + 1);
+        $aPaye = Inscription::EN_ATTENTE;
+
+        $idTuteurPrincipal = null;
+        $autresTouteurs    = [];
+
+        if (!$isAdherent) {
+            foreach ((array) ($formData['tuteurs'] ?? []) as $t) {
+                $type = $t['type'] ?? 'parent_tuteur';
+                $tuteur = Tuteur::create([
+                    'type'         => $type,
+                    'nom'          => $t['nom'] ?? '',
+                    'prenom'       => $t['prenom'] ?? '',
+                    'tel'          => $t['tel'] ?? null,
+                    'mail'         => $t['mail'] ?? null,
+                    'adhere'       => !empty($t['adhere']),
+                    'rentre_fin'   => !empty($t['rentre_fin']),
+                    'rentre_annul' => !empty($t['rentre_annul']),
+                ]);
+                if ($type === 'parent_tuteur' && $idTuteurPrincipal === null) {
+                    $idTuteurPrincipal = $tuteur->id;
+                }
+                $autresTouteurs[] = $tuteur->id;
+            }
+        }
+
+        if ($isAdherent) {
+            $adherent = Adherent::where('numero_adherent', $formData['numero_adherent'])->firstOrFail();
+        } else {
+            $adherent = Adherent::create([
+                'numero_adherent' => Adherent::genererNumeroUnique(),
+                'id_tuteur'       => $idTuteurPrincipal,
+                'nom'             => $formData['nom'] ?? '',
+                'prenom'          => $formData['prenom'] ?? '',
+                'genre'           => $formData['genre'] ?? null,
+                'date_naiss'      => $formData['date_naiss'] ?? null,
+                'adresse'         => $formData['adresse'] ?? null,
+                'code_postal'     => $formData['code_postal'] ?? null,
+                'ville'           => $formData['ville'] ?? null,
+                'tel'             => $formData['tel'] ?? null,
+                'mail'            => $formData['mail'] ?? null,
+                'regime_social'   => $formData['regime_social'] ?? null,
+                'occupation'      => $formData['occupation'] ?? null,
+                'etablissement'   => $formData['etablissement'] ?? null,
+                'carnet'          => $formData['carnet_sante_path'] ?? null,
+                'bulletin'        => !empty($formData['bulletin']),
+                'communication'   => !empty($formData['communication']),
+                'manif'           => ($formData['participation_manif'] ?? '0') === '1',
+                'actions'         => json_encode($formData['actions_benevoles'] ?? []),
+                'signature'       => $formData['signature_adherent'] ?? null,
+            ]);
+
+            if (!empty($autresTouteurs)) {
+                foreach ($autresTouteurs as $idTuteur) {
+                    DB::table('adherent_tuteurs')->insert([
+                        'id_adherent' => $adherent->id,
+                        'id_tuteur'   => $idTuteur,
+                    ]);
+                }
+            }
+        }
+
+        $montantActivites    = !empty($activiteIds)    ? Activite::whereIn('id', $activiteIds)->sum('tarif')       : 0;
+        $montantRessourcerie = !empty($ressourcerieIds) ? Ressourcerie::whereIn('id', $ressourcerieIds)->sum('prix') : 0;
+        $cotisation = (!$isAdherent && $typeActivite !== 'club_maker') ? 10 : 0;
+        $montantTotal = (float) ($montantActivites + $montantRessourcerie + $cotisation);
+
+        Inscription::create([
+            'id_adherent'     => $adherent->id,
+            'saison'          => $saison,
+            'date_inscription' => now()->toDateString(),
+            'type_adhesion'   => $typeActivite,
+            'a_paye'          => $aPaye,
+            'montant'         => $montantTotal,
+            'renouvellement'  => $isAdherent,
+        ]);
+
+        foreach ($activiteIds as $idActivite) {
+            DB::table('activites_adherents')->insertOrIgnore([
+                'id_adherent'  => $adherent->id,
+                'id_activite'  => $idActivite,
+                'saison'       => $saison,
+                'date_entree'  => now()->toDateString(),
+                'est_un_abandon' => 0,
+                'created_at'   => now(),
+                'updated_at'   => now(),
+            ]);
+        }
+
+        if (!empty($formData['_helloasso_ok'])) {
+            $montantActivite = (float) ($montantActivites + $montantRessourcerie);
+            if ($montantActivite > 0) {
+                Paiement::create([
+                    'id_adherent'   => $adherent->id,
+                    'montant'       => $montantActivite,
+                    'source'        => 'HelloAsso',
+                    'date_paiement' => now()->toDateString(),
+                    'commentaire'   => 'Paiement activité/ressourcerie via HelloAsso',
+                ]);
+            }
+            if ($cotisation > 0) {
+                Paiement::create([
+                    'id_adherent'   => $adherent->id,
+                    'montant'       => $cotisation,
+                    'source'        => 'HelloAsso',
+                    'date_paiement' => now()->toDateString(),
+                    'commentaire'   => 'Cotisation annuelle via HelloAsso',
+                ]);
+            }
+        }
+
+        return $adherent->id;
+    }
+
     private function sauvegarderStructure(array $formData): int
     {
-        $statutActivite = match($formData['type_activite'] ?? '') {
+        $statutActivite = match ($formData['type_activite'] ?? '') {
             'ressourcerie' => 'ressourcerie',
             'soutien'      => 'soutien',
             default        => 'participation',
@@ -533,8 +703,8 @@ class AdherentFormulaireController extends Controller
             'tel_portable'     => $formData['tel_portable_structure'] ?? null,
             'mail'             => $formData['mail_structure'] ?? null,
             'site_web'         => $formData['site_web'] ?? null,
-            'nom_correspondant'=> $formData['nom_correspondant'] ?? null,
-            'tel_correspondant'=> $formData['tel_correspondant'] ?? null,
+            'nom_correspondant' => $formData['nom_correspondant'] ?? null,
+            'tel_correspondant' => $formData['tel_correspondant'] ?? null,
             'bulletin'         => (bool) ($formData['bulletin'] ?? false),
             'communication'    => (bool) ($formData['communication'] ?? false),
             'autorisation_photo' => (bool) ($formData['autorisation_photo'] ?? false),
@@ -545,13 +715,13 @@ class AdherentFormulaireController extends Controller
 
         $year   = now()->month >= 9 ? now()->year : now()->year - 1;
         $saison = $year . '-' . ($year + 1);
-        $aPaye  = ($formData['mode_paiement'] ?? '') === 'helloasso' ? 'Payé' : 'En attente';
+        $aPaye  = !empty($formData['_helloasso_ok']) ? Inscription::PAYE : Inscription::EN_ATTENTE;
 
         DB::table('inscriptions')->insert([
             'id_adherent'     => null,
             'id_structure'    => $structure->id,
             'saison'          => $saison,
-            'date_inscription'=> now()->toDateString(),
+            'date_inscription' => now()->toDateString(),
             'type_adhesion'   => $formData['type_activite'] ?? 'soutien',
             'a_paye'          => $aPaye,
             'montant'         => $this->montantStructure($formData),
@@ -583,25 +753,77 @@ class AdherentFormulaireController extends Controller
         $orderId   = $payload['data']['order']['id'] ?? null;
 
         Log::info('HelloAsso paiement adhésion reçu', [
-            'email'     => $email,
-            'nom'       => "{$firstName} {$lastName}",
-            'montant'   => $amount,
-            'formSlug'  => $formSlug,
-            'orderId'   => $orderId,
+            'email'    => $email,
+            'nom'      => "{$firstName} {$lastName}",
+            'montant'  => $amount,
+            'formSlug' => $formSlug,
+            'orderId'  => $orderId,
         ]);
 
-        if ($email) {
-            $adherent = \App\Models\Adherent::where('mail', $email)->first();
-            if ($adherent) {
-                Log::info('HelloAsso webhook : adhérent trouvé', [
-                    'id'             => $adherent->id,
-                    'numero_adherent'=> $adherent->numero_adherent,
-                ]);
-            } else {
-                Log::warning('HelloAsso webhook : aucun adhérent trouvé pour ' . $email);
-            }
+        if (!$email) {
+            Log::warning('HelloAsso webhook : Email manquant dans le payload.');
+            return response()->json(['status' => 'missing_email'], 400);
         }
 
-        return response()->json(['status' => 'ok'], 200);
+        $adherent = \App\Models\Adherent::where('mail', $email)->latest()->first();
+
+        if ($adherent) {
+            Log::info('HelloAsso webhook : adhérent trouvé', [
+                'id'              => $adherent->id,
+                'numero_adherent' => $adherent->numero_adherent,
+            ]);
+
+            $inscription = \App\Models\Inscription::where('id_adherent', $adherent->id)
+                ->where('a_paye', \App\Models\Inscription::EN_ATTENTE)
+                ->latest()
+                ->first();
+
+            if ($inscription) {
+                $inscription->update(['a_paye' => \App\Models\Inscription::PAYE]);
+                Log::info("Inscription de l'adhérent {$adherent->id} validée.");
+            }
+
+            \App\Models\Paiement::create([
+                'id_adherent'   => $adherent->id,
+                'montant'       => $amount,
+                'source'        => 'HelloAsso',
+                'date_paiement' => now()->toDateString(),
+                'commentaire'   => "Paiement webhook (Order: {$orderId})",
+            ]);
+
+            return response()->json(['status' => 'ok'], 200);
+        }
+
+        $structure = \App\Models\AdherentStructure::where('mail', $email)->latest()->first();
+
+        if ($structure) {
+            Log::info('HelloAsso webhook : structure trouvée', [
+                'id'  => $structure->id,
+                'nom' => $structure->nom,
+            ]);
+
+            $inscriptionStructure = \Illuminate\Support\Facades\DB::table('inscriptions')
+                ->where('id_structure', $structure->id)
+                ->where('a_paye', \App\Models\Inscription::EN_ATTENTE)
+                ->orderByDesc('id')
+                ->first();
+
+            if ($inscriptionStructure) {
+                \Illuminate\Support\Facades\DB::table('inscriptions')
+                    ->where('id', $inscriptionStructure->id)
+                    ->update([
+                        'a_paye'     => \App\Models\Inscription::PAYE,
+                        'updated_at' => now()
+                    ]);
+                Log::info("Inscription de la structure {$structure->id} validée.");
+            }
+
+            return response()->json(['status' => 'ok'], 200);
+        }
+
+        // 3. Aucun compte trouvé
+        Log::warning("HelloAsso webhook : Aucun compte (adhérent ou structure) trouvé pour l'email {$email}. Le paiement a réussi chez HelloAsso mais n'a pas pu être lié automatiquement dans la base.");
+
+        return response()->json(['status' => 'not_found'], 404);
     }
 }

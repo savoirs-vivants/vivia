@@ -10,6 +10,7 @@ class Tuteur extends Model
     protected $table = 'tuteur';
 
     protected $fillable = [
+        'type',
         'nom',
         'prenom',
         'mail',

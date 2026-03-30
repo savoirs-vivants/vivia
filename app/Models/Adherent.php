@@ -67,6 +67,14 @@ class Adherent extends Model
     }
 
     /**
+     * Tous les tuteurs (parent principal + personnes autorisées/non autorisées).
+     */
+    public function tousLesTuteurs(): \Illuminate\Database\Eloquent\Relations\BelongsToMany
+    {
+        return $this->belongsToMany(Tuteur::class, 'adherent_tuteurs', 'id_adherent', 'id_tuteur');
+    }
+
+    /**
      * Toutes les inscriptions de l'adhérent (une par saison).
      */
     public function inscriptions(): HasMany
