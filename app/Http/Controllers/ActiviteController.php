@@ -377,34 +377,54 @@ class ActiviteController extends Controller
     private function genererSeancesAuto(Activite $activite)
     {
         $horaires = is_string($activite->horaires) ? json_decode($activite->horaires, true) : $activite->horaires;
-        if (empty($horaires)) return;
+        if (empty($horaires) || !is_array($horaires)) return;
+
+        if ($activite->type === 'stage' && isset($horaires['stage'])) {
+            $debutStage = $horaires['stage']['date_debut'] ?? null;
+            $finStage   = $horaires['stage']['date_fin'] ?? null;
+            $heureDebut = $horaires['stage']['heure_debut'] ?? '00:00';
+
+            if (!$debutStage || !$finStage) return;
+
+            $dateDebut = \Carbon\Carbon::parse($debutStage);
+            $dateFin   = \Carbon\Carbon::parse($finStage);
+
+            for ($dateCourante = clone $dateDebut; $dateCourante->lte($dateFin); $dateCourante->addDay()) {
+                $dateAvecHeure = $dateCourante->format('Y-m-d') . ' ' . $heureDebut . ':00';
+
+                $existe = DB::table('seances')
+                    ->where('id_activite', $activite->id)
+                    ->where('date', $dateAvecHeure)
+                    ->exists();
+
+                if (!$existe) {
+                    DB::table('seances')->insert([
+                        'id_activite' => $activite->id,
+                        'date'        => $dateAvecHeure,
+                    ]);
+                }
+            }
+
+            return;
+        }
 
         $joursMap = [
-            'Lundi' => Carbon::MONDAY,
-            'Mardi' => Carbon::TUESDAY,
-            'Mercredi' => Carbon::WEDNESDAY,
-            'Jeudi' => Carbon::THURSDAY,
-            'Vendredi' => Carbon::FRIDAY,
-            'Samedi' => Carbon::SATURDAY,
-            'Dimanche' => Carbon::SUNDAY,
+            'Lundi' => \Carbon\Carbon::MONDAY, 'Mardi' => \Carbon\Carbon::TUESDAY, 'Mercredi' => \Carbon\Carbon::WEDNESDAY,
+            'Jeudi' => \Carbon\Carbon::THURSDAY, 'Vendredi' => \Carbon\Carbon::FRIDAY, 'Samedi' => \Carbon\Carbon::SATURDAY, 'Dimanche' => \Carbon\Carbon::SUNDAY,
         ];
 
-        $finAnneeScolaire = now()->month >= 9 ? Carbon::create(now()->year + 1, 6, 30) : Carbon::create(now()->year, 8, 30);
+        $finAnneeScolaire = now()->month >= 9 ? \Carbon\Carbon::create(now()->year + 1, 6, 30) : \Carbon\Carbon::create(now()->year, 6, 30);
 
         foreach ($horaires as $jour => $plagesStr) {
             if (!isset($joursMap[$jour])) continue;
 
             $plages = explode(',', $plagesStr);
-
             $dateCourante = now()->next($joursMap[$jour]);
 
             while ($dateCourante->lte($finAnneeScolaire)) {
-
                 foreach ($plages as $plage) {
-                    $plage = trim($plage);
-                    $parts = explode('-', $plage);
+                    $parts = explode('-', trim($plage));
                     $heureDebut = trim($parts[0]);
-
                     $dateAvecHeure = $dateCourante->format('Y-m-d') . ' ' . $heureDebut . ':00';
 
                     $existe = DB::table('seances')
@@ -419,7 +439,6 @@ class ActiviteController extends Controller
                         ]);
                     }
                 }
-
                 $dateCourante->addWeek();
             }
         }
