@@ -16,7 +16,6 @@ class Adherent extends Model
 
     protected $fillable = [
         'numero_adherent',
-        'id_tuteur',
         'nom',
         'prenom',
         'carnet',
@@ -28,21 +27,23 @@ class Adherent extends Model
         'code_postal',
         'tel',
         'mail',
-        'statut',
         'occupation',
         'etablissement',
         'regime_social',
         'actions',
-        'criteres',
         'commentaire',
         'manif',
         'communication',
         'bulletin',
         'signature',
+        'problemes_sante',
+        'allergies',
+        'conduite_a_tenir',
+        'restrictions_alimentaires'
     ];
 
     protected $casts = [
-        'criteres'      => 'array',  
+        'criteres'      => 'array',
         'date_naiss'    => 'date',
         'manif'         => 'boolean',
         'communication' => 'boolean',
@@ -56,14 +57,6 @@ class Adherent extends Model
         } while (self::where('numero_adherent', $numero)->exists());
 
         return $numero;
-    }
-
-    /**
-     * Le tuteur légal de l'adhérent (table `tuteur`).
-     */
-    public function tuteur(): BelongsTo
-    {
-        return $this->belongsTo(Tuteur::class, 'id_tuteur');
     }
 
     /**

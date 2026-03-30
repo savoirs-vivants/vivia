@@ -599,13 +599,17 @@ class AdherentFormulaireController extends Controller
         if ($isAdherent) {
             $adherent = Adherent::where('numero_adherent', $formData['numero_adherent'])->firstOrFail();
         } else {
+            $age = null;
+            if (!empty($formData['date_naiss'])) {
+                $age = \Carbon\Carbon::parse($formData['date_naiss'])->age;
+            }
             $adherent = Adherent::create([
                 'numero_adherent' => Adherent::genererNumeroUnique(),
-                'id_tuteur'       => $idTuteurPrincipal,
                 'nom'             => $formData['nom'] ?? '',
                 'prenom'          => $formData['prenom'] ?? '',
                 'genre'           => $formData['genre'] ?? null,
                 'date_naiss'      => $formData['date_naiss'] ?? null,
+                'age'             => $age,
                 'adresse'         => $formData['adresse'] ?? null,
                 'code_postal'     => $formData['code_postal'] ?? null,
                 'ville'           => $formData['ville'] ?? null,
@@ -613,8 +617,12 @@ class AdherentFormulaireController extends Controller
                 'mail'            => $formData['mail'] ?? null,
                 'regime_social'   => $formData['regime_social'] ?? null,
                 'occupation'      => $formData['occupation'] ?? null,
-                'etablissement'   => $formData['etablissement'] ?? null,
-                'carnet'          => $formData['carnet_sante_path'] ?? null,
+                'etablissement'             => $formData['etablissement'] ?? null,
+                'carnet'                    => $formData['carnet_sante_path'] ?? null,
+                'problemes_sante'           => $formData['problemes_sante'] ?? null,
+                'allergies'                 => $formData['allergies'] ?? null,
+                'conduite_a_tenir'          => $formData['conduite_a_tenir'] ?? null,
+                'restrictions_alimentaires' => $formData['restrictions_alimentaires'] ?? null,
                 'bulletin'        => !empty($formData['bulletin']),
                 'communication'   => !empty($formData['communication']),
                 'manif'           => ($formData['participation_manif'] ?? '0') === '1',
@@ -788,7 +796,6 @@ class AdherentFormulaireController extends Controller
                 'montant'       => $amount,
                 'source'        => 'HelloAsso',
                 'date_paiement' => now()->toDateString(),
-                'commentaire'   => "Paiement webhook (Order: {$orderId})",
             ]);
 
             return response()->json(['status' => 'ok'], 200);
