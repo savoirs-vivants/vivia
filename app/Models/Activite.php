@@ -144,14 +144,20 @@ class Activite extends Model
      */
     public function getHorairesListAttribute(): array
     {
-        if (empty($this->horaires)) {
+        $horaires = $this->horaires;
+
+        if (is_string($horaires)) {
+            $horaires = json_decode($horaires, true);
+        }
+
+        if (empty($horaires) || !is_array($horaires)) {
             return [];
         }
 
         return array_map(
             fn($jour, $plage) => "{$jour} {$plage}",
-            array_keys($this->horaires),
-            $this->horaires
+            array_keys($horaires),
+            $horaires
         );
     }
 

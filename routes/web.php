@@ -60,6 +60,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/activites/create', [ActiviteController::class, 'create'])->name('activites.create');
     Route::post('/activites', [ActiviteController::class, 'store'])->name('activites.store');
     Route::get('/activites/{activite}', [ActiviteController::class, 'show'])->name('activites.show');
+    Route::delete('/activites/{activite}/seances/{seance}/annuler', [App\Http\Controllers\ActiviteController::class, 'annulerSeance'])->name('seances.annuler');
     Route::post('/activites/{activite}/seances/{seance}/presences', [ActiviteController::class, 'storePresences'])->name('activites.presences.store');
     Route::get('/activites/{activite}/edit', [ActiviteController::class, 'edit'])->name('activites.edit');
     Route::put('/activites/{activite}', [ActiviteController::class, 'update'])->name('activites.update');

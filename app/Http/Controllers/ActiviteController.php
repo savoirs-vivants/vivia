@@ -6,6 +6,8 @@ use App\Models\Activite;
 use App\Models\DossierActivite;
 use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Carbon\Carbon;
 
 class ActiviteController extends Controller
 {
@@ -115,6 +117,7 @@ class ActiviteController extends Controller
         if (!empty($validated['gestionnaires'])) {
             $activite->gestionnaires()->sync($validated['gestionnaires']);
         }
+        $this->genererSeancesAuto($activite);
 
         return redirect()->route('activites.index')
             ->with('success', 'L\'événement a été créé avec succès.');
@@ -126,14 +129,22 @@ class ActiviteController extends Controller
 
         $seances = $activite->seances()
             ->with('presences')
-            ->where('date', '<=', now())
+            ->where('date', '<=', now()->toDateString())
             ->orderByDesc('date')
             ->get();
+
+        $seancesAVenir = $activite->seances()
+            ->where('date', '>', now()->toDateString())
+            ->orderBy('date')
+            ->get();
+
+        $seancesIds = $seances->pluck('id_seance');
+        $toutesPresences = \App\Models\Presence::whereIn('id_seance', $seancesIds)->get()->groupBy('id_seance');
 
         $nbSeancesPassees = $seances->count();
         $adherentsActifs = $activite->adherentsActifs;
 
-        $adherentsStats = $adherentsActifs->map(function ($adherent) use ($seances, $nbSeancesPassees) {
+        $adherentsStats = $adherentsActifs->map(function ($adherent) use ($seances, $toutesPresences, $nbSeancesPassees) {
             if ($nbSeancesPassees === 0) {
                 $adherent->taux_presence = 0;
                 return $adherent;
@@ -141,7 +152,8 @@ class ActiviteController extends Controller
 
             $nbAbsences = 0;
             foreach ($seances as $seance) {
-                if ($seance->presences->where('id_adherent', $adherent->id)->isNotEmpty()) {
+                $presencesSeance = $toutesPresences->get($seance->id_seance, collect());
+                if ($presencesSeance->where('id_adherent', $adherent->id)->isNotEmpty()) {
                     $nbAbsences++;
                 }
             }
@@ -181,7 +193,7 @@ class ActiviteController extends Controller
             $nbPresents = $adherentsActifs->count() - $nbAbsents;
 
             return [
-                'date' => $seance->date->isoFormat('D MMM'),
+                'date' => Carbon::parse($seance->date)->isoFormat('D MMM'),
                 'presents' => $nbPresents,
                 'total' => $adherentsActifs->count(),
                 'pourcentage' => $adherentsActifs->count() > 0 ? ($nbPresents / $adherentsActifs->count()) * 100 : 0
@@ -192,6 +204,7 @@ class ActiviteController extends Controller
             'activite',
             'adherentsStats',
             'seances',
+            'seancesAVenir',
             'tauxMoyen',
             'nbSeancesPassees',
             'graphiqueSeances',
@@ -300,6 +313,7 @@ class ActiviteController extends Controller
         ]);
 
         $activite->gestionnaires()->sync($validated['gestionnaires'] ?? []);
+        $this->genererSeancesAuto($activite);
 
         return redirect()->route('activites.show', $activite)
             ->with('success', 'L\'événement a été modifié avec succès.');
@@ -321,16 +335,66 @@ class ActiviteController extends Controller
     }
 
     public function searchUsers(Request $request)
-{
-    $search = $request->get('q');
+    {
+        $search = $request->get('q');
 
-    $users = User::where(function($q) use ($search) {
+        $users = User::where(function ($q) use ($search) {
             $q->where('name', 'like', "%{$search}%")
-              ->orWhere('firstname', 'like', "%{$search}%");
+                ->orWhere('firstname', 'like', "%{$search}%");
         })
-        ->limit(10)
-        ->get(['id', 'firstname', 'name']);
+            ->limit(10)
+            ->get(['id', 'firstname', 'name']);
 
-    return response()->json($users);
-}
+        return response()->json($users);
+    }
+
+    private function genererSeancesAuto(Activite $activite)
+    {
+        $horaires = $activite->horaires;
+
+        if (empty($horaires)) return;
+
+        $joursMap = [
+            'Lundi' => Carbon::MONDAY,
+            'Mardi' => Carbon::TUESDAY,
+            'Mercredi' => Carbon::WEDNESDAY,
+            'Jeudi' => Carbon::THURSDAY,
+            'Vendredi' => Carbon::FRIDAY,
+            'Samedi' => Carbon::SATURDAY,
+            'Dimanche' => Carbon::SUNDAY,
+        ];
+
+        $finAnneeScolaire = now()->month >= 9 ? Carbon::create(now()->year + 1, 6, 30) : Carbon::create(now()->year, 8, 30);
+
+        foreach ($horaires as $jour => $plage) {
+            if (!isset($joursMap[$jour])) continue;
+
+            $dateCourante = now()->next($joursMap[$jour]);
+
+            while ($dateCourante->lte($finAnneeScolaire)) {
+                $existe = DB::table('seances')
+                    ->where('id_activite', $activite->id)
+                    ->where('date', $dateCourante->toDateString())
+                    ->exists();
+
+                if (!$existe) {
+                    DB::table('seances')->insert([
+                        'id_activite' => $activite->id,
+                        'date'        => $dateCourante->toDateString(),
+                    ]);
+                }
+                $dateCourante->addWeek();
+            }
+        }
+    }
+
+    public function annulerSeance(Activite $activite, $idSeance)
+    {
+        DB::table('seances')
+            ->where('id_activite', $activite->id)
+            ->where('id_seance', $idSeance)
+            ->delete();
+
+        return redirect()->back()->with('success', 'La séance a été annulée et supprimée du calendrier.');
+    }
 }

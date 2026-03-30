@@ -121,23 +121,55 @@
             </div>
 
             <div class="flex gap-1">
-                <button onclick="switchTab('presences')" id="tab-presences"
+                <button onclick="switchTab('avenir')" id="tab-avenir"
                     class="tab-hero-btn active px-6 py-3 rounded-t-xl text-sm font-bold border-none cursor-pointer transition-all">
-                    Faire l'appel
+                    À venir
                 </button>
-                <button onclick="switchTab('adherents')" id="tab-adherents"
+                <button onclick="switchTab('presences')" id="tab-presences"
                     class="tab-hero-btn px-6 py-3 rounded-t-xl text-sm font-bold border-none cursor-pointer transition-all">
-                    Adhérents
+                    Historique & Appel
                 </button>
-                <button onclick="switchTab('statistiques')" id="tab-statistiques"
-                    class="tab-hero-btn px-6 py-3 rounded-t-xl text-sm font-bold border-none cursor-pointer transition-all">
-                    Statistiques
-                </button>
+                <button onclick="switchTab('adherents')" id="tab-adherents" ...> Adhérents </button>
+                <button onclick="switchTab('statistiques')" id="tab-statistiques" ...> Statistiques </button>
             </div>
         </div>
     </div>
 
     <div class="mt-7"></div>
+
+    <div id="content-avenir" class="space-y-3 animate-fade-in">
+        <div class="section-label">Prochaines séances programmées</div>
+
+        @forelse($seancesAVenir as $seance)
+            <div class="bg-white rounded-2xl border border-gray-200 overflow-hidden shadow-sm flex items-center justify-between px-6 py-4">
+                <div class="flex items-center gap-4">
+                    <div class="w-[52px] h-[52px] rounded-[14px] bg-teal-50 border border-teal-100 flex flex-col items-center justify-center shrink-0">
+                        <span class="text-[10px] font-bold text-teal-600 uppercase tracking-wide leading-none">{{ \Carbon\Carbon::parse($seance->date)->isoFormat('MMM') }}</span>
+                        <span class="text-[22px] font-black text-teal-900 leading-tight">{{ \Carbon\Carbon::parse($seance->date)->isoFormat('DD') }}</span>
+                    </div>
+                    <div>
+                        <p class="text-base font-black text-[#0F143A] capitalize">
+                            {{ \Carbon\Carbon::parse($seance->date)->isoFormat('dddd') }}
+                        </p>
+                    </div>
+                </div>
+
+                <form action="{{ route('seances.annuler', ['activite' => $activite->id, 'seance' => $seance->id_seance]) }}" method="POST" onsubmit="return confirm('Êtes-vous sûr de vouloir annuler ce cours ?');">
+                    @csrf
+                    @method('DELETE')
+                    <button type="submit" class="px-4 py-2 bg-rose-50 text-rose-600 text-sm font-bold rounded-xl hover:bg-rose-500 hover:text-white transition-colors">
+                        Annuler le cours
+                    </button>
+                </form>
+            </div>
+        @empty
+            <div class="flex flex-col items-center justify-center py-16 bg-white rounded-2xl border border-gray-100">
+                <div class="w-14 h-14 bg-teal-50 rounded-full flex items-center justify-center mb-3 text-2xl">📅</div>
+                <p class="text-sm font-bold text-gray-400">Aucune séance programmée.</p>
+                <p class="text-xs text-gray-400 mt-1">Modifiez l'activité et ré-enregistrez pour générer le calendrier.</p>
+            </div>
+        @endforelse
+    </div>
 
     <div id="content-presences" class="space-y-3 animate-fade-in">
 
@@ -403,7 +435,7 @@
     </div>
     <script>
         function switchTab(tabName) {
-            ['presences', 'adherents', 'statistiques'].forEach(name => {
+            ['avenir', 'presences', 'adherents', 'statistiques'].forEach(name => {
                 document.getElementById('content-' + name).classList.add('hidden');
                 const btn = document.getElementById('tab-' + name);
                 btn.classList.remove('active');
