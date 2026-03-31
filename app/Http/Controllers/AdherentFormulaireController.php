@@ -64,21 +64,13 @@ class AdherentFormulaireController extends Controller
         $needsActivite    = in_array($activite, ['atelier', 'stage', 'ressourcerie']);
 
         if ($this->isStructure($formData)) {
-            $path = [1, 12, 2];
+            $path = $isAdherent ? [1, 2] : [1, 12, 2];
             if ($activite === 'ressourcerie') $path[] = 6;
             $path = array_merge($path, [13, 14, 9, 10, 11]);
             return $path;
         }
 
-        if ($isAdherent) {
-            $path = [1, 12, 2];
-            if ($needsActivite) $path[] = 6;
-            if (! $isClubMaker) $path[] = 10;
-            $path[] = 11;
-            return $path;
-        }
-
-        $path = [1, 12, 2, 3];
+        $path = $isAdherent ? [1, 2, 3] : [1, 12, 2, 3];
         if ($isMineur) $path[] = 4;
         $path[] = 5;
         if ($needsActivite) $path[] = 6;
@@ -199,11 +191,23 @@ class AdherentFormulaireController extends Controller
 
         $activitesDejaInscritesIds = [];
         if (($formData['is_adherent'] ?? 'non') === 'oui' && !empty($formData['numero_adherent'])) {
+
             $adherentExistant = Adherent::where('numero_adherent', $formData['numero_adherent'])->first();
             if ($adherentExistant) {
-                if (empty($formData['date_naiss'])) {
+                $champsAdherent = [
+                    'nom', 'prenom', 'genre', 'adresse', 'code_postal', 'ville',
+                    'tel', 'mail', 'occupation', 'etablissement', 'regime_social',
+                    'problemes_sante', 'allergies', 'conduite_a_tenir', 'restrictions_alimentaires',
+                ];
+                foreach ($champsAdherent as $champ) {
+                    if (!array_key_exists($champ, $formData) && $adherentExistant->$champ !== null) {
+                        $formData[$champ] = $adherentExistant->$champ;
+                    }
+                }
+                if (!array_key_exists('date_naiss', $formData)) {
                     $formData['date_naiss'] = $adherentExistant->date_naiss?->format('Y-m-d');
                 }
+
                 $year   = now()->month >= 9 ? now()->year : now()->year - 1;
                 $saison = $year . '-' . ($year + 1);
                 $activitesDejaInscritesIds = $adherentExistant->activites()
@@ -211,6 +215,33 @@ class AdherentFormulaireController extends Controller
                     ->wherePivot('est_un_abandon', 0)
                     ->pluck('activites.id')
                     ->toArray();
+            }
+
+            if (!$adherentExistant && !empty($formData['_existing_structure_id'])) {
+                $structureExistante = AdherentStructure::find($formData['_existing_structure_id']);
+                if ($structureExistante) {
+                    $champsStructure = [
+                        'nom_structure'           => 'nom',
+                        'sigle'                   => 'sigle',
+                        'adresse_structure'       => 'adresse',
+                        'code_postal_structure'   => 'code_postal',
+                        'ville_structure'         => 'ville',
+                        'tel_structure'           => 'tel',
+                        'tel_portable_structure'  => 'tel_portable',
+                        'mail_structure'          => 'mail',
+                        'site_web'                => 'site_web',
+                        'nom_correspondant'       => 'nom_correspondant',
+                        'tel_correspondant'       => 'tel_correspondant',
+                    ];
+                    foreach ($champsStructure as $formKey => $modelKey) {
+                        if (!array_key_exists($formKey, $formData) && $structureExistante->$modelKey !== null) {
+                            $formData[$formKey] = $structureExistante->$modelKey;
+                        }
+                    }
+                    if (!array_key_exists('date_creation_structure', $formData) && $structureExistante->date_creation) {
+                        $formData['date_creation_structure'] = $structureExistante->date_creation->format('Y-m-d');
+                    }
+                }
             }
         }
 
@@ -333,17 +364,33 @@ class AdherentFormulaireController extends Controller
         $formData = $request->session()->get("adhesion_{$token}", []);
 
         if ($step === 1 && $request->input('is_adherent') === 'oui') {
-            $inputNumero = trim($request->input('numero_adherent'));
-            $vraiNumero = Cache::get("recup_adherent_{$inputNumero}");
-            $numeroRecherche = $vraiNumero ? $vraiNumero : $inputNumero;
+            $inputNumero     = trim($request->input('numero_adherent'));
+            $vraiNumero      = Cache::get("recup_adherent_{$inputNumero}");
+            $numeroRecherche = $vraiNumero ?: $inputNumero;
 
-            $adherentExistant = Adherent::where('numero_adherent', $numeroRecherche)->first();
+            $adherentExistant  = Adherent::where('numero_adherent', $numeroRecherche)->first();
+            $structureExistante = null;
 
             if (!$adherentExistant) {
+                $structureExistante = AdherentStructure::where('numero_adherent', $numeroRecherche)->first();
+            }
+
+            if (!$adherentExistant && !$structureExistante) {
                 return back()->withErrors(['numero_adherent' => 'Ce numéro ou code temporaire est introuvable.']);
             }
 
-            $request->merge(['numero_adherent' => $adherentExistant->numero_adherent]);
+            if ($structureExistante) {
+                $request->merge([
+                    'numero_adherent'        => $structureExistante->numero_adherent,
+                    'statut_juridique'       => $structureExistante->statut_juridique,
+                    '_existing_structure_id' => $structureExistante->id,
+                ]);
+            } else {
+                $request->merge([
+                    'numero_adherent'  => $adherentExistant->numero_adherent,
+                    'statut_juridique' => 'personne_physique',
+                ]);
+            }
         }
 
         if ($step === 10 && $request->input('mode_paiement') === 'helloasso') {
@@ -834,6 +881,12 @@ class AdherentFormulaireController extends Controller
             'statut'           => $statutActivite,
             'statut_juridique' => $formData['statut_juridique'] ?? null,
         ]);
+
+        if (!empty($formData['signature_adherent'])) {
+            DB::table('adherents_structure')
+                ->where('id', $structure->id)
+                ->update(['signature' => $formData['signature_adherent']]);
+        }
 
         $year   = now()->month >= 9 ? now()->year : now()->year - 1;
         $saison = $year . '-' . ($year + 1);
