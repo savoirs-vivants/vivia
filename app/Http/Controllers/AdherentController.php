@@ -174,6 +174,26 @@ class AdherentController extends Controller
             ->with('success', $adherent->prenom . ' ' . $adherent->nom . ' — ' . strtolower($statut) . '.');
     }
 
+    public function validerStructure(Request $request, AdherentStructure $structure)
+    {
+        $statut = $request->boolean('plusieurs_versements') ? Inscription::PARTIEL : Inscription::PAYE;
+
+        $structure->inscription()->update([
+            'a_paye'  => $statut,
+            'montant' => $structure->montant_adhesion,
+        ]);
+
+        $tab = match ($statut) {
+            Inscription::PAYE    => 'payes',
+            Inscription::PARTIEL => 'partiel',
+            default              => 'attente',
+        };
+
+        return redirect()
+            ->route('adherents.index', ['tab' => $tab, 'type' => 'structure'])
+            ->with('success', 'La structure ' . $structure->nom . ' est passée en statut : ' . strtolower($statut) . '.');
+    }
+
     public function downloadPdf(Adherent $adherent)
     {
         $adherent->load(['tousLesTuteurs', 'activitesActives', 'inscription', 'paiements']);

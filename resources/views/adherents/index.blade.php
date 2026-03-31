@@ -6,9 +6,6 @@
 
 <div x-data="adherentOverlay()" @keydown.escape.window="close()">
 
-    {{-- ================================================================
-         OVERLAY BACKDROP
-    ================================================================ --}}
     <div x-show="open"
          x-transition:enter="transition duration-200"
          x-transition:enter-start="opacity-0"
@@ -21,9 +18,6 @@
          @click="close()">
     </div>
 
-    {{-- ================================================================
-         MODAL
-    ================================================================ --}}
     <div x-show="open"
          x-transition:enter="transition duration-200"
          x-transition:enter-start="opacity-0 scale-95 translate-y-2"
@@ -37,7 +31,6 @@
         <div class="bg-white rounded-2xl shadow-[0_20px_60px_rgba(0,0,0,0.15)] w-full max-w-md pointer-events-auto overflow-hidden"
              @click.stop>
 
-            {{-- Header --}}
             <div class="flex items-center justify-between p-5 border-b border-gray-100">
                 <div class="flex items-center gap-3">
                     <div class="w-10 h-10 rounded-xl flex items-center justify-center text-white text-xs font-black shrink-0"
@@ -59,12 +52,10 @@
                 </div>
             </div>
 
-            {{-- Body --}}
             <div class="p-5 space-y-4 max-h-[60vh] overflow-y-auto">
 
-                {{-- Activités --}}
                 <div>
-                    <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3">Activités choisies</p>
+                    <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3">Détail Inscription</p>
                     <div class="space-y-2.5">
                         <template x-for="activite in adherent.activites" :key="activite.nom">
                             <div class="flex items-center justify-between">
@@ -76,12 +67,11 @@
                             </div>
                         </template>
                     </div>
-                    <div class="mt-3 pt-2 border-t border-gray-50 flex justify-end">
+                    <div class="mt-3 pt-2 border-t border-gray-50 flex justify-end" x-show="!adherent.isStructure">
                         <p class="text-xs text-gray-400">+ Adhésion annuelle : <span class="font-semibold">10,00 €</span></p>
                     </div>
                 </div>
 
-                {{-- Bloc HelloAsso --}}
                 <template x-if="adherent.source === 'HelloAsso'">
                     <div class="space-y-3">
                         <div class="flex items-center justify-between p-3 bg-[#16987C]/8 rounded-xl border border-[#16987C]/15">
@@ -95,29 +85,9 @@
                                 En attente de validation
                             </span>
                         </div>
-                        <div>
-                            <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Facture HelloAsso</p>
-                            <div class="flex items-center justify-between p-3 bg-gray-50 rounded-xl border border-gray-100">
-                                <div class="flex items-center gap-3">
-                                    <div class="w-8 h-8 rounded-lg bg-[#222A60]/8 flex items-center justify-center">
-                                        <svg class="w-4 h-4 text-[#222A60]/50" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
-                                    </div>
-                                    <div>
-                                        <p class="text-sm font-bold text-[#0F143A]" x-text="'Facture #' + adherent.refFacture"></p>
-                                        <p class="text-xs text-gray-400" x-text="'Paiement reçu le ' + adherent.datePaiement + ' · CB'"></p>
-                                    </div>
-                                </div>
-                                <a href="#" class="text-xs font-bold text-[#16987C] hover:underline whitespace-nowrap">↗ Voir la facture</a>
-                            </div>
-                        </div>
-                        <div class="flex items-start gap-2 p-3 bg-blue-50 rounded-xl border border-blue-100">
-                            <svg class="w-4 h-4 text-blue-400 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                            <p class="text-xs text-blue-600">Paiement automatiquement rapproché via l'API HelloAsso.</p>
-                        </div>
                     </div>
                 </template>
 
-                {{-- Bloc autres sources --}}
                 <template x-if="adherent.source !== 'HelloAsso'">
                     <div class="space-y-3">
                         <div class="flex items-center justify-between p-3 bg-amber-50 rounded-xl border border-amber-100">
@@ -132,8 +102,7 @@
                             </span>
                         </div>
 
-                        {{-- Toggle paiement en plusieurs fois --}}
-                        <div class="p-3 bg-gray-50 rounded-xl border border-gray-100 space-y-3">
+                        <div class="p-3 bg-gray-50 rounded-xl border border-gray-100 space-y-3" x-show="!adherent.isStructure">
                             <button type="button"
                                     @click="plusieursVersements = !plusieursVersements"
                                     class="w-full flex items-center justify-between">
@@ -180,6 +149,15 @@
                                 <p class="text-xs text-gray-400">Le statut passera en <span class="font-bold text-amber-600">Partiel</span> jusqu'au solde complet.</p>
                             </div>
                         </div>
+
+                        <div x-show="!adherent.isStructure">
+                            <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Note interne</p>
+                            <textarea x-model="commentaire"
+                                      rows="2"
+                                      placeholder="Ex : 1er chèque reçu le 12/03, 2e attendu fin mars..."
+                                      class="w-full px-3 py-2.5 bg-gray-50 border border-gray-100 rounded-xl text-sm text-gray-700 placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-[#16987C]/30 focus:border-[#16987C]/40 transition-all resize-none">
+                            </textarea>
+                        </div>
                     </div>
                 </template>
 
@@ -190,7 +168,7 @@
                         class="px-4 py-2 text-sm font-bold text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-xl transition-all">
                     Annuler
                 </button>
-                <form :action="'/adherents/' + adherent.id + '/valider'" method="POST">
+                <form :action="actionUrl" method="POST">
                     @csrf
                     <input type="hidden" name="commentaire" :value="commentaire">
                     <input type="hidden" name="plusieurs_versements" :value="plusieursVersements ? '1' : '0'">
@@ -249,6 +227,7 @@
     </div>
 
     <div class="bg-white rounded-2xl border border-gray-100 shadow-[0_4px_24px_rgba(0,0,0,0.04)] overflow-hidden">
+
         @php
             $filterType = request('type', 'tous');
             $structuresList = match($tab) {
@@ -330,7 +309,7 @@
                             <th class="px-4 py-3 text-left text-[10px] font-black text-gray-400 uppercase tracking-widest">Contact</th>
                             <th class="px-4 py-3 text-right text-[10px] font-black text-gray-400 uppercase tracking-widest">Montant</th>
                             <th class="px-4 py-3 text-left text-[10px] font-black text-gray-400 uppercase tracking-widest">Inscription</th>
-                            <th class="px-6 py-3 text-left text-[10px] font-black text-gray-400 uppercase tracking-widest">Statut paiement</th>
+                            <th class="px-6 py-3 text-right text-[10px] font-black text-gray-400 uppercase tracking-widest">Statut / Actions</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-gray-50">
@@ -366,16 +345,81 @@
                                     @endif
                                 </td>
                                 <td class="px-4 py-4 text-right">
-                                    <span class="font-black text-sm text-[#0F143A]">{{ $structure->montant_adhesion }} €</span>
+                                    <span class="font-black text-sm text-[#0F143A]">{{ number_format((float)($structure->inscription->montant ?? $structure->montant_adhesion ?? 0), 2, ',', ' ') }} €</span>
                                 </td>
                                 <td class="px-4 py-4">
                                     <span class="text-sm text-gray-500">{{ $structure->inscription?->date_inscription?->isoFormat('D MMM YYYY') ?? '—' }}</span>
                                 </td>
-                                <td class="px-6 py-4">
+                                <td class="px-6 py-4 text-right">
                                     @if($tab === 'payes')
                                         <span class="inline-flex px-3 py-1.5 bg-teal-100 text-teal-700 rounded-lg text-xs font-bold">Payée</span>
                                     @else
-                                        <span class="inline-flex px-3 py-1.5 bg-amber-100 text-amber-700 rounded-lg text-xs font-bold">En attente</span>
+                                        @php
+                                            $modalSource = 'Interne';
+                                            if (isset($structure->paiements) && $structure->paiements->isNotEmpty()) {
+                                                $modalSource = $structure->paiements->first()->source;
+                                            } elseif (isset($structure->inscription->source)) {
+                                                $modalSource = $structure->inscription->source;
+                                            } elseif (isset($structure->source)) {
+                                                $modalSource = $structure->source;
+                                            }
+                                            if (isset($structure->inscription->mode_paiement) && strtolower($structure->inscription->mode_paiement) === 'helloasso') {
+                                                $modalSource = 'HelloAsso';
+                                            }
+
+                                            $montantFinal = $structure->inscription->montant ?? $structure->montant_adhesion ?? 0;
+
+                                            $activitesStructure = [];
+                                            $tarifAdhesion = match($structure->statut_juridique) {
+                                                'tpe_asso' => 50,
+                                                'esr_pme' => 200,
+                                                default => 0
+                                            };
+                                            if ($tarifAdhesion > 0) {
+                                                $activitesStructure[] = [
+                                                    'nom' => 'Cotisation annuelle',
+                                                    'tarif' => number_format($tarifAdhesion, 2, ',', ' ') . ' €'
+                                                ];
+                                            }
+                                            if ($structure->statut === 'ressourcerie') {
+                                                $activitesStructure[] = [
+                                                    'nom' => 'Ressourcerie Codey Rocky',
+                                                    'tarif' => '50,00 €'
+                                                ];
+                                            }
+                                            if (empty($activitesStructure)) {
+                                                $activitesStructure[] = [
+                                                    'nom' => 'Adhésion',
+                                                    'tarif' => number_format((float) $montantFinal, 2, ',', ' ') . ' €'
+                                                ];
+                                            }
+                                        @endphp
+                                        <button
+                                            @click="ouvrirModal({{ json_encode([
+                                                'actionUrl'   => '/structures/' . $structure->id . '/valider',
+                                                'isStructure' => true,
+                                                'id'          => $structure->id,
+                                                'nom'         => $structure->nom,
+                                                'initiales'   => $structure->sigle ?: mb_substr($structure->nom, 0, 2),
+                                                'couleur'     => '#222A60',
+                                                'meta'        => 'Structure · Inscrite le ' . ($structure->inscription?->date_inscription?->isoFormat('D MMM YYYY') ?? ''),
+                                                'source'      => $modalSource,
+                                                'sourceClass' => match($modalSource) {
+                                                    'HelloAsso'    => 'bg-[#16987C]/10 text-[#16987C]',
+                                                    'Virement'     => 'bg-blue-50 text-blue-600',
+                                                    'Chèque'       => 'bg-amber-50 text-amber-600',
+                                                    'Espèces'      => 'bg-orange-50 text-orange-600',
+                                                    'Pass Culture' => 'bg-purple-50 text-purple-600',
+                                                    default        => 'bg-gray-100 text-gray-600',
+                                                },
+                                                'montant'      => number_format((float) $montantFinal, 2, ',', ' ') . ' €',
+                                                'datePaiement' => '',
+                                                'activites'    => $activitesStructure,
+                                            ]) }})"
+                                            class="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-[#16987C] hover:bg-[#138a6f] text-white rounded-lg text-xs font-bold transition-all duration-150 shadow-sm">
+                                            Valider
+                                            <svg class="w-3 h-3 opacity-80" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"/></svg>
+                                        </button>
                                     @endif
                                 </td>
                             </tr>
@@ -387,9 +431,6 @@
                                             <span class="text-2xl">🏛️</span>
                                         </div>
                                         <p class="font-bold text-gray-400">Aucune structure trouvée</p>
-                                        @if ($search)
-                                            <p class="text-sm text-gray-300">pour « {{ $search }} »</p>
-                                        @endif
                                     </div>
                                 </td>
                             </tr>
@@ -508,6 +549,8 @@
                                         @endphp
                                             <button
                                                 @click="ouvrirModal({{ json_encode([
+                                                    'actionUrl'   => '/adherents/' . $adherent->id . '/valider',
+                                                    'isStructure' => false,
                                                     'id'          => $adherent->id,
                                                     'nom'         => $adherent->prenom . ' ' . $adherent->nom,
                                                     'initiales'   => $adherent->initiales,
@@ -554,9 +597,6 @@
                                             <svg class="w-7 h-7 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
                                         </div>
                                         <p class="font-bold text-gray-400">Aucun adhérent trouvé</p>
-                                        @if ($search)
-                                            <p class="text-sm text-gray-300">pour « {{ $search }} »</p>
-                                        @endif
                                     </div>
                                 </td>
                             </tr>
@@ -591,6 +631,7 @@
 
         @endif
     </div>
+
     @if ($filterType === 'tous')
 
         @if ($tab === 'payes' && $structuresPayees->isNotEmpty())
@@ -643,7 +684,7 @@
                                         @endif
                                     </td>
                                     <td class="px-4 py-4 text-right">
-                                        <span class="font-black text-sm text-[#0F143A]">{{ $structure->montant_adhesion }} €</span>
+                                        <span class="font-black text-sm text-[#0F143A]">{{ number_format((float)($structure->inscription->montant ?? $structure->montant_adhesion ?? 0), 2, ',', ' ') }} €</span>
                                     </td>
                                     <td class="px-4 py-4">
                                         <span class="text-sm text-gray-500">{{ $structure->inscription?->date_inscription?->isoFormat('D MMM YYYY') ?? '—' }}</span>
@@ -676,7 +717,7 @@
                                 <th class="px-4 py-3 text-left text-[10px] font-black text-gray-400 uppercase tracking-widest">Contact</th>
                                 <th class="px-4 py-3 text-right text-[10px] font-black text-gray-400 uppercase tracking-widest">Montant</th>
                                 <th class="px-4 py-3 text-left text-[10px] font-black text-gray-400 uppercase tracking-widest">Inscription</th>
-                                <th class="px-6 py-3"></th>
+                                <th class="px-6 py-3 text-right text-[10px] font-black text-gray-400 uppercase tracking-widest">Actions</th>
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-gray-50">
@@ -709,13 +750,74 @@
                                         @endif
                                     </td>
                                     <td class="px-4 py-4 text-right">
-                                        <span class="font-black text-sm text-[#0F143A]">{{ $structure->montant_adhesion }} €</span>
+                                        <span class="font-black text-sm text-[#0F143A]">{{ number_format((float)($structure->inscription->montant ?? $structure->montant_adhesion ?? 0), 2, ',', ' ') }} €</span>
                                     </td>
                                     <td class="px-4 py-4">
                                         <span class="text-sm text-gray-500">{{ $structure->inscription?->date_inscription?->isoFormat('D MMM YYYY') ?? '—' }}</span>
                                     </td>
-                                    <td class="px-6 py-4">
-                                        <span class="inline-flex px-3 py-1.5 bg-amber-100 text-amber-700 rounded-lg text-xs font-bold">En attente</span>
+                                    <td class="px-6 py-4 text-right">
+                                        @php
+                                            $modalSource = 'Interne';
+                                            if (isset($structure->paiements) && $structure->paiements->isNotEmpty()) {
+                                                $modalSource = $structure->paiements->first()->source;
+                                            } elseif (isset($structure->inscription->source)) {
+                                                $modalSource = $structure->inscription->source;
+                                            } elseif (isset($structure->source)) {
+                                                $modalSource = $structure->source;
+                                            }
+                                            if (isset($structure->inscription->mode_paiement) && strtolower($structure->inscription->mode_paiement) === 'helloasso') {
+                                                $modalSource = 'HelloAsso';
+                                            }
+
+                                            $montantFinal = $structure->inscription->montant ?? $structure->montant_adhesion ?? 0;
+
+                                            $activitesStructure = [];
+                                            $tarifAdhesion = match($structure->statut_juridique) {
+                                                'tpe_asso' => 50,
+                                                'esr_pme' => 200,
+                                                default => 0
+                                            };
+                                            if ($tarifAdhesion > 0) {
+                                                $activitesStructure[] = [
+                                                    'nom' => 'Cotisation annuelle',
+                                                    'tarif' => number_format($tarifAdhesion, 2, ',', ' ') . ' €'
+                                                ];
+                                            }
+                                            if ($structure->statut === 'ressourcerie') {
+                                                $activitesStructure[] = [
+                                                    'nom' => 'Ressourcerie Codey Rocky',
+                                                    'tarif' => '50,00 €'
+                                                ];
+                                            }
+                                        @endphp
+                                        <button
+                                            @click="ouvrirModal({{ json_encode([
+                                                'actionUrl'   => '/structures/' . $structure->id . '/valider',
+                                                'isStructure' => true,
+                                                'id'          => $structure->id,
+                                                'nom'         => $structure->nom,
+                                                'initiales'   => $structure->sigle ?: mb_substr($structure->nom, 0, 2),
+                                                'couleur'     => '#222A60',
+                                                'meta'        => 'Structure · Inscrite le ' . ($structure->inscription?->date_inscription?->isoFormat('D MMM YYYY') ?? ''),
+                                                'source'      => $modalSource,
+                                                'sourceClass' => match($modalSource) {
+                                                    'HelloAsso'    => 'bg-[#16987C]/10 text-[#16987C]',
+                                                    'Virement'     => 'bg-blue-50 text-blue-600',
+                                                    'Chèque'       => 'bg-amber-50 text-amber-600',
+                                                    'Espèces'      => 'bg-orange-50 text-orange-600',
+                                                    'Pass Culture' => 'bg-purple-50 text-purple-600',
+                                                    default        => 'bg-gray-100 text-gray-600',
+                                                },
+                                                'montant'      => number_format((float) $montantFinal, 2, ',', ' ') . ' €',
+                                                'refFacture'   => '',
+                                                'datePaiement' => '',
+                                                'commentaire'  => '',
+                                                'activites'    => $activitesStructure,
+                                            ]) }})"
+                                            class="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-[#16987C] hover:bg-[#138a6f] text-white rounded-lg text-xs font-bold transition-all duration-150 shadow-sm">
+                                            Valider
+                                            <svg class="w-3 h-3 opacity-80" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"/></svg>
+                                        </button>
                                     </td>
                                 </tr>
                             @endforeach
@@ -732,6 +834,7 @@
 function adherentOverlay() {
     return {
         open: false,
+        actionUrl: '',
         commentaire: '',
         plusieursVersements: false,
         montantRecu: '',
@@ -739,6 +842,7 @@ function adherentOverlay() {
 
         ouvrirModal(data) {
             this.adherent           = data;
+            this.actionUrl          = data.actionUrl;
             this.commentaire        = data.commentaire || '';
             this.plusieursVersements = false;
             this.montantRecu        = '';
@@ -760,7 +864,7 @@ function adherentOverlay() {
         },
 
         adherent: {
-            id: null, nom: '', initiales: '', couleur: '', meta: '',
+            isStructure: false, id: null, nom: '', initiales: '', couleur: '', meta: '',
             source: '', sourceClass: '', montant: '', refFacture: '',
             datePaiement: '', activites: [], commentaire: '',
         },
