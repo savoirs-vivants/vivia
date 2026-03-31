@@ -74,6 +74,7 @@ class AdherentFormulaireController extends Controller
         }
 
         $path = $isAdherent ? [1, 2, 3] : [1, 12, 2, 3];
+        if (!$isAdherent && $isMineur) $path[] = 15;
         if ($isMineur) $path[] = 4;
         $path[] = 5;
         if ($needsActivite) $path[] = 6;
@@ -160,6 +161,7 @@ class AdherentFormulaireController extends Controller
             11 => ['label' => 'Confirmation',   'icon' => '✅'],
             13 => ['label' => 'Structure',      'icon' => '🏛️'],
             14 => ['label' => 'Autorisations',  'icon' => '📜'],
+            15 => ['label' => 'Orientation',    'icon' => '🎓'],
         ];
     }
 
@@ -876,6 +878,8 @@ class AdherentFormulaireController extends Controller
                 'manif'           => ($formData['participation_manif'] ?? '0') === '1',
                 'actions'         => json_encode($formData['actions_benevoles'] ?? []),
                 'signature'       => $formData['signature_adherent'] ?? null,
+                'idee_metier'       => $formData['idee_metier'] ?? null,
+                'decouverte_metier' => $formData['decouverte_metier'] ?? null,
             ]);
 
             if (!empty($autresTouteurs)) {

@@ -39,7 +39,9 @@ class Adherent extends Model
         'problemes_sante',
         'allergies',
         'conduite_a_tenir',
-        'restrictions_alimentaires'
+        'restrictions_alimentaires',
+        'idee_metier',
+        'decouverte_metier',
     ];
 
     protected $casts = [

@@ -226,6 +226,29 @@
                     </div>
                 </div>
             </div>
+            @if ($adherent->idee_metier || $adherent->decouverte_metier)
+                <div class="bg-white rounded-2xl border border-gray-100 shadow-[0_2px_12px_rgba(0,0,0,0.03)] overflow-hidden">
+                    <div class="px-6 py-4 border-b border-gray-50 flex items-center gap-2">
+                        <span class="text-indigo-400 text-sm">🎓</span>
+                        <h2 class="text-xs font-black text-gray-400 uppercase tracking-widest">Orientation professionnelle</h2>
+                    </div>
+                    <div class="p-6 space-y-4">
+                        @if ($adherent->idee_metier)
+                            <div>
+                                <p class="text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-1.5">Idée de métier</p>
+                                <p class="text-sm text-[#0F143A] font-medium leading-relaxed">{{ $adherent->idee_metier }}</p>
+                            </div>
+                        @endif
+                        @if ($adherent->decouverte_metier)
+                            <div>
+                                <p class="text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-1.5">Découverte métier / formation</p>
+                                <p class="text-sm text-[#0F143A] font-medium leading-relaxed">{{ $adherent->decouverte_metier }}</p>
+                            </div>
+                        @endif
+                    </div>
+                </div>
+            @endif
+
             @if (
                 $adherent->problemes_sante ||
                     $adherent->allergies ||
