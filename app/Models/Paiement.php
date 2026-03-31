@@ -12,6 +12,7 @@ class Paiement extends Model
 
     protected $fillable = [
         'id_adherent',
+        'id_structure',
         'montant',
         'source',
         'ref_facture',
