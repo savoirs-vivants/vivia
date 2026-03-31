@@ -51,18 +51,25 @@ class AdherentController extends Controller
         $adherentsEnAttente = $queryAttente->orderBy('nom')->paginate(25)->withQueryString();
         $adherentsPartiel   = $queryPartiel->orderBy('nom')->paginate(25)->withQueryString();
 
-        // Structures en attente
-        $structuresEnAttente = AdherentStructure::with(['inscription'])
-            ->whereHas('inscriptions', fn($q) => $q->where('a_paye', Inscription::EN_ATTENTE))
+        $baseStructures = AdherentStructure::with(['inscription'])
             ->when($search, fn($q) => $q->where(function ($q) use ($search) {
                 $q->where('nom', 'like', "%{$search}%")
                   ->orWhere('mail', 'like', "%{$search}%")
                   ->orWhere('nom_correspondant', 'like', "%{$search}%");
-            }))
+            }));
+
+        $structuresEnAttente = (clone $baseStructures)
+            ->whereHas('inscriptions', fn($q) => $q->where('a_paye', Inscription::EN_ATTENTE))
+            ->orderBy('nom')
+            ->get();
+
+        $structuresPayees = (clone $baseStructures)
+            ->whereHas('inscriptions', fn($q) => $q->where('a_paye', Inscription::PAYE))
             ->orderBy('nom')
             ->get();
 
         $countAttente += $structuresEnAttente->count();
+        $countPayes   += $structuresPayees->count();
 
         return view('adherents.index', compact(
             'tab',
@@ -76,6 +83,7 @@ class AdherentController extends Controller
             'countAttente',
             'countPartiel',
             'structuresEnAttente',
+            'structuresPayees',
         ));
     }
 

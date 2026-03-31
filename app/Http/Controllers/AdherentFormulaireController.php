@@ -694,13 +694,6 @@ class AdherentFormulaireController extends Controller
                     ->withErrors(['helloasso2' => 'Structure introuvable, veuillez réessayer.']);
             }
 
-            DB::table('inscriptions')
-                ->where('id_structure', $formData['_structure_id'])
-                ->where('a_paye', Inscription::EN_ATTENTE)
-                ->orderByDesc('id')
-                ->limit(1)
-                ->update(['a_paye' => Inscription::PAYE, 'updated_at' => now()]);
-
             $montantCotisation = ($formData['statut_juridique'] ?? '') === 'esr_pme' ? 200 : 50;
             Paiement::create([
                 'id_structure'  => $formData['_structure_id'],
