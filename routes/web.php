@@ -59,7 +59,8 @@ Route::middleware('auth')->group(function () {
     Route::post('/adherents/{adherent}/valider', [AdherentController::class, 'valider'])->name('adherents.valider');
     Route::get('/adherents/{adherent}/pdf', [AdherentController::class, 'downloadPdf'])->name('adherents.pdf');
 
-    Route::post('/structures/{structure}/valider', [App\Http\Controllers\AdherentController::class, 'validerStructure'])->name('structures.valider');
+    Route::get('/structures/{structure}', [AdherentController::class, 'showStructure'])->name('structures.show');
+    Route::post('/structures/{structure}/valider', [AdherentController::class, 'validerStructure'])->name('structures.valider');
 
     Route::get('/activites', [ActiviteController::class, 'index'])->name('activites.index');
     Route::get('/activites/create', [ActiviteController::class, 'create'])->name('activites.create');

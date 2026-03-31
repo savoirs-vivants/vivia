@@ -367,7 +367,7 @@
                                                 $modalSource = 'HelloAsso';
                                             }
 
-                                            $montantFinal = $structure->inscription->montant ?? $structure->montant_adhesion ?? 0;
+                                            $montantFinal = $structure->montant_adhesion;
 
                                             $activitesStructure = [];
                                             $tarifAdhesion = match($structure->statut_juridique) {
@@ -652,6 +652,7 @@
                                 <th class="px-4 py-3 text-right text-[10px] font-black text-gray-400 uppercase tracking-widest">Montant</th>
                                 <th class="px-4 py-3 text-left text-[10px] font-black text-gray-400 uppercase tracking-widest">Date</th>
                                 <th class="px-6 py-3 text-left text-[10px] font-black text-gray-400 uppercase tracking-widest">Statut paiement</th>
+                                <th class="px-6 py-3"></th>
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-gray-50">
@@ -684,13 +685,19 @@
                                         @endif
                                     </td>
                                     <td class="px-4 py-4 text-right">
-                                        <span class="font-black text-sm text-[#0F143A]">{{ number_format((float)($structure->inscription->montant ?? $structure->montant_adhesion ?? 0), 2, ',', ' ') }} €</span>
+                                        <span class="font-black text-sm text-[#0F143A]">{{ number_format((float) $structure->montant_adhesion, 2, ',', ' ') }} €</span>
                                     </td>
                                     <td class="px-4 py-4">
                                         <span class="text-sm text-gray-500">{{ $structure->inscription?->date_inscription?->isoFormat('D MMM YYYY') ?? '—' }}</span>
                                     </td>
                                     <td class="px-6 py-4">
                                         <span class="inline-flex px-3 py-1.5 bg-teal-100 text-teal-700 rounded-lg text-xs font-bold">Payée</span>
+                                    </td>
+                                    <td class="px-6 py-4">
+                                        <a href="{{ route('structures.show', $structure) }}" class="inline-flex items-center gap-1 px-3 py-1.5 bg-[#222A60]/5 hover:bg-[#222A60]/10 text-[#222A60] rounded-lg text-xs font-bold transition-all">
+                                            Voir la fiche
+                                            <svg class="w-3 h-3 opacity-60" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"/></svg>
+                                        </a>
                                     </td>
                                 </tr>
                             @endforeach
@@ -750,7 +757,7 @@
                                         @endif
                                     </td>
                                     <td class="px-4 py-4 text-right">
-                                        <span class="font-black text-sm text-[#0F143A]">{{ number_format((float)($structure->inscription->montant ?? $structure->montant_adhesion ?? 0), 2, ',', ' ') }} €</span>
+                                        <span class="font-black text-sm text-[#0F143A]">{{ number_format((float) $structure->montant_adhesion, 2, ',', ' ') }} €</span>
                                     </td>
                                     <td class="px-4 py-4">
                                         <span class="text-sm text-gray-500">{{ $structure->inscription?->date_inscription?->isoFormat('D MMM YYYY') ?? '—' }}</span>
@@ -769,7 +776,7 @@
                                                 $modalSource = 'HelloAsso';
                                             }
 
-                                            $montantFinal = $structure->inscription->montant ?? $structure->montant_adhesion ?? 0;
+                                            $montantFinal = $structure->montant_adhesion;
 
                                             $activitesStructure = [];
                                             $tarifAdhesion = match($structure->statut_juridique) {
@@ -818,6 +825,7 @@
                                             Valider
                                             <svg class="w-3 h-3 opacity-80" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"/></svg>
                                         </button>
+                                        </div>
                                     </td>
                                 </tr>
                             @endforeach

@@ -24,16 +24,8 @@ class Tuteur extends Model
     protected $casts = [
         'adhere'       => 'boolean',
         'rentre_fin'   => 'boolean',
-        'rentre_annul' => 'boolean', 
+        'rentre_annul' => 'boolean',
     ];
-
-    /**
-     * Enfants / adhérents rattachés à ce tuteur.
-     */
-    public function adherents(): HasMany
-    {
-        return $this->hasMany(Adherent::class, 'id_tuteur');
-    }
 
     public function getNomCompletAttribute(): string
     {

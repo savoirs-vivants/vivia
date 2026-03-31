@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Str;
+use App\Models\Paiement;
 
 class AdherentStructure extends Model
 {
@@ -24,7 +25,6 @@ class AdherentStructure extends Model
         'nom_correspondant',
         'tel_correspondant',
         'bulletin',
-        'communication',
         'autorisation_photo',
         'statut',
         'statut_juridique',
@@ -33,7 +33,6 @@ class AdherentStructure extends Model
     protected $casts = [
         'date_creation'     => 'date',
         'bulletin'          => 'boolean',
-        'communication'     => 'boolean',
         'autorisation_photo'=> 'boolean',
     ];
 
@@ -56,8 +55,17 @@ class AdherentStructure extends Model
         return $this->hasOne(Inscription::class, 'id_structure')->latestOfMany('date_inscription');
     }
 
-    public function getMontantAdhesionAttribute(): int
+    public function paiements()
     {
-        return $this->statut_juridique === 'esr_pme' ? 200 : 50;
+        return $this->hasMany(Paiement::class, 'id_structure');
+    }
+
+    public function getMontantAdhesionAttribute(): float
+    {
+        if ($this->relationLoaded('paiements')) {
+            $total = (float) $this->paiements->sum('montant');
+            return $total > 0 ? $total : (float) ($this->inscription?->montant ?? ($this->statut_juridique === 'esr_pme' ? 200 : 50));
+        }
+        return (float) ($this->inscription?->montant ?? ($this->statut_juridique === 'esr_pme' ? 200 : 50));
     }
 }

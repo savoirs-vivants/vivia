@@ -51,7 +51,7 @@ class AdherentController extends Controller
         $adherentsEnAttente = $queryAttente->orderBy('nom')->paginate(25)->withQueryString();
         $adherentsPartiel   = $queryPartiel->orderBy('nom')->paginate(25)->withQueryString();
 
-        $baseStructures = AdherentStructure::with(['inscription'])
+        $baseStructures = AdherentStructure::with(['inscription', 'paiements'])
             ->when($search, fn($q) => $q->where(function ($q) use ($search) {
                 $q->where('nom', 'like', "%{$search}%")
                   ->orWhere('mail', 'like', "%{$search}%")
@@ -172,6 +172,15 @@ class AdherentController extends Controller
         return redirect()
             ->route('adherents.index', ['tab' => $tab])
             ->with('success', $adherent->prenom . ' ' . $adherent->nom . ' — ' . strtolower($statut) . '.');
+    }
+
+    public function showStructure(AdherentStructure $structure)
+    {
+        $structure->load(['inscriptions', 'inscription', 'paiements']);
+        $saisons   = $structure->inscriptions->sortByDesc('saison');
+        $totalPaye = (float) $structure->paiements->sum('montant');
+
+        return view('adherents.show_structure', compact('structure', 'saisons', 'totalPaye'));
     }
 
     public function validerStructure(Request $request, AdherentStructure $structure)
