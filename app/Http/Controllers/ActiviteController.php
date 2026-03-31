@@ -2,12 +2,14 @@
 
 namespace App\Http\Controllers;
 
+use App\Mail\CoursAnnule;
 use App\Models\Activite;
 use App\Models\DossierActivite;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\Mail;
 
 class ActiviteController extends Controller
 {
@@ -446,11 +448,36 @@ class ActiviteController extends Controller
 
     public function annulerSeance(Activite $activite, $idSeance)
     {
+        $seance = DB::table('seances')
+            ->where('id_activite', $activite->id)
+            ->where('id_seance', $idSeance)
+            ->first();
+
+        if ($seance) {
+            $dateFormatee = \Carbon\Carbon::parse($seance->date)->isoFormat('dddd D MMMM YYYY à HH:mm');
+
+            $adherents = $activite->adherentsActifs()->with('tousLesTuteurs')->get();
+            $emails = [];
+
+            foreach ($adherents as $adherent) {
+                $tuteur = $adherent->tousLesTuteurs->first();
+                if ($tuteur && $tuteur->mail) {
+                    $emails[] = $tuteur->mail;
+                }
+            }
+
+            $emails = array_unique($emails);
+
+            if (!empty($emails)) {
+                Mail::to('contact@savoirsvivants.fr')->bcc($emails)->send(new CoursAnnule($activite->nom, $dateFormatee));
+            }
+        }
+
         DB::table('seances')
             ->where('id_activite', $activite->id)
             ->where('id_seance', $idSeance)
             ->delete();
 
-        return redirect()->back()->with('success', 'La séance a été annulée et supprimée du calendrier.');
+        return redirect()->back()->with('success', 'La séance a été annulée, et les tuteurs ont été prévenus par email.');
     }
 }
