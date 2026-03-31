@@ -333,8 +333,9 @@
 
                             <div x-data="{ activite: '{{ $formData['type_activite'] ?? '' }}' }">
                                 @php
-                                    $statutJuridique = $formData['statut_juridique'] ?? 'personne_physique';
+                                    $statutJuridique  = $formData['statut_juridique'] ?? 'personne_physique';
                                     $isStructureStep2 = in_array($statutJuridique, ['tpe_asso', 'esr_pme']);
+                                    $isDejaAdherent   = ($formData['is_adherent'] ?? 'non') === 'oui';
 
                                     if ($isStructureStep2) {
                                         $options = [
@@ -345,18 +346,20 @@
                                                 'desc'  => 'Louer du matériel pédagogique robotique',
                                             ],
                                             [
+                                                'value' => 'recherche',
+                                                'label' => 'Programme de recherche',
+                                                'icon'  => '🔬',
+                                                'desc'  => 'Participer à un programme de recherche participative' . ($isDejaAdherent ? ' (gratuit)' : ''),
+                                            ],
+                                        ];
+                                        if (!$isDejaAdherent) {
+                                            $options[] = [
                                                 'value' => 'soutien',
                                                 'label' => 'Adhésion par soutien',
                                                 'icon'  => '🤝',
                                                 'desc'  => 'Soutenir financièrement l\'association',
-                                            ],
-                                            [
-                                                'value' => 'recherche',
-                                                'label' => 'Programme de recherche',
-                                                'icon'  => '🔬',
-                                                'desc'  => 'Participer à un programme de recherche participative',
-                                            ],
-                                        ];
+                                            ];
+                                        }
                                     } else {
                                         $options = [
                                             [
@@ -378,24 +381,26 @@
                                                 'desc'  => 'Stages sur plusieurs jours',
                                             ],
                                             [
+                                                'value' => 'recherche',
+                                                'label' => 'Recherche participative',
+                                                'icon'  => '🔬',
+                                                'desc'  => 'Participer à un programme de recherche' . ($isDejaAdherent ? ' (gratuit)' : ''),
+                                            ],
+                                        ];
+                                        if (!$isDejaAdherent) {
+                                            $options[] = [
                                                 'value' => 'club_maker',
                                                 'label' => 'Club Maker',
                                                 'icon'  => '⚙️',
                                                 'desc'  => 'Rejoindre le club des makers',
-                                            ],
-                                            [
+                                            ];
+                                            $options[] = [
                                                 'value' => 'soutien',
                                                 'label' => 'Inscription par soutien',
                                                 'icon'  => '🤝',
                                                 'desc'  => 'Soutenir financièrement l\'association',
-                                            ],
-                                            [
-                                                'value' => 'recherche',
-                                                'label' => 'Recherche participative',
-                                                'icon'  => '🔬',
-                                                'desc'  => 'Participer à un programme de recherche',
-                                            ],
-                                        ];
+                                            ];
+                                        }
                                     }
                                 @endphp
 

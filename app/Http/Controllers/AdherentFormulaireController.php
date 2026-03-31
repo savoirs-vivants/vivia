@@ -52,6 +52,9 @@ class AdherentFormulaireController extends Controller
 
     private function montantStructure(array $formData): int
     {
+        if (($formData['is_adherent'] ?? 'non') === 'oui') {
+            return 0;
+        }
         return ($formData['statut_juridique'] ?? '') === 'esr_pme' ? 200 : 50;
     }
 
@@ -413,6 +416,7 @@ class AdherentFormulaireController extends Controller
             if ($this->isStructure($formData)) {
                 $typeActivite     = $formData['type_activite'] ?? '';
                 $ressourceriePaid = !empty($formData['_ressourcerie_paid']);
+                $isDejaAdherent   = ($formData['is_adherent'] ?? 'non') === 'oui';
 
                 if ($typeActivite === 'ressourcerie' && !$ressourceriePaid) {
                     $correspondant = trim($formData['nom_correspondant'] ?? '');
@@ -439,6 +443,22 @@ class AdherentFormulaireController extends Controller
                     }
                 }
 
+                // Membre existant (recherche gratuite ou autre) → pas de cotisation, step 11 direct
+                if ($isDejaAdherent) {
+                    if (!empty($formData['_structure_id'])) {
+                        DB::table('inscriptions')
+                            ->where('id_structure', $formData['_structure_id'])
+                            ->where('a_paye', Inscription::EN_ATTENTE)
+                            ->orderByDesc('id')->limit(1)
+                            ->update(['a_paye' => Inscription::PAYE, 'updated_at' => now()]);
+                    }
+                    $formData['_paiement2_cree'] = true;
+                    $formData['_helloasso_ok']   = true;
+                    $formData['_last_completed'] = 11;
+                    $request->session()->put("adhesion_{$token}", $formData);
+                    return redirect()->route('adhesion.show', ['token' => $token, 'step' => 11]);
+                }
+
                 $request->session()->put("paiement1_done_{$token}", true);
                 return redirect()->route('adhesion.show', ['token' => $token, 'step' => 10]);
             }
@@ -455,6 +475,21 @@ class AdherentFormulaireController extends Controller
 
             $isSinglePayment = in_array($formData['type_activite'] ?? '', ['soutien', 'recherche']);
             if ($isSinglePayment && $totalActiviteEuros == 0) {
+                // Membre existant + recherche gratuite → step 11 direct, pas de cotisation
+                if (!$estNouvelAdherent) {
+                    if (!empty($formData['_adherent_id'])) {
+                        DB::table('inscriptions')
+                            ->where('id_adherent', $formData['_adherent_id'])
+                            ->where('a_paye', Inscription::EN_ATTENTE)
+                            ->orderByDesc('id')->limit(1)
+                            ->update(['a_paye' => Inscription::PAYE, 'updated_at' => now()]);
+                    }
+                    $formData['_paiement2_cree'] = true;
+                    $formData['_helloasso_ok']   = true;
+                    $formData['_last_completed'] = 11;
+                    $request->session()->put("adhesion_{$token}", $formData);
+                    return redirect()->route('adhesion.show', ['token' => $token, 'step' => 11]);
+                }
                 $request->session()->put("paiement1_done_{$token}", true);
                 return redirect()->route('adhesion.show', ['token' => $token, 'step' => 10]);
             }
@@ -551,10 +586,9 @@ class AdherentFormulaireController extends Controller
         if ($this->isStructure($formData)) {
             if (($formData['type_activite'] ?? '') === 'ressourcerie' && empty($formData['_ressourcerie_paid'])) {
                 $formData['_ressourcerie_paid'] = true;
-                $request->session()->put("adhesion_{$token}", $formData);
 
                 if (!empty($formData['_structure_id'])) {
-                    $ressourcerieIds   = $formData['ressourcerie_selectionnees'] ?? [];
+                    $ressourcerieIds     = $formData['ressourcerie_selectionnees'] ?? [];
                     $montantRessourcerie = \App\Models\Ressourcerie::whereIn('id', $ressourcerieIds)->sum('prix');
                     if ($montantRessourcerie > 0) {
                         Paiement::create([
@@ -567,6 +601,21 @@ class AdherentFormulaireController extends Controller
                     }
                 }
 
+                // Membre existant : pas de cotisation, inscription PAYE, step 11 direct
+                if (($formData['is_adherent'] ?? 'non') === 'oui' && !empty($formData['_structure_id'])) {
+                    DB::table('inscriptions')
+                        ->where('id_structure', $formData['_structure_id'])
+                        ->where('a_paye', Inscription::EN_ATTENTE)
+                        ->orderByDesc('id')->limit(1)
+                        ->update(['a_paye' => Inscription::PAYE, 'updated_at' => now()]);
+                    $formData['_paiement2_cree'] = true;
+                    $formData['_helloasso_ok']   = true;
+                    $formData['_last_completed'] = 11;
+                    $request->session()->put("adhesion_{$token}", $formData);
+                    return redirect()->route('adhesion.show', ['token' => $token, 'step' => 11]);
+                }
+
+                $request->session()->put("adhesion_{$token}", $formData);
                 $request->session()->put("paiement1_done_{$token}", true);
                 return redirect()->route('adhesion.show', ['token' => $token, 'step' => 10]);
             }
@@ -603,6 +652,14 @@ class AdherentFormulaireController extends Controller
             return redirect()->route('adhesion.show', ['token' => $token, 'step' => 10]);
         }
 
+        // Membre existant : marquer l'inscription comme payée (pas de cotisation)
+        if (!empty($formData['_adherent_id'])) {
+            DB::table('inscriptions')
+                ->where('id_adherent', $formData['_adherent_id'])
+                ->where('a_paye', Inscription::EN_ATTENTE)
+                ->orderByDesc('id')->limit(1)
+                ->update(['a_paye' => Inscription::PAYE, 'updated_at' => now()]);
+        }
         $formData['_helloasso_ok'] = true;
         $formData['_last_completed'] = 11;
         $request->session()->put("adhesion_{$token}", $formData);
@@ -694,14 +751,17 @@ class AdherentFormulaireController extends Controller
                     ->withErrors(['helloasso2' => 'Structure introuvable, veuillez réessayer.']);
             }
 
-            $montantCotisation = ($formData['statut_juridique'] ?? '') === 'esr_pme' ? 200 : 50;
-            Paiement::create([
-                'id_structure'  => $formData['_structure_id'],
-                'montant'       => $montantCotisation,
-                'source'        => 'HelloAsso',
-                'date_paiement' => now()->toDateString(),
-                'commentaire'   => 'Cotisation structure via HelloAsso',
-            ]);
+            $isDejaAdherentStr = ($formData['is_adherent'] ?? 'non') === 'oui';
+            $montantCotisation = $isDejaAdherentStr ? 0 : (($formData['statut_juridique'] ?? '') === 'esr_pme' ? 200 : 50);
+            if ($montantCotisation > 0) {
+                Paiement::create([
+                    'id_structure'  => $formData['_structure_id'],
+                    'montant'       => $montantCotisation,
+                    'source'        => 'HelloAsso',
+                    'date_paiement' => now()->toDateString(),
+                    'commentaire'   => 'Cotisation structure via HelloAsso',
+                ]);
+            }
 
             $formData['_paiement2_cree'] = true;
             $formData['_helloasso_ok']   = true;
@@ -716,8 +776,9 @@ class AdherentFormulaireController extends Controller
             return redirect()->route('adhesion.show', ['token' => $token, 'step' => 10]);
         }
 
-        $typeActivite = $formData['type_activite'] ?? '';
-        $cotisation   = ($typeActivite !== 'club_maker') ? 10 : 0;
+        $typeActivite   = $formData['type_activite'] ?? '';
+        $isDejaAdherent = ($formData['is_adherent'] ?? 'non') === 'oui';
+        $cotisation     = (!$isDejaAdherent && $typeActivite !== 'club_maker') ? 10 : 0;
 
         if ($cotisation > 0) {
             Paiement::create([
