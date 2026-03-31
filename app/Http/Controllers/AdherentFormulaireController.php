@@ -414,15 +414,14 @@ class AdherentFormulaireController extends Controller
                 $typeActivite     = $formData['type_activite'] ?? '';
                 $ressourceriePaid = !empty($formData['_ressourcerie_paid']);
 
-                $correspondant = trim($formData['nom_correspondant'] ?? '');
-                $parts = preg_split('/\s+/', $correspondant, 2);
-                $payerInfo = [
-                    'prenom' => $parts[0] ?: 'Correspondant',
-                    'nom'    => ($parts[1] ?? '') ?: ($formData['nom_structure'] ?? 'Structure'),
-                    'mail'   => $formData['mail_structure'] ?? 'email@defaut.fr',
-                ];
-
                 if ($typeActivite === 'ressourcerie' && !$ressourceriePaid) {
+                    $correspondant = trim($formData['nom_correspondant'] ?? '');
+                    $parts = preg_split('/\s+/', $correspondant, 2);
+                    $payerInfo = [
+                        'prenom' => $parts[0] ?: 'Correspondant',
+                        'nom'    => ($parts[1] ?? '') ?: ($formData['nom_structure'] ?? 'Structure'),
+                        'mail'   => $formData['mail_structure'] ?? 'email@defaut.fr',
+                    ];
                     $ressourcerieIds   = $formData['ressourcerie_selectionnees'] ?? [];
                     $totalRessourcerie = \App\Models\Ressourcerie::whereIn('id', $ressourcerieIds)->sum('prix');
                     try {
@@ -440,20 +439,8 @@ class AdherentFormulaireController extends Controller
                     }
                 }
 
-                $montantCentimes = $this->montantStructure($formData) * 100;
-                try {
-                    $urlPaiement = $service->createCheckout(
-                        $montantCentimes,
-                        $payerInfo,
-                        $token,
-                        'adhesion.helloasso.return',
-                        'Adhésion Structure - Savoirs Vivants'
-                    );
-                    return redirect($urlPaiement);
-                } catch (\Exception $e) {
-                    Log::error('HelloAsso Error (Structure): ' . $e->getMessage());
-                    return back()->withErrors(['helloasso' => $e->getMessage()]);
-                }
+                $request->session()->put("paiement1_done_{$token}", true);
+                return redirect()->route('adhesion.show', ['token' => $token, 'step' => 10]);
             }
 
             $activitesIds      = $formData['activites_selectionnees'] ?? [];
@@ -466,15 +453,12 @@ class AdherentFormulaireController extends Controller
                 $totalActiviteEuros = $activites->sum('tarif');
             }
 
-            // Étape 1 : pour soutien/recherche (pas d'activité à payer en étape 1),
-            // on passe directement au modal "cotisation dans un nouvel onglet".
             $isSinglePayment = in_array($formData['type_activite'] ?? '', ['soutien', 'recherche']);
             if ($isSinglePayment && $totalActiviteEuros == 0) {
                 $request->session()->put("paiement1_done_{$token}", true);
                 return redirect()->route('adhesion.show', ['token' => $token, 'step' => 10]);
             }
 
-            // Pour les réinscriptions, prenom/nom/mail ne sont pas dans formData (step 3 sauté)
             $payerPrenom = $formData['prenom'] ?? null;
             $payerNom    = $formData['nom']    ?? null;
             $payerMail   = $formData['mail']   ?? null;
@@ -622,12 +606,19 @@ class AdherentFormulaireController extends Controller
         $basePublic = $isSandbox
             ? 'https://www.helloasso-sandbox.com'
             : 'https://www.helloasso.com';
-        $orgSlug  = config('services.helloasso.org_slug');
-        $formSlug = env('HELLOASSO_MEMBERSHIP_FORM_SLUG');
+        $orgSlug = config('services.helloasso.org_slug');
+
+        if ($this->isStructure($formData)) {
+            $formSlug = ($formData['statut_juridique'] ?? '') === 'esr_pme'
+                ? env('HELLOASSO_MEMBERSHIP_FORM_SLUG_PME', 'adhesion-savoirs-vivants-2025-2026-pme')
+                : env('HELLOASSO_MEMBERSHIP_FORM_SLUG_TPE', 'adhesion-savoirs-vivants-2025-2026-tpe');
+        } else {
+            $formSlug = env('HELLOASSO_MEMBERSHIP_FORM_SLUG');
+        }
 
         $url = "{$basePublic}/associations/{$orgSlug}/adhesions/{$formSlug}";
 
-        Log::info("HelloAsso checkout2 : redirection vers la page officielle d'adhésion", ['url' => $url]);
+        Log::info("HelloAsso checkout2 : URL d'adhésion", ['url' => $url, 'statut_juridique' => $formData['statut_juridique'] ?? 'n/a']);
 
         if ($request->expectsJson()) {
             return response()->json(['url' => $url]);
@@ -669,8 +660,8 @@ class AdherentFormulaireController extends Controller
     }
 
     /**
-     * Vérifie via l'API HelloAsso si la cotisation a bien été payée sur la page d'adhésion.
-     * Appelé manuellement par l'utilisateur après avoir payé sur HelloAsso (URL).
+     * Vérifie via l'API HelloAsso si la cotisation a bien été payée.
+     * Gère les adhérents (personne physique) et les structures.
      */
     public function verifierCotisation(Request $request, string $token)
     {
@@ -678,9 +669,59 @@ class AdherentFormulaireController extends Controller
 
         $formData = $request->session()->get("adhesion_{$token}", []);
 
+        if ($this->isStructure($formData)) {
+            if (!empty($formData['_paiement2_cree'])) {
+                return redirect()->route('adhesion.show', ['token' => $token, 'step' => 11]);
+            }
+
+            if (empty($formData['_structure_id'])) {
+                return redirect()->route('adhesion.show', ['token' => $token, 'step' => 10])
+                    ->withErrors(['helloasso2' => 'Structure introuvable, veuillez réessayer.']);
+            }
+
+            $structure = AdherentStructure::find($formData['_structure_id']);
+            if (!$structure || !$structure->mail) {
+                return redirect()->route('adhesion.show', ['token' => $token, 'step' => 10])
+                    ->withErrors(['helloasso2' => 'Impossible de vérifier : structure ou email introuvable.']);
+            }
+
+            try {
+                $service  = new HelloAssoService();
+                $formSlug = ($formData['statut_juridique'] ?? '') === 'esr_pme'
+                    ? env('HELLOASSO_MEMBERSHIP_FORM_SLUG_PME', 'adhesion-savoirs-vivants-2025-2026-pme')
+                    : env('HELLOASSO_MEMBERSHIP_FORM_SLUG_TPE', 'adhesion-savoirs-vivants-2025-2026-tpe');
+
+                $montant = $service->getLastMembershipPayment($formSlug, $structure->mail);
+
+                if ($montant !== null) {
+                    DB::table('inscriptions')
+                        ->where('id_structure', $structure->id)
+                        ->where('a_paye', Inscription::EN_ATTENTE)
+                        ->orderByDesc('id')
+                        ->limit(1)
+                        ->update(['a_paye' => Inscription::PAYE, 'updated_at' => now()]);
+
+                    $formData['_paiement2_cree'] = true;
+                    $formData['_helloasso_ok']   = true;
+                    $formData['_last_completed'] = 11;
+                    $request->session()->put("adhesion_{$token}", $formData);
+
+                    Log::info("Cotisation structure {$structure->id} vérifiée, montant {$montant}€");
+                    return redirect()->route('adhesion.show', ['token' => $token, 'step' => 11]);
+                }
+
+                return redirect()->route('adhesion.show', ['token' => $token, 'step' => 10])
+                    ->withErrors(['helloasso2' => 'Aucun paiement récent trouvé. Finalisez le paiement sur HelloAsso puis réessayez.']);
+
+            } catch (\Exception $e) {
+                Log::error('verifierCotisation structure error: ' . $e->getMessage());
+                return redirect()->route('adhesion.show', ['token' => $token, 'step' => 10])
+                    ->withErrors(['helloasso2' => 'Erreur lors de la vérification : ' . $e->getMessage()]);
+            }
+        }
+
         if (empty($formData['_adherent_id']) || !empty($formData['_paiement2_cree'])) {
-            return redirect()->route('adhesion.show', ['token' => $token, 'step' => 10])
-                ->with('cotisation_status', empty($formData['_paiement2_cree']) ? 'already_done' : 'no_adherent');
+            return redirect()->route('adhesion.show', ['token' => $token, 'step' => !empty($formData['_paiement2_cree']) ? 11 : 10]);
         }
 
         $adherent = \App\Models\Adherent::find($formData['_adherent_id']);
@@ -708,14 +749,12 @@ class AdherentFormulaireController extends Controller
                 $formData['_last_completed']  = 11;
                 $request->session()->put("adhesion_{$token}", $formData);
 
-                Log::info("Cotisation vérifiée et enregistrée pour adhérent {$adherent->id}, montant {$montant}€");
-
+                Log::info("Cotisation vérifiée pour adhérent {$adherent->id}, montant {$montant}€");
                 return redirect()->route('adhesion.show', ['token' => $token, 'step' => 11]);
             }
 
-            Log::info("Cotisation non trouvée sur HelloAsso pour {$adherent->mail}");
             return redirect()->route('adhesion.show', ['token' => $token, 'step' => 10])
-                ->withErrors(['helloasso2' => 'Aucun paiement de cotisation récent trouvé sur HelloAsso. Vérifiez que vous avez bien finalisé le paiement, puis réessayez.']);
+                ->withErrors(['helloasso2' => 'Aucun paiement de cotisation récent trouvé. Vérifiez que vous avez bien finalisé le paiement, puis réessayez.']);
 
         } catch (\Exception $e) {
             Log::error('verifierCotisation error: ' . $e->getMessage());
@@ -881,12 +920,6 @@ class AdherentFormulaireController extends Controller
             'statut'           => $statutActivite,
             'statut_juridique' => $formData['statut_juridique'] ?? null,
         ]);
-
-        if (!empty($formData['signature_adherent'])) {
-            DB::table('adherents_structure')
-                ->where('id', $structure->id)
-                ->update(['signature' => $formData['signature_adherent']]);
-        }
 
         $year   = now()->month >= 9 ? now()->year : now()->year - 1;
         $saison = $year . '-' . ($year + 1);

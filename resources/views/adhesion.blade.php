@@ -1628,45 +1628,70 @@
                     </div>
                 @elseif($step === 10)
                     @if ($isStructure)
-                    {{-- PAIEMENT STRUCTURE : montant fixe, HelloAsso uniquement --}}
                     <div class="p-5 md:p-6" x-data="{ modalCotisation: {{ $paiement1Done ? 'true' : 'false' }} }">
 
-                        {{-- Modal cotisation après paiement ressourcerie (phase 1 → phase 2) --}}
                         <div x-show="modalCotisation" x-transition
                              class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4"
                              style="display: none;">
                             <div class="bg-white rounded-2xl shadow-xl w-full max-w-md p-6" @click.outside="false">
                                 <div class="text-center mb-5">
-                                    <div class="w-14 h-14 rounded-2xl bg-teal-50 border border-teal-100 flex items-center justify-center text-3xl mx-auto mb-3">✅</div>
-                                    <h3 class="text-lg font-bold text-gray-900">Ressourcerie réglée !</h3>
-                                    <p class="text-gray-500 text-sm mt-1">L'accès à la ressourcerie est bien enregistré.</p>
+                                    <div class="w-14 h-14 rounded-2xl bg-teal-50 border border-teal-100 flex items-center justify-center text-3xl mx-auto mb-3">🏛️</div>
+                                    <h3 class="text-lg font-bold text-gray-900">
+                                        @if (($formData['type_activite'] ?? '') === 'ressourcerie')
+                                            Ressourcerie réglée !
+                                        @else
+                                            Cotisation {{ ($formData['statut_juridique'] ?? '') === 'esr_pme' ? 'ESR/PME' : 'TPE/Asso' }}
+                                        @endif
+                                    </h3>
+                                    <p class="text-gray-500 text-sm mt-1">
+                                        Réglez la cotisation annuelle <strong>({{ $montantStructure }} €)</strong> via le formulaire HelloAsso dédié.
+                                    </p>
                                 </div>
 
                                 <div class="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-5 flex items-start gap-3">
                                     <span class="text-xl shrink-0">📋</span>
                                     <div>
-                                        <p class="text-sm font-semibold text-amber-900">Une dernière étape</p>
+                                        <p class="text-sm font-semibold text-amber-900">Paiement dans un nouvel onglet</p>
                                         <p class="text-sm text-amber-700 mt-0.5 leading-relaxed">
-                                            Pour finaliser l'adhésion, réglez la <strong>cotisation annuelle ({{ $montantStructure }} €)</strong> via HelloAsso.
+                                            Cliquez sur le bouton ci-dessous, payez sur HelloAsso, puis revenez ici pour valider.
                                         </p>
                                     </div>
                                 </div>
 
-                                @error('helloasso')
+                                @error('helloasso2')
                                     <div class="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700 font-medium">
                                         ❌ {{ $message }}
                                     </div>
                                 @enderror
 
-                                <form action="{{ route('adhesion.next', $token) }}" method="POST">
-                                    @csrf
-                                    <input type="hidden" name="current_step" value="10">
-                                    <input type="hidden" name="mode_paiement" value="helloasso">
-                                    <button type="submit"
-                                        class="w-full inline-flex items-center justify-center gap-2 bg-teal-600 text-white font-semibold px-6 py-3 rounded-lg hover:bg-teal-700 transition text-sm shadow-sm">
-                                        Payer {{ $montantStructure }} € sur HelloAsso 🔒
+                                <div x-data="cotisationPaiement()" x-init="init()">
+                                    <button
+                                        @click="ouvrirHelloAsso()"
+                                        :disabled="loading"
+                                        x-show="!dejaClique"
+                                        class="w-full inline-flex items-center justify-center gap-2 bg-teal-600 text-white font-semibold px-6 py-3 rounded-lg hover:bg-teal-700 transition text-sm shadow-sm disabled:opacity-60">
+                                        <span x-show="!loading">Payer la cotisation sur HelloAsso →</span>
+                                        <span x-show="loading">Chargement…</span>
                                     </button>
-                                </form>
+
+                                    <div x-show="dejaClique" x-transition class="mt-4 space-y-3">
+                                        <div class="p-4 bg-teal-50 border border-teal-200 rounded-xl text-sm text-teal-800">
+                                            <p class="font-semibold mb-1">La page HelloAsso s'est ouverte dans un nouvel onglet.</p>
+                                            <p class="text-xs text-teal-700">Une fois le paiement finalisé, revenez ici et cliquez sur le bouton ci-dessous.</p>
+                                        </div>
+                                        <form action="{{ route('adhesion.verifier.cotisation', $token) }}" method="POST">
+                                            @csrf
+                                            <button type="submit"
+                                                class="w-full inline-flex items-center justify-center gap-2 bg-emerald-600 text-white font-semibold px-6 py-3 rounded-lg hover:bg-emerald-700 transition text-sm">
+                                                ✅ J'ai payé — vérifier et continuer
+                                            </button>
+                                        </form>
+                                        <button @click="dejaClique = false"
+                                            class="w-full text-xs text-gray-400 hover:text-gray-600 underline py-1">
+                                            ← Rouvrir la page HelloAsso
+                                        </button>
+                                    </div>
+                                </div>
 
                                 <p class="text-center text-xs text-gray-400 mt-3">Paiement sécurisé via HelloAsso</p>
                             </div>
@@ -1691,7 +1716,7 @@
                         @enderror
 
                         @if ($totalRessourcerieStructure !== null)
-                            {{-- Phase 1 : items ressourcerie sélectionnés --}}
+                            {{-- Phase 1 : items ressourcerie --}}
                             <div class="p-5 bg-teal-50 border border-teal-200 rounded-2xl mb-6">
                                 <p class="text-xs font-bold text-teal-700 uppercase tracking-wide mb-3">Items sélectionnés</p>
                                 @foreach ($ressourcerieSelectionnees as $item)
@@ -1703,19 +1728,15 @@
                                 <p class="text-xs text-teal-600 mt-2">La cotisation annuelle ({{ $montantStructure }} €) sera réglée dans un second temps.</p>
                             </div>
                         @else
-                            {{-- Phase 2 ou structure non-ressourcerie : cotisation --}}
+                            {{-- Cotisation structure --}}
                             <div class="p-5 bg-teal-50 border border-teal-200 rounded-2xl mb-6">
                                 <div class="flex items-center justify-between mb-2">
                                     <span class="text-sm font-bold text-teal-900">Cotisation annuelle</span>
                                     <span class="text-2xl font-bold text-teal-700">{{ $montantStructure }} €</span>
                                 </div>
                                 <p class="text-xs text-teal-700">
-                                    @if (($formData['statut_juridique'] ?? '') === 'esr_pme')
-                                        Tarif ESR / PME
-                                    @else
-                                        Tarif TPE / Association
-                                    @endif
-                                    — paiement sécurisé via HelloAsso
+                                    {{ ($formData['statut_juridique'] ?? '') === 'esr_pme' ? 'Tarif ESR / PME' : 'Tarif TPE / Association' }}
+                                    — paiement via formulaire HelloAsso dédié
                                 </p>
                             </div>
                         @endif
@@ -1724,13 +1745,6 @@
                             @csrf
                             <input type="hidden" name="current_step" value="10">
                             <input type="hidden" name="mode_paiement" value="helloasso">
-
-                            <div class="p-4 bg-blue-50 border border-blue-100 rounded-xl mb-6 flex items-start gap-3">
-                                <span class="text-xl shrink-0">🔒</span>
-                                <p class="text-sm font-medium text-blue-900 leading-relaxed">
-                                    Vous allez être redirigé·e vers la plateforme sécurisée HelloAsso pour procéder au paiement.
-                                </p>
-                            </div>
 
                             <div class="flex items-center justify-between pt-4 border-t border-gray-100 mt-1">
                                 @if ($hasPrev)
@@ -1747,9 +1761,9 @@
                                 @endif
                                 <button type="submit" class="{{ $btn }}">
                                     @if ($totalRessourcerieStructure !== null)
-                                        Payer {{ $totalRessourcerieStructure }} € (ressourcerie) sur HelloAsso 🔒
+                                        Payer {{ $totalRessourcerieStructure }} € (ressourcerie) 🔒
                                     @else
-                                        Payer {{ $montantStructure }} € sur HelloAsso 🔒
+                                        Payer via HelloAsso 🔒
                                     @endif
                                 </button>
                             </div>
@@ -1840,40 +1854,6 @@
                                         </button>
                                     </div>
                                 </div>
-
-                                <script>
-                                function cotisationPaiement() {
-                                    return {
-                                        loading: false,
-                                        dejaClique: {{ !empty($formData['_via_url_checkout']) ? 'true' : 'false' }},
-                                        helloassoUrl: null,
-                                        init() {
-                                        },
-                                        async ouvrirHelloAsso() {
-                                            this.loading = true;
-                                            try {
-                                                const response = await fetch('{{ route('adhesion.helloasso2.checkout', $token) }}', {
-                                                    method: 'POST',
-                                                    headers: {
-                                                        'X-CSRF-TOKEN': '{{ csrf_token() }}',
-                                                        'Accept': 'application/json',
-                                                        'X-Requested-With': 'XMLHttpRequest',
-                                                    },
-                                                });
-                                                const data = await response.json();
-                                                if (data.url) {
-                                                    window.open(data.url, '_blank');
-                                                    this.dejaClique = true;
-                                                }
-                                            } catch (e) {
-                                                console.error(e);
-                                            } finally {
-                                                this.loading = false;
-                                            }
-                                        }
-                                    }
-                                }
-                                </script>
 
                                 <p class="text-center text-xs text-gray-400 mt-3">Paiement sécurisé via HelloAsso</p>
                             </div>
@@ -1992,7 +1972,7 @@
                             </div>
                         </form>
                     </div>
-                    @endif {{-- fin @if ($isStructure) pour step 10 --}}
+                    @endif
                 @elseif($step === 11)
                     <div class="p-6 md:p-8 text-center">
                         <div
@@ -2077,6 +2057,37 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/signature_pad/4.1.7/signature_pad.umd.min.js"></script>
 
     <script>
+
+        function cotisationPaiement() {
+                        return {
+                            loading: false,
+                            dejaClique: {{ !empty($formData['_via_url_checkout']) ? 'true' : 'false' }},
+                            init() {},
+                            async ouvrirHelloAsso() {
+                                this.loading = true;
+                                try {
+                                    const response = await fetch('{{ route('adhesion.helloasso2.checkout', $token) }}', {
+                                        method: 'POST',
+                                        headers: {
+                                            'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                                            'Accept': 'application/json',
+                                            'X-Requested-With': 'XMLHttpRequest',
+                                        },
+                                    });
+                                    const data = await response.json();
+                                    if (data.url) {
+                                        window.open(data.url, '_blank');
+                                        this.dejaClique = true;
+                                    }
+                                } catch (e) {
+                                    console.error(e);
+                                } finally {
+                                    this.loading = false;
+                                }
+                            }
+                        }
+                    }
+
         (function() {
             const canvas = document.getElementById('canvas-adherent');
             if (!canvas) return;
