@@ -3,12 +3,14 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Str;
 
 class AdherentStructure extends Model
 {
     protected $table = 'adherents_structure';
 
     protected $fillable = [
+        'numero_adherent',
         'nom',
         'sigle',
         'adresse',
@@ -34,6 +36,15 @@ class AdherentStructure extends Model
         'communication'     => 'boolean',
         'autorisation_photo'=> 'boolean',
     ];
+
+    public static function genererNumeroUnique(): string
+    {
+        do {
+            $numero = 'STR-' . date('y') . '-' . strtoupper(Str::random(4));
+        } while (self::where('numero_adherent', $numero)->exists());
+
+        return $numero;
+    }
 
     public function inscriptions()
     {

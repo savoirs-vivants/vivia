@@ -815,6 +815,7 @@ class AdherentFormulaireController extends Controller
         };
 
         $structure = AdherentStructure::create([
+            'numero_adherent'  => AdherentStructure::genererNumeroUnique(),
             'nom'              => $formData['nom_structure'] ?? '',
             'sigle'            => $formData['sigle'] ?? null,
             'adresse'          => $formData['adresse_structure'] ?? null,
@@ -832,7 +833,6 @@ class AdherentFormulaireController extends Controller
             'autorisation_photo' => (bool) ($formData['autorisation_photo'] ?? false),
             'statut'           => $statutActivite,
             'statut_juridique' => $formData['statut_juridique'] ?? null,
-            'signature'        => $formData['signature_adherent'] ?? null,
         ]);
 
         $year   = now()->month >= 9 ? now()->year : now()->year - 1;
