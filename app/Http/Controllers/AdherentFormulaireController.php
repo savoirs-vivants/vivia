@@ -463,14 +463,16 @@ class AdherentFormulaireController extends Controller
                 return redirect()->route('adhesion.show', ['token' => $token, 'step' => 10]);
             }
 
-            $activitesIds      = $formData['activites_selectionnees'] ?? [];
-            $hasActivites      = !empty($activitesIds);
+            $activitesIds      = array_filter((array) ($formData['activites_selectionnees'] ?? []));
+            $ressourcerieIds   = array_filter((array) ($formData['ressourcerie_selectionnees'] ?? []));
             $estNouvelAdherent = ($formData['is_adherent'] ?? 'non') === 'non';
 
             $totalActiviteEuros = 0;
-            if ($hasActivites) {
-                $activites = \App\Models\Activite::whereIn('id', $activitesIds)->get();
-                $totalActiviteEuros = $activites->sum('tarif');
+            if (!empty($activitesIds)) {
+                $totalActiviteEuros += \App\Models\Activite::whereIn('id', $activitesIds)->sum('tarif');
+            }
+            if (!empty($ressourcerieIds)) {
+                $totalActiviteEuros += \App\Models\Ressourcerie::whereIn('id', $ressourcerieIds)->sum('prix');
             }
 
             $isSinglePayment = in_array($formData['type_activite'] ?? '', ['soutien', 'recherche']);
@@ -512,13 +514,16 @@ class AdherentFormulaireController extends Controller
             ];
 
             if ($totalActiviteEuros > 0) {
+                $itemLabel = ($formData['type_activite'] ?? '') === 'ressourcerie'
+                    ? 'Ressourcerie - Savoirs Vivants'
+                    : 'Inscription Activité - Savoirs Vivants';
                 try {
                     $urlPaiement = $service->createCheckout(
                         (int) round($totalActiviteEuros * 100),
                         $payerInfo,
                         $token,
                         'adhesion.helloasso.return',
-                        'Inscription Activité - Savoirs Vivants'
+                        $itemLabel
                     );
                     return redirect($urlPaiement);
                 } catch (\Exception $e) {

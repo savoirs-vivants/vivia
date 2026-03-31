@@ -149,15 +149,6 @@
                                 <p class="text-xs text-gray-400">Le statut passera en <span class="font-bold text-amber-600">Partiel</span> jusqu'au solde complet.</p>
                             </div>
                         </div>
-
-                        <div x-show="!adherent.isStructure">
-                            <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Note interne</p>
-                            <textarea x-model="commentaire"
-                                      rows="2"
-                                      placeholder="Ex : 1er chèque reçu le 12/03, 2e attendu fin mars..."
-                                      class="w-full px-3 py-2.5 bg-gray-50 border border-gray-100 rounded-xl text-sm text-gray-700 placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-[#16987C]/30 focus:border-[#16987C]/40 transition-all resize-none">
-                            </textarea>
-                        </div>
                     </div>
                 </template>
 
