@@ -419,6 +419,14 @@ class AdherentFormulaireController extends Controller
                 $totalActiviteEuros = $activites->sum('tarif');
             }
 
+            // Étape 1 : pour soutien/recherche (pas d'activité à payer en étape 1),
+            // on passe directement au modal "cotisation dans un nouvel onglet".
+            $isSinglePayment = in_array($formData['type_activite'] ?? '', ['soutien', 'recherche']);
+            if ($isSinglePayment && $totalActiviteEuros == 0) {
+                $request->session()->put("paiement1_done_{$token}", true);
+                return redirect()->route('adhesion.show', ['token' => $token, 'step' => 10]);
+            }
+
             // Pour les réinscriptions, prenom/nom/mail ne sont pas dans formData (step 3 sauté)
             $payerPrenom = $formData['prenom'] ?? null;
             $payerNom    = $formData['nom']    ?? null;

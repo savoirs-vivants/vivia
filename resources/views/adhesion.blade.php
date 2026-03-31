@@ -1762,19 +1762,44 @@
                              class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4"
                              style="display: none;">
                             <div class="bg-white rounded-2xl shadow-xl w-full max-w-md p-6" @click.outside="false">
+                                @php
+                                    $typeAct      = $formData['type_activite'] ?? '';
+                                    $modalIcon    = match($typeAct) {
+                                        'soutien'      => '🤝',
+                                        'recherche'    => '🔬',
+                                        'ressourcerie' => '🤖',
+                                        'stage'        => '📚',
+                                        default        => '✅',
+                                    };
+                                    $modalTitre   = match($typeAct) {
+                                        'soutien'      => 'Adhésion par soutien',
+                                        'recherche'    => 'Recherche participative',
+                                        'ressourcerie' => 'Ressourcerie enregistrée !',
+                                        'stage'        => 'Stage enregistré !',
+                                        default        => 'Activité enregistrée !',
+                                    };
+                                    $modalSous    = match($typeAct) {
+                                        'soutien'      => 'Merci pour votre soutien à l\'association.',
+                                        'recherche'    => 'Votre participation au programme de recherche est enregistrée.',
+                                        'ressourcerie' => 'Votre accès à la ressourcerie est bien enregistré.',
+                                        'stage'        => 'Votre inscription au stage est bien enregistrée.',
+                                        default        => 'Votre inscription à l\'atelier est bien enregistrée.',
+                                    };
+                                    $modalMessage = in_array($typeAct, ['soutien', 'recherche'])
+                                        ? 'Pour finaliser votre adhésion, réglez la <strong>cotisation annuelle</strong> via la page officielle HelloAsso.'
+                                        : 'Pour être pleinement membre de l\'association, réglez également la <strong>cotisation annuelle</strong> via HelloAsso.';
+                                @endphp
                                 <div class="text-center mb-5">
-                                    <div class="w-14 h-14 rounded-2xl bg-teal-50 border border-teal-100 flex items-center justify-center text-3xl mx-auto mb-3">✅</div>
-                                    <h3 class="text-lg font-bold text-gray-900">Activité réglée !</h3>
-                                    <p class="text-gray-500 text-sm mt-1">Votre inscription à l'atelier est bien enregistrée.</p>
+                                    <div class="w-14 h-14 rounded-2xl bg-teal-50 border border-teal-100 flex items-center justify-center text-3xl mx-auto mb-3">{{ $modalIcon }}</div>
+                                    <h3 class="text-lg font-bold text-gray-900">{{ $modalTitre }}</h3>
+                                    <p class="text-gray-500 text-sm mt-1">{{ $modalSous }}</p>
                                 </div>
 
                                 <div class="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-5 flex items-start gap-3">
                                     <span class="text-xl shrink-0">📋</span>
                                     <div>
                                         <p class="text-sm font-semibold text-amber-900">Une dernière étape</p>
-                                        <p class="text-sm text-amber-700 mt-0.5 leading-relaxed">
-                                            Pour être pleinement membre de l'association, vous devez également régler la <strong>cotisation annuelle</strong> via la page officielle HelloAsso. Vous serez redirigé vers le formulaire d'adhésion.
-                                        </p>
+                                        <p class="text-sm text-amber-700 mt-0.5 leading-relaxed">{!! $modalMessage !!}</p>
                                     </div>
                                 </div>
 
