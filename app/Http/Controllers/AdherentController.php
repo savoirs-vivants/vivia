@@ -2,11 +2,13 @@
 
 namespace App\Http\Controllers;
 
+use App\Mail\AdhesionValidee;
 use App\Models\Adherent;
 use App\Models\AdherentStructure;
 use App\Models\Inscription;
 use App\Models\Presence;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Mail;
 
 class AdherentController extends Controller
 {
@@ -149,6 +151,8 @@ class AdherentController extends Controller
 
         $statut = $request->boolean('plusieurs_versements') ? Inscription::PARTIEL : Inscription::PAYE;
 
+        $ancienStatut = $adherent->inscription->a_paye ?? null;
+
         $totalAttendu = $adherent->load('activitesActives')->activitesActives->sum('tarif') + 10;
 
         $adherent->inscription()->update([
@@ -160,6 +164,26 @@ class AdherentController extends Controller
             $paiement = $adherent->paiements()->latest()->first();
             if ($paiement) {
                 $paiement->update(['montant' => (float) $request->montant_recu]);
+            }
+        }
+
+        if ($statut === Inscription::PAYE && $ancienStatut !== Inscription::PAYE) {
+
+            $destinataire = null;
+
+            if ($adherent->tranche_age === 'Enfant' || $adherent->tranche_age === 'Adolescent') {
+                $premierTuteur = $adherent->tousLesTuteurs()->first();
+                if ($premierTuteur && $premierTuteur->mail) {
+                    $destinataire = $premierTuteur->mail;
+                }
+            } else {
+                if ($adherent->mail) {
+                    $destinataire = $adherent->mail;
+                }
+            }
+
+            if ($destinataire) {
+                Mail::to($destinataire)->send(new AdhesionValidee($adherent));
             }
         }
 
