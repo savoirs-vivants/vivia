@@ -2,9 +2,13 @@
 
 namespace App\Http\Controllers;
 
+use App\Mail\EnfantAbsent;
+use App\Models\Adherent;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Mail;
 
 class DashboardController extends Controller
 {
@@ -163,7 +167,12 @@ class DashboardController extends Controller
      */
     public function enregistrerAppel(Request $request, int $seance)
     {
-        $seanceData = DB::table('seances')->where('id_seance', $seance)->first();
+        $seanceData = DB::table('seances')
+            ->join('activites', 'seances.id_activite', '=', 'activites.id')
+            ->select('seances.*', 'activites.nom as activite_nom')
+            ->where('seances.id_seance', $seance)
+            ->first();
+
         abort_if(!$seanceData, 404);
 
         $mesActivitesIds = DB::table('activites_gestionnaire')
@@ -177,6 +186,9 @@ class DashboardController extends Controller
 
         DB::table('presence')->where('id_seance', $seance)->delete();
 
+        Carbon::setLocale('fr');
+        $dateFormatee = Carbon::parse($seanceData->date)->isoFormat('dddd D MMMM YYYY à HH:mm');
+
         foreach ($absents as $absent) {
             $idAdherent = (int) ($absent['id_adherent'] ?? 0);
             if (!$idAdherent) continue;
@@ -189,6 +201,22 @@ class DashboardController extends Controller
                 'created_at'  => now(),
                 'updated_at'  => now(),
             ]);
+
+            $adherent = Adherent::with('tousLesTuteurs')->find($idAdherent);
+
+            if ($adherent && in_array($adherent->tranche_age, ['Enfant', 'Adolescent'])) {
+                $premierTuteur = $adherent->tousLesTuteurs->first();
+
+                if ($premierTuteur && $premierTuteur->mail) {
+                    Mail::to($premierTuteur->mail)
+                        ->send(new EnfantAbsent(
+                            $adherent->prenom,
+                            $seanceData->activite_nom,
+                            $dateFormatee
+                        ));
+                }
+            }
+            // -----------------------------------------
         }
 
         DB::table('seances')->where('id_seance', $seance)->update([
