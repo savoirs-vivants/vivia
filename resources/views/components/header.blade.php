@@ -36,16 +36,6 @@
             <div class="w-px h-6 bg-gray-200 mx-1 hidden sm:block"></div>
         @endif
 
-        <button class="w-9 h-9 sm:w-10 sm:h-10 flex items-center justify-center rounded-full
-                       text-gray-400 hover:text-[#0F143A] hover:bg-gray-50 transition-all relative">
-            <svg class="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                      d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
-            </svg>
-            <span class="absolute top-2 right-2 sm:top-2.5 sm:right-2.5 w-1.5 h-1.5 sm:w-2 sm:h-2
-                         bg-red-500 rounded-full border-2 border-white"></span>
-        </button>
-
         <div class="relative" x-data="{ open: false }" @click.outside="open = false">
             <button @click="open = !open"
                     class="flex items-center gap-1.5 pl-1.5 sm:pl-2 pr-2 sm:pr-4 py-1
