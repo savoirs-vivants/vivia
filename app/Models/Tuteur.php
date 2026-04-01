@@ -19,6 +19,8 @@ class Tuteur extends Model
         'rentre_fin',
         'rentre_annul',
         'profession',
+        'date_signature',
+        'signature',
     ];
 
     protected $casts = [

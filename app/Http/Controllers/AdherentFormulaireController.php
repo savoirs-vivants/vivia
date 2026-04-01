@@ -230,16 +230,16 @@ class AdherentFormulaireController extends Controller
                     $tuteurs = $adherentExistant->tousLesTuteurs()->get();
                     if ($tuteurs->isNotEmpty()) {
                         $formData['tuteurs'] = $tuteurs->map(fn($t) => [
-                            'type'         => $t->type,
-                            'nom'          => $t->nom ?? '',
-                            'prenom'       => $t->prenom ?? '',
-                            'tel'          => $t->tel ?? '',
-                            'mail'         => $t->mail ?? '',
-                            'adhere'       => (bool) $t->adhere,
-                            'rentre_fin'   => (bool) $t->rentre_fin,
-                            'rentre_annul' => (bool) $t->rentre_annul,
-                            'date_signature' => '',
-                            'signature'    => '',
+                            'type'           => $t->type,
+                            'nom'            => $t->nom ?? '',
+                            'prenom'         => $t->prenom ?? '',
+                            'tel'            => $t->tel ?? '',
+                            'mail'           => $t->mail ?? '',
+                            'adhere'         => (bool) $t->adhere,
+                            'rentre_fin'     => (bool) $t->rentre_fin,
+                            'rentre_annul'   => (bool) $t->rentre_annul,
+                            'date_signature' => $t->type === 'parent_tuteur' ? ($t->date_signature ?? '') : '',
+                            'signature'      => $t->type === 'parent_tuteur' ? ($t->signature ?? '') : '',
                         ])->toArray();
                     }
                 }
@@ -869,14 +869,16 @@ class AdherentFormulaireController extends Controller
             foreach ((array) ($formData['tuteurs'] ?? []) as $t) {
                 $type = $t['type'] ?? 'parent_tuteur';
                 $tuteur = Tuteur::create([
-                    'type'         => $type,
-                    'nom'          => $t['nom'] ?? '',
-                    'prenom'       => $t['prenom'] ?? '',
-                    'tel'          => $t['tel'] ?? null,
-                    'mail'         => $t['mail'] ?? null,
-                    'adhere'       => !empty($t['adhere']),
-                    'rentre_fin'   => !empty($t['rentre_fin']),
-                    'rentre_annul' => !empty($t['rentre_annul']),
+                    'type'           => $type,
+                    'nom'            => $t['nom'] ?? '',
+                    'prenom'         => $t['prenom'] ?? '',
+                    'tel'            => $t['tel'] ?? null,
+                    'mail'           => $t['mail'] ?? null,
+                    'adhere'         => !empty($t['adhere']),
+                    'rentre_fin'     => !empty($t['rentre_fin']),
+                    'rentre_annul'   => !empty($t['rentre_annul']),
+                    'date_signature' => $type === 'parent_tuteur' ? ($t['date_signature'] ?? null) : null,
+                    'signature'      => $type === 'parent_tuteur' ? ($t['signature'] ?? null) : null,
                 ]);
                 if ($type === 'parent_tuteur' && $idTuteurPrincipal === null) {
                     $idTuteurPrincipal = $tuteur->id;

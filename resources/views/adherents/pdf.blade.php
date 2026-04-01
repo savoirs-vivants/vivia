@@ -111,6 +111,18 @@
                     <td style="border: none; color: #666; font-weight: normal; padding-top: 5px;">Tél : <strong style="color: #333;">{{ $tuteur->tel ?? 'N/A' }}</strong></td>
                     <td style="border: none; color: #666; font-weight: normal; padding-top: 5px;">Email : <strong style="color: #333;">{{ $tuteur->mail ?? 'N/A' }}</strong></td>
                 </tr>
+                @if($tuteur->type === 'parent_tuteur' && $tuteur->signature)
+                <tr>
+                    <td colspan="2" style="border: none; padding-top: 5px;">
+                        <div class="signature-box" style="margin: 5px 0 5px auto;">
+                            <img src="{{ $tuteur->signature }}" alt="Signature du représentant légal" class="signature-img">
+                            <p class="signature-text">
+                                Signé le {{ $tuteur->date_signature ? \Carbon\Carbon::parse($tuteur->date_signature)->format('d/m/Y') : 'N/A' }}
+                            </p>
+                        </div>
+                    </td>
+                </tr>
+                @endif
             </table>
         @endforeach
     @endif
