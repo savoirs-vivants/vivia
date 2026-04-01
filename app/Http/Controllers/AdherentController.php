@@ -207,6 +207,57 @@ class AdherentController extends Controller
         return view('adherents.show_structure', compact('structure', 'saisons', 'totalPaye'));
     }
 
+    public function ajouterVersement(Request $request, Adherent $adherent)
+    {
+        $request->validate([
+            'montant_versement' => ['required', 'numeric', 'min:0.01'],
+            'source'            => ['nullable', 'string', 'max:100'],
+            'date_paiement'     => ['nullable', 'date'],
+        ]);
+
+        $inscription = $adherent->inscription;
+
+        if (!$inscription || $inscription->a_paye !== Inscription::PARTIEL) {
+            return redirect()->route('adherents.index', ['tab' => 'partiel'])
+                ->with('error', 'Cet adhérent n\'est pas en statut Partiel.');
+        }
+
+        $adherent->paiements()->create([
+            'montant'       => (float) $request->montant_versement,
+            'source'        => $request->source ?? 'Interne',
+            'date_paiement' => $request->date_paiement ?? now()->toDateString(),
+            'commentaire'   => $request->commentaire ?? null,
+        ]);
+
+        $totalVerse = (float) $adherent->paiements()->sum('montant');
+        $totalDu    = (float) $inscription->montant;
+
+        if ($totalVerse >= $totalDu) {
+            $inscription->update(['a_paye' => Inscription::PAYE]);
+
+            $destinataire = null;
+            if (in_array($adherent->tranche_age, ['Enfant', 'Adolescent'])) {
+                $premierTuteur = $adherent->tousLesTuteurs()->first();
+                if ($premierTuteur?->mail) {
+                    $destinataire = $premierTuteur->mail;
+                }
+            } elseif ($adherent->mail) {
+                $destinataire = $adherent->mail;
+            }
+            if ($destinataire) {
+                Mail::to($destinataire)->send(new AdhesionValidee($adherent));
+            }
+
+            return redirect()->route('adherents.index', ['tab' => 'payes'])
+                ->with('success', $adherent->prenom . ' ' . $adherent->nom . ' — solde complet, passé en Payé.');
+        }
+
+        $reste = number_format($totalDu - $totalVerse, 2, ',', ' ');
+
+        return redirect()->route('adherents.index', ['tab' => 'partiel'])
+            ->with('success', 'Versement enregistré. Reste dû : ' . $reste . ' €');
+    }
+
     public function validerStructure(Request $request, AdherentStructure $structure)
     {
         $statut = $request->boolean('plusieurs_versements') ? Inscription::PARTIEL : Inscription::PAYE;
