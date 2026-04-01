@@ -96,14 +96,20 @@ class DashboardController extends Controller
             if ($prochaineSeance) {
                 $adherentsSeance = DB::table('activites_adherents')
                     ->join('adherents', 'activites_adherents.id_adherent', '=', 'adherents.id')
+                    ->join('inscriptions', function ($join) use ($saison) {
+                        $join->on('adherents.id', '=', 'inscriptions.id_adherent')
+                             ->where('inscriptions.saison', '=', $saison);
+                    })
                     ->where('activites_adherents.id_activite', $prochaineSeance->id_activite)
                     ->where('activites_adherents.est_un_abandon', 0)
                     ->whereNull('activites_adherents.date_sortie')
+                    ->where('inscriptions.a_paye', '!=', 'En attente')
                     ->select(
                         'adherents.id',
                         'adherents.nom',
                         'adherents.prenom',
                     )
+                    ->distinct()
                     ->orderBy('adherents.nom')
                     ->orderBy('adherents.prenom')
                     ->get();
