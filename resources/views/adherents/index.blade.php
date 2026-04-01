@@ -280,16 +280,22 @@
 
         @if ($filterType === 'structure')
             <div class="overflow-x-auto">
-                <table class="w-full table-fixed">
+                <table class="w-full text-sm">
                     <thead>
-                        <tr class="border-b border-gray-100">
+                        <tr class="bg-gray-50/70 border-b border-gray-100">
                             <th class="px-6 py-3 text-left text-[10px] font-black text-gray-400 uppercase tracking-widest">Structure</th>
                             <th class="px-4 py-3 text-left text-[10px] font-black text-gray-400 uppercase tracking-widest">Statut</th>
                             <th class="px-4 py-3 text-left text-[10px] font-black text-gray-400 uppercase tracking-widest">Correspondant</th>
                             <th class="px-4 py-3 text-left text-[10px] font-black text-gray-400 uppercase tracking-widest">Contact</th>
                             <th class="px-4 py-3 text-right text-[10px] font-black text-gray-400 uppercase tracking-widest">Montant</th>
-                            <th class="px-4 py-3 text-left text-[10px] font-black text-gray-400 uppercase tracking-widest">Inscription</th>
-                            <th class="px-6 py-3 text-right text-[10px] font-black text-gray-400 uppercase tracking-widest">Statut / Actions</th>
+                            <th class="px-4 py-3 text-left text-[10px] font-black text-gray-400 uppercase tracking-widest">{{ $tab === 'payes' ? 'Date' : 'Inscription' }}</th>
+
+                            @if($tab === 'payes')
+                                <th class="px-6 py-3 text-left text-[10px] font-black text-gray-400 uppercase tracking-widest">Statut paiement</th>
+                                <th class="px-6 py-3"></th>
+                            @else
+                                <th class="px-6 py-3 text-right text-[10px] font-black text-gray-400 uppercase tracking-widest">Actions</th>
+                            @endif
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-gray-50">
@@ -310,9 +316,6 @@
                                         };
                                     @endphp
                                     <span class="inline-flex px-2.5 py-1 rounded-lg text-xs font-bold {{ $sjLabel['class'] }}">{{ $sjLabel['label'] }}</span>
-                                    @if ($structure->statut)
-                                        <span class="mt-1 inline-flex px-2 py-0.5 rounded text-[10px] font-semibold bg-gray-100 text-gray-500">{{ ucfirst($structure->statut) }}</span>
-                                    @endif
                                 </td>
                                 <td class="px-4 py-4">
                                     <p class="text-sm font-semibold text-gray-700">{{ $structure->nom_correspondant ?? '—' }}</p>
@@ -330,10 +333,19 @@
                                 <td class="px-4 py-4">
                                     <span class="text-sm text-gray-500">{{ $structure->inscription?->date_inscription?->isoFormat('D MMM YYYY') ?? '—' }}</span>
                                 </td>
-                                <td class="px-6 py-4 text-right">
-                                    @if($tab === 'payes')
+
+                                @if($tab === 'payes')
+                                    <td class="px-6 py-4">
                                         <span class="inline-flex px-3 py-1.5 bg-teal-100 text-teal-700 rounded-lg text-xs font-bold">Payée</span>
-                                    @else
+                                    </td>
+                                    <td class="px-6 py-4 text-right">
+                                        <a href="{{ route('structures.show', $structure) }}" class="inline-flex items-center gap-1 px-3 py-1.5 bg-[#222A60]/5 hover:bg-[#222A60]/10 text-[#222A60] rounded-lg text-xs font-bold transition-all">
+                                            Voir la fiche
+                                            <svg class="w-3 h-3 opacity-60" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"/></svg>
+                                        </a>
+                                    </td>
+                                @else
+                                    <td class="px-6 py-4 text-right">
                                         @php
                                             $modalSource = 'Interne';
                                             if (isset($structure->paiements) && $structure->paiements->isNotEmpty()) {
@@ -386,9 +398,7 @@
                                                 'source'      => $modalSource,
                                                 'sourceClass' => match($modalSource) {
                                                     'HelloAsso'    => 'bg-[#16987C]/10 text-[#16987C]',
-                                                    'Virement'     => 'bg-blue-50 text-blue-600',
-                                                    'Chèque'       => 'bg-amber-50 text-amber-600',
-                                                    'Espèces'      => 'bg-orange-50 text-orange-600',
+                                                    'Interne'      => 'bg-orange-50 text-orange-600',
                                                     'Pass Culture' => 'bg-purple-50 text-purple-600',
                                                     default        => 'bg-gray-100 text-gray-600',
                                                 },
@@ -400,12 +410,12 @@
                                             Valider
                                             <svg class="w-3 h-3 opacity-80" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"/></svg>
                                         </button>
-                                    @endif
-                                </td>
+                                    </td>
+                                @endif
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="7" class="px-6 py-20 text-center">
+                                <td colspan="8" class="px-6 py-20 text-center">
                                     <div class="flex flex-col items-center gap-3">
                                         <div class="w-14 h-14 rounded-2xl bg-gray-100 flex items-center justify-center">
                                             <span class="text-2xl">🏛️</span>

@@ -129,8 +129,12 @@
                     class="tab-hero-btn px-6 py-3 rounded-t-xl text-sm font-bold border-none cursor-pointer transition-all">
                     Historique & Appel
                 </button>
-                <button onclick="switchTab('adherents')" id="tab-adherents" ...> Adhérents </button>
-                <button onclick="switchTab('statistiques')" id="tab-statistiques" ...> Statistiques </button>
+                <button onclick="switchTab('adherents')" id="tab-adherents" class="tab-hero-btn px-6 py-3 rounded-t-xl text-sm font-bold border-none cursor-pointer transition-all">
+                    Adhérents
+                </button>
+                <button onclick="switchTab('statistiques')" id="tab-statistiques" class="tab-hero-btn px-6 py-3 rounded-t-xl text-sm font-bold border-none cursor-pointer transition-all">
+                    Statistiques
+                </button>
             </div>
         </div>
     </div>
