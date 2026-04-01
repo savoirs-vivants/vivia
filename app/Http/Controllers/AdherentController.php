@@ -56,8 +56,8 @@ class AdherentController extends Controller
         $baseStructures = AdherentStructure::with(['inscription', 'paiements'])
             ->when($search, fn($q) => $q->where(function ($q) use ($search) {
                 $q->where('nom', 'like', "%{$search}%")
-                  ->orWhere('mail', 'like', "%{$search}%")
-                  ->orWhere('nom_correspondant', 'like', "%{$search}%");
+                    ->orWhere('mail', 'like', "%{$search}%")
+                    ->orWhere('nom_correspondant', 'like', "%{$search}%");
             }));
 
         $structuresEnAttente = (clone $baseStructures)
@@ -112,7 +112,7 @@ class AdherentController extends Controller
             return $seance;
         });
 
-        $presences = $toutesLesSeances->filter(function($s) {
+        $presences = $toutesLesSeances->filter(function ($s) {
             return \Carbon\Carbon::parse($s->date)->isPast() || $s->statut === 'terminee';
         });
 
@@ -248,5 +248,40 @@ class AdherentController extends Controller
         $fileName = 'fiche_structure_' . \Illuminate\Support\Str::slug($structure->nom) . '.pdf';
 
         return $pdf->download($fileName);
+    }
+
+    public function updateFiche(Request $request, Adherent $adherent)
+    {
+        $validated = $request->validate([
+            'prenom' => 'required|string|max:255',
+            'nom' => 'required|string|max:255',
+            'communication' => 'boolean',
+            'bulletin' => 'boolean',
+            'manif' => 'boolean',
+            'date_naiss' => 'nullable|date',
+            'genre' => 'nullable|string|max:255',
+            'adresse' => 'nullable|string|max:255',
+            'code_postal' => 'nullable|string|max:20',
+            'ville' => 'nullable|string|max:255',
+            'tel' => 'nullable|string|max:50',
+            'mail' => 'nullable|email|max:255',
+            'occupation' => 'nullable|string|max:255',
+            'etablissement' => 'nullable|string|max:255',
+            'regime_social' => 'nullable|string|max:255',
+            'idee_metier' => 'nullable|string|max:1000',
+            'decouverte_metier' => 'nullable|string|max:1000',
+            'problemes_sante' => 'nullable|string|max:1000',
+            'allergies' => 'nullable|string|max:1000',
+            'conduite_a_tenir' => 'nullable|string|max:1000',
+            'restrictions_alimentaires' => 'nullable|string|max:1000',
+        ]);
+
+        $validated['communication'] = $request->boolean('communication');
+        $validated['bulletin'] = $request->boolean('bulletin');
+        $validated['manif'] = $request->boolean('manif');
+
+        $adherent->update($validated);
+
+        return back()->with('success', 'La fiche de l\'adhérent a été mise à jour.');
     }
 }
