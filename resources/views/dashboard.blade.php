@@ -447,73 +447,82 @@
         </div>
     </div>
 
-    {{-- ═══════════════════════════════════════════════════════════════ --}}
-    {{-- OVERLAY 3 : CONFIRMATION ENFANT (checkbox + signature)        --}}
-    {{-- ═══════════════════════════════════════════════════════════════ --}}
     <div id="overlay-enfant"
-         class="fixed inset-0 z-[60] hidden items-center justify-center bg-black/60 backdrop-blur-sm p-4"
+         class="fixed inset-0 z-[60] hidden items-center justify-center bg-black/60 backdrop-blur-sm p-4 sm:p-6"
          style="display:none!important">
-        <div class="bg-white rounded-3xl shadow-2xl w-full max-w-md">
 
-            <div class="px-6 py-5 border-b border-gray-100 flex items-center justify-between">
+        <div class="bg-white rounded-3xl shadow-2xl w-full max-w-2xl flex flex-col" style="max-height: 95vh;">
+
+            <div class="px-6 py-5 sm:px-8 sm:py-6 border-b border-gray-100 flex items-center justify-between shrink-0">
                 <div>
-                    <p class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-0.5">Récupération</p>
-                    <h2 class="font-grotesk font-black text-lg text-gray-900" id="enfant-nom-titre">—</h2>
+                    <p class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1">Récupération</p>
+                    <h2 class="font-grotesk font-black text-xl sm:text-2xl text-gray-900" id="enfant-nom-titre">—</h2>
                 </div>
                 <button onclick="closeEnfantOverlay()"
-                        class="w-8 h-8 rounded-lg bg-gray-100 hover:bg-gray-200 flex items-center justify-center transition-colors">
-                    <svg class="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        class="w-10 h-10 rounded-xl bg-gray-100 hover:bg-gray-200 flex items-center justify-center transition-colors">
+                    <svg class="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
                     </svg>
                 </button>
             </div>
 
-            <div class="px-6 py-5 space-y-5">
-                <label class="flex items-start gap-3 cursor-pointer group">
-                    <div class="relative mt-0.5 shrink-0">
-                        <input type="checkbox" id="cb-recup" onchange="onEnfantFormChange()"
-                               class="peer w-5 h-5 rounded border-2 border-gray-300 accent-[#083325] cursor-pointer">
-                    </div>
-                    <span class="text-sm font-semibold text-gray-700 leading-snug group-hover:text-gray-900 transition-colors">
-                        Je certifie avoir récupéré mon enfant
-                    </span>
-                </label>
+            <div class="px-6 py-5 sm:px-8 sm:py-6 space-y-6 overflow-y-auto flex-1">
+
+                {{-- LISTE DES TUTEURS --}}
+                <div>
+                    <label class="block text-xs font-black text-gray-400 uppercase tracking-widest mb-3">
+                        👥 Personnes autorisées
+                    </label>
+                    <div id="enfant-tuteurs-list" class="space-y-3 max-h-60 overflow-y-auto pr-2">
+                        </div>
+                </div>
+
+                <div class="border-t border-gray-100 pt-6">
+                    <label class="flex items-center gap-4 cursor-pointer group bg-gray-50 p-4 sm:p-5 rounded-2xl border border-gray-200 hover:border-gray-300 transition-colors">
+                        <div class="relative shrink-0">
+                            <input type="checkbox" id="cb-recup" onchange="onEnfantFormChange()"
+                                   class="peer w-6 h-6 rounded border-2 border-gray-300 accent-[#083325] cursor-pointer">
+                        </div>
+                        <span class="text-base sm:text-lg font-semibold text-gray-700 leading-snug group-hover:text-gray-900 transition-colors">
+                            Je certifie avoir récupéré mon enfant
+                        </span>
+                    </label>
+                </div>
 
                 <div>
-                    <label class="block text-sm font-bold text-gray-700 mb-2">
-                        Signature du responsable <span class="text-rose-500">*</span>
+                    <label class="block text-xs font-black text-gray-400 uppercase tracking-widest mb-3">
+                        ✍️ Signature du responsable <span class="text-rose-500">*</span>
                     </label>
                     <div class="relative border-2 border-dashed border-gray-300 rounded-2xl p-2 bg-gray-50 overflow-hidden"
-                         style="height:150px">
+                         style="height:200px">
                         <canvas id="canvas-fin"
                                 class="w-full h-full touch-none bg-white rounded-xl cursor-crosshair block border border-gray-100"></canvas>
                         <button type="button" onclick="clearSigFin()"
-                                class="absolute top-3 right-3 bg-white border border-gray-200 text-xs font-bold
-                                       text-gray-500 hover:text-rose-500 hover:border-rose-200 px-2 py-1 rounded-lg
+                                class="absolute top-4 right-4 bg-white border border-gray-200 text-xs font-bold
+                                       text-gray-500 hover:text-rose-500 hover:border-rose-200 px-3 py-1.5 rounded-lg
                                        shadow-sm transition-colors">
                             Effacer
                         </button>
                     </div>
-                    <p id="sig-warning" class="text-xs text-rose-500 font-medium mt-1.5 hidden">
+                    <p id="sig-warning" class="text-sm text-rose-500 font-medium mt-2 hidden">
                         La signature est requise pour valider.
                     </p>
                 </div>
             </div>
 
-            <div class="px-6 py-5 border-t border-gray-100">
+            <div class="px-6 py-5 sm:px-8 sm:py-6 border-t border-gray-100 shrink-0">
                 <button id="btn-valider-enfant" onclick="validerEnfant()"
                         class="w-full bg-gray-100 text-gray-400 font-grotesk font-bold
-                               py-3.5 rounded-xl cursor-not-allowed text-sm transition-all duration-300
+                               py-4 rounded-xl cursor-not-allowed text-base transition-all duration-300
                                flex items-center justify-center gap-2" disabled>
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/>
                     </svg>
-                    Valider
+                    Valider la récupération
                 </button>
             </div>
         </div>
     </div>
-
     @endif
 
 @endsection
@@ -920,6 +929,46 @@
         currentEnfantId = id;
         const enfant = PRESENTS.find(e => e.id === id);
         document.getElementById('enfant-nom-titre').textContent = `${enfant.prenom} ${enfant.nom}`;
+
+        // -- AFFICHAGE DES TUTEURS --
+        const tuteursContainer = document.getElementById('enfant-tuteurs-list');
+        if(enfant.tous_les_tuteurs && enfant.tous_les_tuteurs.length > 0) {
+            tuteursContainer.innerHTML = enfant.tous_les_tuteurs.map(t => {
+                let badge = '';
+                let bgClass = '';
+                let icon = '';
+
+                if(t.type === 'parent_tuteur') {
+                    badge = 'Parent / Tuteur';
+                    bgClass = 'bg-slate-50 border-slate-200 text-slate-700';
+                    icon = '👨‍👩‍👧';
+                } else if(t.type === 'autre_autorise') {
+                    badge = 'Autorisé(e)';
+                    bgClass = 'bg-teal-50 border-teal-200 text-teal-800';
+                    icon = '✅';
+                } else {
+                    badge = 'Non autorisé(e)';
+                    bgClass = 'bg-rose-50 border-rose-200 text-rose-800';
+                    icon = '🚫';
+                }
+
+                const nomComplet = t.nom_complet || `${t.prenom} ${t.nom}`;
+
+                return `
+                <div class="flex items-center justify-between p-2.5 rounded-xl border ${bgClass}">
+                    <div class="flex items-center gap-3">
+                        <span class="text-xl bg-white/60 w-8 h-8 rounded-lg flex items-center justify-center shadow-sm border border-black/5">${icon}</span>
+                        <div>
+                            <p class="text-sm font-bold leading-tight">${nomComplet}</p>
+                        </div>
+                    </div>
+                    <span class="text-[9px] font-black uppercase tracking-widest px-2 py-1 rounded border border-black/5 bg-white/60 shadow-sm">${badge}</span>
+                </div>
+                `;
+            }).join('');
+        } else {
+            tuteursContainer.innerHTML = '<div class="p-3 bg-gray-50 rounded-xl border border-gray-100 text-xs text-gray-500 font-medium text-center">Aucun responsable légal renseigné pour cet enfant.</div>';
+        }
 
         document.getElementById('cb-recup').checked = false;
         document.getElementById('sig-warning').classList.add('hidden');

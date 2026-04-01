@@ -94,24 +94,21 @@ class DashboardController extends Controller
                 ->first();
 
             if ($prochaineSeance) {
-                $adherentsSeance = DB::table('activites_adherents')
-                    ->join('adherents', 'activites_adherents.id_adherent', '=', 'adherents.id')
+                $adherentsIds = DB::table('activites_adherents')
                     ->join('inscriptions', function ($join) use ($saison) {
-                        $join->on('adherents.id', '=', 'inscriptions.id_adherent')
+                        $join->on('activites_adherents.id_adherent', '=', 'inscriptions.id_adherent')
                              ->where('inscriptions.saison', '=', $saison);
                     })
                     ->where('activites_adherents.id_activite', $prochaineSeance->id_activite)
                     ->where('activites_adherents.est_un_abandon', 0)
                     ->whereNull('activites_adherents.date_sortie')
                     ->where('inscriptions.a_paye', '!=', 'En attente')
-                    ->select(
-                        'adherents.id',
-                        'adherents.nom',
-                        'adherents.prenom',
-                    )
-                    ->distinct()
-                    ->orderBy('adherents.nom')
-                    ->orderBy('adherents.prenom')
+                    ->pluck('activites_adherents.id_adherent');
+
+                $adherentsSeance = Adherent::with('tousLesTuteurs')
+                    ->whereIn('id', $adherentsIds)
+                    ->orderBy('nom')
+                    ->orderBy('prenom')
                     ->get();
 
                 $absentsSeanceIds = DB::table('presence')
@@ -226,7 +223,7 @@ class DashboardController extends Controller
         }
 
         DB::table('seances')->where('id_seance', $seance)->update([
-            'statut'     => 'terminee',
+            'statut'     => 'appel_fait', 
             'updated_at' => now(),
         ]);
 
