@@ -30,6 +30,11 @@
         .tag-red { background-color: #ffe4e6; color: #9f1239; }
 
         .footer { text-align: center; margin-top: 40px; font-size: 10px; color: #999; border-top: 1px solid #eee; padding-top: 10px; }
+
+        /* Style spécifique pour la signature */
+        .signature-box { border: 1px dashed #cbd5e1; background-color: #f8fafc; padding: 15px; width: 260px; margin: 15px 0 15px auto; text-align: center; border-radius: 8px; }
+        .signature-img { max-height: 90px; max-width: 100%; }
+        .signature-text { font-size: 10px; color: #64748b; margin: 5px 0 0 0; font-style: italic; }
     </style>
 </head>
 <body>
@@ -143,7 +148,7 @@
         </tr>
     </table>
 
-    {{-- NOUVEAU BLOC : HISTORIQUE DES PAIEMENTS --}}
+    {{-- HISTORIQUE DES PAIEMENTS --}}
     @if($adherent->paiements && $adherent->paiements->count() > 0)
         <div class="section-title">Historique des Paiements</div>
         <table class="table-striped">
@@ -172,6 +177,14 @@
                 </tr>
             </tbody>
         </table>
+    @endif
+
+    @if($adherent->signature)
+        <div class="section-title">Validation & Signature</div>
+        <div class="signature-box">
+            <img src="{{ $adherent->signature }}" alt="Signature de l'adhérent" class="signature-img">
+            <p class="signature-text">Document certifié et signé électroniquement</p>
+        </div>
     @endif
 
     <div class="footer">
