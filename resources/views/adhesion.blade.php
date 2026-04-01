@@ -82,7 +82,7 @@
 
                         <form action="{{ route('adhesion.next', $token) }}" method="POST">
                             @csrf
-                            <input type="hidden" name="current_step" value="1">
+                            <input type="hidden" name="current_step" value="1" >
 
                             <div x-data="{ statut: '{{ $formData['is_adherent'] ?? '' }}' }">
                                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
@@ -216,7 +216,7 @@
                                 </div>
 
                                 <div class="flex justify-end pt-4 border-t border-gray-100 mt-1">
-                                    <button type="submit" class="{{ $btn }}">
+                                    <button type="submit" class="{{ $btn }}" :disabled="!statut" :class="!statut ? 'opacity-50 cursor-not-allowed grayscale' : ''">
                                         Suivant
                                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
@@ -308,7 +308,7 @@
                                     @else
                                         <div></div>
                                     @endif
-                                    <button type="submit" class="{{ $btn }}">
+                                    <button type="submit" class="{{ $btn }}" :disabled="!statut_juridique" :class="!statut_juridique ? 'opacity-50 cursor-not-allowed grayscale' : ''">
                                         Suivant
                                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
@@ -446,7 +446,7 @@
                                     @else
                                         <div></div>
                                     @endif
-                                    <button type="submit" class="{{ $btn }}">
+                                    <button type="submit" class="{{ $btn }}" :disabled="!activite" :class="!activite ? 'opacity-50 cursor-not-allowed grayscale' : ''">
                                         Suivant
                                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
@@ -469,11 +469,11 @@
                             <input type="hidden" name="current_step" value="3">
 
                             <div class="mb-5">
-                                <label class="{{ $label }}">Genre</label>
+                                <label class="{{ $label }}">Genre *</label>
                                 <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
                                     @foreach (['Homme' => '🧔', 'Femme' => '👩', 'Autre' => '🧑'] as $val => $icon)
                                         <label class="cursor-pointer block group">
-                                            <input type="radio" name="genre" value="{{ $val }}"
+                                            <input type="radio" name="genre" required value="{{ $val }}"
                                                 {{ ($formData['genre'] ?? '') === $val ? 'checked' : '' }}
                                                 class="sr-only peer">
                                             <div
@@ -526,20 +526,20 @@
 
                             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-5">
                                 <div>
-                                    <label class="{{ $label }}">📞 Téléphone</label>
-                                    <input type="tel" name="tel" value="{{ $formData['tel'] ?? '' }}"
+                                    <label class="{{ $label }}">📞 Téléphone *</label>
+                                    <input type="tel" name="tel" required value="{{ $formData['tel'] ?? '' }}"
                                         placeholder="06 00 00 00 00" class="{{ $field }}">
                                 </div>
                                 <div>
-                                    <label class="{{ $label }}">📧 Email</label>
-                                    <input type="email" name="mail" value="{{ $formData['mail'] ?? '' }}"
+                                    <label class="{{ $label }}">📧 Email *</label>
+                                    <input type="email" name="mail" required value="{{ $formData['mail'] ?? '' }}"
                                         placeholder="exemple@mail.com" class="{{ $field }}">
                                 </div>
                             </div>
 
                             <div class="mb-5">
-                                <label class="{{ $label }}">🏛️ Régime social</label>
-                                <select name="regime_social" class="{{ $field }}">
+                                <label class="{{ $label }}">🏛️ Régime social *</label>
+                                <select name="regime_social" requiredclass="{{ $field }}">
                                     <option value="">— Sélectionnez votre régime —</option>
                                     @foreach (['Sécurité sociale générale', 'Mutuelle complémentaire', 'CSS / CMU-C', 'MSA (agricole)', 'RSI / Indépendants', 'Autre'] as $r)
                                         <option value="{{ $r }}"
@@ -607,14 +607,14 @@
 
                             <div class="mb-5">
                                 <label class="{{ $label }}">As-tu déjà une idée de métier que tu aimerais exercer ?</label>
-                                <textarea name="idee_metier" rows="4"
+                                <textarea name="idee_metier" rows="4" required
                                     placeholder="Décris librement tes idées ou aspirations professionnelles..."
                                     class="{{ $field }}">{{ $formData['idee_metier'] ?? '' }}</textarea>
                             </div>
 
                             <div class="mb-5">
                                 <label class="{{ $label }}">Aimerais-tu que ce que tu vas apprendre avec nous te permette de découvrir un métier ou une formation ?</label>
-                                <textarea name="decouverte_metier" rows="4"
+                                <textarea name="decouverte_metier" rows="4" required
                                     placeholder="Dis-nous ce que tu espères découvrir ou apprendre..."
                                     class="{{ $field }}">{{ $formData['decouverte_metier'] ?? '' }}</textarea>
                             </div>
@@ -786,7 +786,7 @@
                                         @foreach ([['val' => 'Maternelle', 'desc' => '3 à 5 ans'], ['val' => 'Primaire', 'desc' => '6 à 10 ans'], ['val' => 'Collège', 'desc' => '11 à 14 ans'], ['val' => 'Lycée', 'desc' => '15 à 17 ans'], ['val' => 'École à la maison', 'desc' => 'Tout âge']] as $o)
                                             <label class="cursor-pointer block group">
                                                 <input type="radio" name="occupation" value="{{ $o['val'] }}"
-                                                    x-model="occupation" class="sr-only">
+                                                    required x-model="occupation" class="sr-only">
                                                 <div :class="occupation === '{{ $o['val'] }}' ?
                                                     'border-teal-600 bg-teal-50 ring-2 ring-teal-600/20' :
                                                     'border-gray-200 group-hover:border-slate-900'"
@@ -802,7 +802,7 @@
 
                                     <div x-show="occupation !== ''" x-transition class="mb-5">
                                         <label class="{{ $label }}">🏫 Établissement scolaire</label>
-                                        <input type="text" name="etablissement"
+                                        <input type="text" name="etablissement" required
                                             value="{{ $formData['etablissement'] ?? '' }}"
                                             placeholder="Nom de l'école / collège / lycée" class="{{ $field }}">
                                     </div>
@@ -826,7 +826,7 @@
                                     @endphp
                                     @foreach ($adulteOptions as $o)
                                         <label class="cursor-pointer block group">
-                                            <input type="radio" name="occupation" value="{{ $o['val'] }}"
+                                            <input type="radio" required name="occupation" value="{{ $o['val'] }}"
                                                 {{ ($formData['occupation'] ?? '') === $o['val'] ? 'checked' : '' }}
                                                 class="sr-only peer">
                                             <div
@@ -1219,7 +1219,7 @@
                                     </label>
                                     <label
                                         class="flex items-center gap-3 p-3 bg-white border border-gray-200 rounded-lg cursor-pointer hover:border-gray-400 transition-all flex-1">
-                                        <input type="radio" name="participation_manif" value="0"
+                                        <input type="radio" required name="participation_manif" value="0"
                                             {{ ($formData['participation_manif'] ?? '') === '0' ? 'checked' : '' }}
                                             class="{{ $radio }}">
                                         <span class="text-sm font-bold text-slate-900">❌ Non, merci</span>
@@ -1240,7 +1240,7 @@
                                 @else
                                     <div></div>
                                 @endif
-                                <button type="submit" class="{{ $btn }}">
+                                <button type="submit" class="{{ $btn }}" :disabled="!participation_manif" :class="!participation_manif ? 'opacity-50 cursor-not-allowed grayscale' : ''">
                                     Suivant
                                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
@@ -1316,16 +1316,16 @@
 
                                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-5">
                                             <div>
-                                                <label class="{{ $label }}">📞 Téléphone</label>
+                                                <label class="{{ $label }}">📞 Téléphone *</label>
                                                 <input type="tel" :name="'tuteurs[' + i + '][tel]'"
                                                     x-model="tuteur.tel" placeholder="06 00 00 00 00"
                                                     class="{{ $field }}">
                                             </div>
                                             <div>
-                                                <label class="{{ $label }}">📧 Email</label>
+                                                <label class="{{ $label }}">📧 Email *</label>
                                                 <input type="email" :name="'tuteurs[' + i + '][mail]'"
                                                     x-model="tuteur.mail" placeholder="email@exemple.com"
-                                                    class="{{ $field }}">
+                                                    class="{{ $field }}" required>
                                             </div>
                                         </div>
 
@@ -1474,22 +1474,22 @@
                             </div>
 
                             <div class="mb-4">
-                                <label class="{{ $label }}">📅 Date de création</label>
-                                <input type="date" name="date_creation_structure"
+                                <label class="{{ $label }}">📅 Date de création *</label>
+                                <input type="date" required name="date_creation_structure"
                                     value="{{ $formData['date_creation_structure'] ?? '' }}"
                                     class="{{ $field }} max-w-xs">
                             </div>
 
                             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
                                 <div>
-                                    <label class="{{ $label }}">📞 Téléphone fixe</label>
-                                    <input type="tel" name="tel_structure"
+                                    <label class="{{ $label }}">📞 Téléphone fixe *</label>
+                                    <input type="tel" required name="tel_structure"
                                         value="{{ $formData['tel_structure'] ?? '' }}"
                                         placeholder="03 88 00 00 00" class="{{ $field }}">
                                 </div>
                                 <div>
-                                    <label class="{{ $label }}">📱 Téléphone portable</label>
-                                    <input type="tel" name="tel_portable_structure"
+                                    <label class="{{ $label }}">📱 Téléphone portable *</label>
+                                    <input type="tel" required name="tel_portable_structure"
                                         value="{{ $formData['tel_portable_structure'] ?? '' }}"
                                         placeholder="06 00 00 00 00" class="{{ $field }}">
                                 </div>
@@ -1503,8 +1503,8 @@
                                         placeholder="contact@structure.fr" required class="{{ $field }}">
                                 </div>
                                 <div>
-                                    <label class="{{ $label }}">🌐 Site web</label>
-                                    <input type="url" name="site_web"
+                                    <label class="{{ $label }}">🌐 Site web *</label>
+                                    <input type="url" required name="site_web"
                                         value="{{ $formData['site_web'] ?? '' }}"
                                         placeholder="https://www.structure.fr" class="{{ $field }}">
                                 </div>
@@ -1620,7 +1620,7 @@
                     <div class="p-5 md:p-6">
                         <div class="mb-5">
                             <h2 class="text-xl font-bold text-gray-900">Votre signature ✍️</h2>
-                            <p class="text-gray-400 mt-1 text-sm">Signez ci-dessous pour valider la fiche d'adhésion</p>
+                            <p class="text-gray-400 mt-1 text-sm">En tant qu'adhérent, signez ci-dessous pour valider la fiche d'adhésion</p>
                         </div>
 
                         <form action="{{ route('adhesion.next', $token) }}" method="POST" id="form-signature">
@@ -1630,8 +1630,7 @@
                             <div class="p-4 bg-amber-50 rounded-xl border border-amber-100 mb-5 flex items-start gap-3">
                                 <span class="text-2xl">⚠️</span>
                                 <p class="text-sm font-bold text-amber-800 leading-relaxed">
-                                    En signant ce formulaire, vous certifiez l'exactitude des informations renseignées et
-                                    acceptez le règlement intérieur de l'association.
+                                    En signant ce formulaire, vous certifiez l'exactitude des informations renseignées.
                                 </p>
                             </div>
 
