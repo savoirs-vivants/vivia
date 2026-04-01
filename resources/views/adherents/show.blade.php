@@ -161,7 +161,7 @@
                             <div
                                 class="text-center px-3 sm:px-4 py-2.5 bg-[#222A60]/5 rounded-xl border border-[#222A60]/10 flex flex-col justify-center">
                                 <p class="font-grotesk text-lg sm:text-xl font-black text-[#222A60] leading-none">
-                                    {{ number_format($adherent->montant_total, 0, ',', ' ') }} €</p>
+                                    {{ number_format($adherent->inscriptions->sum('montant'), 0, ',', ' ') }} €</p>
                                 <p
                                     class="text-[9px] sm:text-[10px] font-bold text-gray-500 uppercase tracking-widest mt-1.5">
                                     Encaissé</p>

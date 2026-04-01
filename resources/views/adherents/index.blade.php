@@ -176,18 +176,7 @@
         </div>
     </div>
 
-    <div class="flex items-center justify-between mb-6 pl-2">
-        <div>
-            <p class="text-sm text-gray-400 font-medium">
-                @if ($tab === 'payes')
-                    <span class="font-bold text-gray-600">{{ $adherentsPayes->total() }}</span> adhérents ayant payé cette saison
-                @elseif ($tab === 'partiel')
-                    <span class="font-bold text-amber-600">{{ $adherentsPartiel->total() }}</span> adhérents en paiement partiel
-                @else
-                    <span class="font-bold text-rose-500">{{ $adherentsEnAttente->total() }}</span> adhérents en attente de paiement
-                @endif
-            </p>
-        </div>
+    <div class="mb-6 pl-2">
         <a href="#"
            class="inline-flex items-center gap-2 px-5 py-2.5 bg-[#222A60] hover:bg-[#1a2050] text-white text-sm font-bold rounded-xl transition-all duration-200 shadow-sm hover:shadow-md">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -291,7 +280,7 @@
 
         @if ($filterType === 'structure')
             <div class="overflow-x-auto">
-                <table class="w-full">
+                <table class="w-full table-fixed">
                     <thead>
                         <tr class="border-b border-gray-100">
                             <th class="px-6 py-3 text-left text-[10px] font-black text-gray-400 uppercase tracking-widest">Structure</th>
@@ -431,7 +420,7 @@
             </div>
         @else
             <div class="overflow-x-auto">
-                <table class="w-full">
+                <table class="w-full table-fixed">
                     <thead>
                         <tr class="border-b border-gray-100">
                             <th class="px-6 py-3 text-left text-[10px] font-black text-gray-400 uppercase tracking-widest">Adhérent</th>
@@ -507,25 +496,30 @@
                                     </td>
 
                                     <td class="px-4 py-4 text-right">
-                                        @if ($tab === 'partiel')
-                                            @php
-                                                $verse        = (float) $adherent->paiements->sum('montant');
-                                                $totalAttendu = (float) ($adherent->inscription?->montant ?? $adherent->montant_total);
-                                            @endphp
-                                            <span class="font-black text-sm text-amber-600">
-                                                {{ number_format($verse, 2, ',', ' ') }} €
-                                            </span>
-                                            <span class="text-xs text-gray-400">
-                                                / {{ number_format($totalAttendu, 2, ',', ' ') }} €
-                                            </span>
-                                        @else
-                                            @if ($adherent->inscription && $adherent->inscription->montant > 0)
-                                                <span class="font-black text-sm text-[#0F143A]">{{ number_format($adherent->inscription->montant, 2, ',', ' ') }} €</span>
-                                            @else
-                                                <span class="text-xs text-gray-300">—</span>
-                                            @endif
-                                        @endif
-                                    </td>
+                                    @if ($tab === 'partiel')
+                                        @php
+                                    $verse        = (float) $adherent->inscriptions>sum('montant');
+            $totalAttendu = (float) ($adherent->inscription?->montant ?? 0);
+        @endphp
+        <span class="font-black text-sm text-amber-600">
+            {{ number_format($verse, 2, ',', ' ') }} €
+        </span>
+        <span class="text-xs text-gray-400">
+            / {{ number_format($totalAttendu, 2, ',', ' ') }} €
+        </span>
+    @else
+        @php
+            $montantAffiche = $adherent->paiements->isNotEmpty()
+                ? $adherent->paiements->sum('montant')
+                : ($adherent->inscription?->montant ?? 0);
+        @endphp
+        @if ($montantAffiche > 0)
+            <span class="font-black text-sm text-[#0F143A]">{{ number_format((float)$montantAffiche, 2, ',', ' ') }} €</span>
+        @else
+            <span class="text-xs text-gray-300">—</span>
+        @endif
+    @endif
+</td>
 
                                     <td class="px-4 py-4">
                                         <span class="text-sm text-gray-500">{{ $adherent->inscription?->date_inscription?->isoFormat('D MMM YYYY') ?? '—' }}</span>
@@ -630,7 +624,6 @@
                 <div class="px-6 py-4 border-b border-gray-100 flex items-center gap-3">
                     <span class="text-lg">🏛️</span>
                     <h3 class="font-bold text-gray-800 text-sm">Structures adhérentes</h3>
-                    <span class="ml-auto px-2.5 py-0.5 bg-teal-100 text-teal-600 text-xs font-black rounded-full">{{ $structuresPayees->count() }}</span>
                 </div>
                 <div class="overflow-x-auto">
                     <table class="w-full text-sm">
@@ -640,9 +633,7 @@
                                 <th class="px-4 py-3 text-left text-[10px] font-black text-gray-400 uppercase tracking-widest">Statut</th>
                                 <th class="px-4 py-3 text-left text-[10px] font-black text-gray-400 uppercase tracking-widest">Correspondant</th>
                                 <th class="px-4 py-3 text-left text-[10px] font-black text-gray-400 uppercase tracking-widest">Contact</th>
-                                <th class="px-4 py-3 text-right text-[10px] font-black text-gray-400 uppercase tracking-widest">Montant</th>
                                 <th class="px-4 py-3 text-left text-[10px] font-black text-gray-400 uppercase tracking-widest">Date</th>
-                                <th class="px-6 py-3 text-left text-[10px] font-black text-gray-400 uppercase tracking-widest">Statut paiement</th>
                                 <th class="px-6 py-3"></th>
                             </tr>
                         </thead>
@@ -675,14 +666,8 @@
                                             <span class="text-xs text-gray-300">—</span>
                                         @endif
                                     </td>
-                                    <td class="px-4 py-4 text-right">
-                                        <span class="font-black text-sm text-[#0F143A]">{{ number_format((float) $structure->montant_adhesion, 2, ',', ' ') }} €</span>
-                                    </td>
                                     <td class="px-4 py-4">
                                         <span class="text-sm text-gray-500">{{ $structure->inscription?->date_inscription?->isoFormat('D MMM YYYY') ?? '—' }}</span>
-                                    </td>
-                                    <td class="px-6 py-4">
-                                        <span class="inline-flex px-3 py-1.5 bg-teal-100 text-teal-700 rounded-lg text-xs font-bold">Payée</span>
                                     </td>
                                     <td class="px-6 py-4">
                                         <a href="{{ route('structures.show', $structure) }}" class="inline-flex items-center gap-1 px-3 py-1.5 bg-[#222A60]/5 hover:bg-[#222A60]/10 text-[#222A60] rounded-lg text-xs font-bold transition-all">
@@ -703,7 +688,6 @@
                 <div class="px-6 py-4 border-b border-gray-100 flex items-center gap-3">
                     <span class="text-lg">🏛️</span>
                     <h3 class="font-bold text-gray-800 text-sm">Structures en attente de validation</h3>
-                    <span class="ml-auto px-2.5 py-0.5 bg-rose-100 text-rose-600 text-xs font-black rounded-full">{{ $structuresEnAttente->count() }}</span>
                 </div>
                 <div class="overflow-x-auto">
                     <table class="w-full text-sm">

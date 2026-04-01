@@ -97,16 +97,6 @@
                             </div>
                         </div>
                     </div>
-
-                    <div class="flex flex-col items-end gap-4 shrink-0">
-                        <div class="grid grid-cols-2 gap-3">
-                            <div class="text-center px-4 py-2.5 bg-[#16987C]/10 rounded-xl border border-[#16987C]/15 flex flex-col justify-center">
-                                <p class="font-grotesk text-xl font-black text-[#16987C] leading-none">{{ number_format($totalPaye, 0, ',', ' ') }} €</p>
-                                <p class="text-[10px] font-bold text-gray-500 uppercase tracking-widest mt-1.5">Encaissé</p>
-                            </div>
-                        </div>
-                    </div>
-
                 </div>
             </div>
         </div>
