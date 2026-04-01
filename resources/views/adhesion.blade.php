@@ -553,7 +553,7 @@
                                 <p class="text-sm font-bold text-slate-900 mb-1">Autorisations & communications</p>
                                 <label class="flex items-start gap-3 cursor-pointer group">
                                     <input type="checkbox" name="bulletin" value="1"
-                                        {{ !empty($formData['bulletin']) ? 'checked' : '' }}
+                                        {{ !empty($formData['bulletin'] ?? '') ? 'checked' : '' }}
                                         class="{{ $check }} mt-0.5">
                                     <span class="text-sm text-gray-700 leading-relaxed">
                                         <strong class="text-slate-900">Bulletin d'information</strong> — J'accepte de
@@ -562,7 +562,7 @@
                                 </label>
                                 <label class="flex items-start gap-3 cursor-pointer group">
                                     <input type="checkbox" name="communication" value="1"
-                                        {{ !empty($formData['communication']) ? 'checked' : '' }}
+                                        {{ !empty($formData['communication'] ?? '') ? 'checked' : '' }}
                                         class="{{ $check }} mt-0.5">
                                     <span class="text-sm text-gray-700 leading-relaxed">
                                         <strong class="text-slate-900">Droit à l'image</strong> — J'autorise l'association
@@ -656,31 +656,37 @@
 
                             <div class="mb-5">
                                 <label class="{{ $label }}">📷 Photo des vaccins sur le carnet de santé</label>
-                                @if (!empty($formData['carnet_sante_path']))
-                                    <div
-                                        class="mb-4 p-4 bg-teal-50 border border-teal-200 rounded-xl flex items-center gap-3">
-                                        <span class="text-teal-600 text-xl">✅</span>
-                                        <span class="text-sm font-semibold text-teal-800">Fichier déjà envoyé. Vous pouvez
-                                            le remplacer ci-dessous.</span>
-                                    </div>
-                                @endif
+                                @php
+                                    $carnetPath   = $formData['carnet_sante_path'] ?? null;
+                                    $carnetUrl    = $carnetPath ? asset('storage/' . $carnetPath) : null;
+                                    $carnetIsPdf  = $carnetPath && str_ends_with(strtolower($carnetPath), '.pdf');
+                                @endphp
                                 <div class="border-2 border-dashed border-gray-200 rounded-xl p-6 text-center hover:border-teal-400 hover:bg-teal-50/40 transition-all cursor-pointer group"
-                                    x-data="{ preview: null }" @click="$refs.fileInput.click()">
+                                    x-data="{ preview: @js($carnetIsPdf ? null : $carnetUrl) }" @click="$refs.fileInput.click()">
                                     <input type="file" name="carnet_sante" accept="image/*,.pdf" class="hidden"
                                         x-ref="fileInput"
                                         @change="preview = $event.target.files[0] ? URL.createObjectURL($event.target.files[0]) : null">
                                     <template x-if="!preview">
-                                        <div>
-                                            <div class="text-4xl mb-2 group-hover:scale-110 transition-transform">📁</div>
-                                            <p class="text-sm font-semibold text-gray-600">Cliquez pour déposer l'image
-                                            </p>
-                                            <p class="text-xs text-gray-400 mt-1">JPG, PNG ou PDF — max 10 Mo
-                                            </p>
-                                        </div>
+                                        @if ($carnetIsPdf)
+                                            <div>
+                                                <div class="text-4xl mb-2">📄</div>
+                                                <p class="text-sm font-semibold text-teal-700">PDF déjà envoyé — cliquez pour le remplacer</p>
+                                                <p class="text-xs text-gray-400 mt-1">JPG, PNG ou PDF — max 10 Mo</p>
+                                            </div>
+                                        @else
+                                            <div>
+                                                <div class="text-4xl mb-2 group-hover:scale-110 transition-transform">📁</div>
+                                                <p class="text-sm font-semibold text-gray-600">Cliquez pour déposer l'image</p>
+                                                <p class="text-xs text-gray-400 mt-1">JPG, PNG ou PDF — max 10 Mo</p>
+                                            </div>
+                                        @endif
                                     </template>
                                     <template x-if="preview">
-                                        <img :src="preview"
-                                            class="max-h-48 mx-auto rounded-xl shadow-sm object-contain border border-gray-200">
+                                        <div>
+                                            <img :src="preview"
+                                                class="max-h-48 mx-auto rounded-xl shadow-sm object-contain border border-gray-200">
+                                            <p class="text-xs text-teal-600 font-semibold mt-2">✅ Cliquez pour remplacer</p>
+                                        </div>
                                     </template>
                                 </div>
                                 <p class="mt-2 text-xs text-gray-400 flex items-start gap-1.5">
@@ -1576,7 +1582,7 @@
                                 </h3>
                                 <label class="flex items-start gap-3 cursor-pointer">
                                     <input type="checkbox" name="autorisation_photo" value="1"
-                                        {{ ($formData['autorisation_photo'] ?? false) ? 'checked' : '' }}
+                                        {{ ($formData['autorisation_photo'] ?? 0) == 1 ? 'checked' : '' }}
                                         class="{{ $check }} mt-0.5">
                                     <span class="text-sm text-amber-800 leading-relaxed">
                                         J'autorise les membres de ma structure à être photographiés et filmés lors des

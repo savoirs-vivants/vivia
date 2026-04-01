@@ -203,6 +203,7 @@ class AdherentFormulaireController extends Controller
                     'nom', 'prenom', 'genre', 'adresse', 'code_postal', 'ville',
                     'tel', 'mail', 'occupation', 'etablissement', 'regime_social',
                     'problemes_sante', 'allergies', 'conduite_a_tenir', 'restrictions_alimentaires',
+                    'bulletin', 'communication',
                 ];
                 foreach ($champsAdherent as $champ) {
                     if (!array_key_exists($champ, $formData) && $adherentExistant->$champ !== null) {
@@ -211,6 +212,36 @@ class AdherentFormulaireController extends Controller
                 }
                 if (!array_key_exists('date_naiss', $formData)) {
                     $formData['date_naiss'] = $adherentExistant->date_naiss?->format('Y-m-d');
+                }
+                if (!array_key_exists('carnet_sante_path', $formData) && !empty($adherentExistant->carnet)) {
+                    $formData['carnet_sante_path'] = $adherentExistant->carnet;
+                }
+                if (!array_key_exists('actions_benevoles', $formData) && !empty($adherentExistant->actions)) {
+                    $decoded = json_decode($adherentExistant->actions, true);
+                    $formData['actions_benevoles'] = is_array($decoded) ? $decoded : [];
+                }
+                if (!array_key_exists('participation_manif', $formData)) {
+                    $formData['participation_manif'] = $adherentExistant->manif ? '1' : '0';
+                }
+                if (!array_key_exists('signature_adherent', $formData) && !empty($adherentExistant->signature)) {
+                    $formData['signature_adherent'] = $adherentExistant->signature;
+                }
+                if (!array_key_exists('tuteurs', $formData)) {
+                    $tuteurs = $adherentExistant->tousLesTuteurs()->get();
+                    if ($tuteurs->isNotEmpty()) {
+                        $formData['tuteurs'] = $tuteurs->map(fn($t) => [
+                            'type'         => $t->type,
+                            'nom'          => $t->nom ?? '',
+                            'prenom'       => $t->prenom ?? '',
+                            'tel'          => $t->tel ?? '',
+                            'mail'         => $t->mail ?? '',
+                            'adhere'       => (bool) $t->adhere,
+                            'rentre_fin'   => (bool) $t->rentre_fin,
+                            'rentre_annul' => (bool) $t->rentre_annul,
+                            'date_signature' => '',
+                            'signature'    => '',
+                        ])->toArray();
+                    }
                 }
 
                 $year   = now()->month >= 9 ? now()->year : now()->year - 1;
@@ -245,6 +276,14 @@ class AdherentFormulaireController extends Controller
                     }
                     if (!array_key_exists('date_creation_structure', $formData) && $structureExistante->date_creation) {
                         $formData['date_creation_structure'] = $structureExistante->date_creation->format('Y-m-d');
+                    }
+                    foreach (['bulletin', 'autorisation_photo', 'communication'] as $champ) {
+                        if (!array_key_exists($champ, $formData) && $structureExistante->$champ !== null) {
+                            $formData[$champ] = $structureExistante->$champ;
+                        }
+                    }
+                    if (!array_key_exists('signature_adherent', $formData) && !empty($structureExistante->signature)) {
+                        $formData['signature_adherent'] = $structureExistante->signature;
                     }
                 }
             }
@@ -967,8 +1006,8 @@ class AdherentFormulaireController extends Controller
             'nom_correspondant' => $formData['nom_correspondant'] ?? null,
             'tel_correspondant' => $formData['tel_correspondant'] ?? null,
             'bulletin'         => (bool) ($formData['bulletin'] ?? false),
-            'communication'    => (bool) ($formData['communication'] ?? false),
             'autorisation_photo' => (bool) ($formData['autorisation_photo'] ?? false),
+            'signature'        => $formData['signature_adherent'] ?? null,
             'statut'           => $statutActivite,
             'statut_juridique' => $formData['statut_juridique'] ?? null,
         ]);

@@ -25,7 +25,9 @@ class AdherentStructure extends Model
         'nom_correspondant',
         'tel_correspondant',
         'bulletin',
+        'communication',
         'autorisation_photo',
+        'signature',
         'statut',
         'statut_juridique',
     ];
@@ -33,6 +35,7 @@ class AdherentStructure extends Model
     protected $casts = [
         'date_creation'     => 'date',
         'bulletin'          => 'boolean',
+        'communication'     => 'boolean',
         'autorisation_photo'=> 'boolean',
     ];
 
