@@ -1,6 +1,8 @@
 @extends('layouts.app')
 
-@section('title', 'Structure — ' . $structure->nom)
+@section('title')
+    {!! $structure->nom !!}
+@endsection
 
 @section('content')
 

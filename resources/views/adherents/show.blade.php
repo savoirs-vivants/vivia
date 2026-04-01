@@ -1,6 +1,8 @@
 @extends('layouts.app')
 
-@section('title', 'Détails - ' . $adherent->prenom . ' ' . $adherent->nom)
+@section('title')
+    {!! $adherent->prenom !!} {!! $adherent->nom !!}
+@endsection
 
 @section('content')
 
