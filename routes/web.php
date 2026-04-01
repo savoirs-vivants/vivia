@@ -61,6 +61,7 @@ Route::middleware('auth')->group(function () {
 
     Route::get('/structures/{structure}', [AdherentController::class, 'showStructure'])->name('structures.show');
     Route::post('/structures/{structure}/valider', [AdherentController::class, 'validerStructure'])->name('structures.valider');
+    Route::get('/structures/{structure}/pdf', [AdherentController::class, 'downloadPdfStructure'])->name('structures.pdf');
 
     Route::get('/activites', [ActiviteController::class, 'index'])->name('activites.index');
     Route::get('/activites/create', [ActiviteController::class, 'create'])->name('activites.create');

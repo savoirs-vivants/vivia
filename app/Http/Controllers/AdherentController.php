@@ -237,4 +237,16 @@ class AdherentController extends Controller
 
         return $pdf->download($fileName);
     }
+
+    public function downloadPdfStructure(AdherentStructure $structure)
+    {
+        $structure->load(['inscription', 'paiements']);
+        $totalPaye = (float) $structure->paiements->sum('montant');
+
+        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('adherents.structure_pdf', compact('structure', 'totalPaye'));
+
+        $fileName = 'fiche_structure_' . \Illuminate\Support\Str::slug($structure->nom) . '.pdf';
+
+        return $pdf->download($fileName);
+    }
 }
