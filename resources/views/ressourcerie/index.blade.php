@@ -10,6 +10,7 @@
                 <span class="font-bold text-gray-600">{{ $ressourceries->count() }}</span> ressources disponibles
             </p>
         </div>
+        @can('gerer-ressourcerie')
         <a href="{{ route('ressourcerie.create') }}"
             class="inline-flex items-center gap-2 px-5 py-2.5 bg-[#16A37A] hover:bg-[#128a67] text-white text-sm font-bold rounded-xl transition-all shadow-sm hover:shadow-md">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -17,6 +18,7 @@
             </svg>
             Ajouter une ressource
         </a>
+        @endcan
     </div>
 
     <div class="flex flex-wrap items-center gap-2 mb-4 pl-2">
@@ -130,6 +132,7 @@
                                     </span>
                                 </td>
                                 <td class="px-5 py-4">
+                                    @can('gerer-ressourcerie')
                                     <div class="flex items-center justify-end gap-2">
                                         <a href="{{ route('ressourcerie.edit', $item) }}"
                                             class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-600 text-xs font-bold rounded-lg transition-all">
@@ -154,6 +157,7 @@
                                             </button>
                                         </form>
                                     </div>
+                                    @endcan
                                 </td>
                             </tr>
                         @endforeach
@@ -170,10 +174,12 @@
                 </svg>
             </div>
             <p class="text-gray-400 text-sm font-medium">Aucune ressource trouvée.</p>
+            @can('gerer-ressourcerie')
             <a href="{{ route('ressourcerie.create') }}"
                 class="mt-4 inline-flex items-center gap-2 px-4 py-2 bg-[#16A37A] text-white text-sm font-bold rounded-xl hover:bg-[#128a67] transition-all">
                 Ajouter la première ressource
             </a>
+            @endcan
         </div>
     @endif
 
@@ -240,6 +246,7 @@
                                             </span>
                                         </td>
                                         <td class="px-5 py-4">
+                                            @can('gerer-ressourcerie')
                                             <div class="flex items-center justify-end gap-2">
                                                 <a href="{{ route('ressourcerie.edit', $item) }}"
                                                     class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-600 text-xs font-bold rounded-lg transition-all">
@@ -266,6 +273,7 @@
                                                     </button>
                                                 </form>
                                             </div>
+                                            @endcan
                                         </td>
                                     </tr>
                                 @endforeach

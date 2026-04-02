@@ -1,6 +1,7 @@
 <div class="bg-white rounded-2xl border border-gray-100 shadow-[0_2px_12px_rgba(0,0,0,0.04)] hover:shadow-[0_8px_30px_rgba(0,0,0,0.08)] transition-all duration-200 group relative overflow-hidden flex flex-col">
 
     <div class="absolute top-0 right-0 flex items-center">
+        @can('gerer-activites')
         <form action="{{ route('activites.toggleArchive', $activite) }}" method="POST" class="opacity-0 group-hover:opacity-100 transition-opacity">
             @csrf
             <button type="submit" class="p-2 text-gray-300 hover:text-rose-500 transition-colors" title="Archiver cette activité">
@@ -9,6 +10,7 @@
                 </svg>
             </button>
         </form>
+        @endcan
 
         <span class="text-[10px] font-black uppercase px-3.5 py-1.5 rounded-bl-xl
             {{ $activite->est_stage ? 'bg-amber-100 text-amber-600' : 'bg-[#222A60]/8 text-[#222A60]' }}">
