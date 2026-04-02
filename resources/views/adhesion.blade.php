@@ -539,7 +539,7 @@
 
                             <div class="mb-5">
                                 <label class="{{ $label }}">🏛️ Régime social *</label>
-                                <select name="regime_social" requiredclass="{{ $field }}">
+                                <select name="regime_social" required class="{{ $field }}">
                                     <option value="">— Sélectionnez votre régime —</option>
                                     @foreach (['Sécurité sociale générale', 'Mutuelle complémentaire', 'CSS / CMU-C', 'MSA (agricole)', 'RSI / Indépendants', 'Autre'] as $r)
                                         <option value="{{ $r }}"
@@ -1331,6 +1331,10 @@
 
                                         <template x-if="tuteur.type === 'parent_tuteur'">
                                             <div>
+                                                <div class="mb-5">
+                                                    <label class="{{ $label }}">💼 Profession</label>
+                                                    <input type="text" :name="'tuteurs[' + i + '][profession]'" x-model="tuteur.profession" placeholder="Ex : Enseignant, Indépendant..." class="{{ $field }}">
+                                                </div>
                                                 <div class="space-y-3 mb-6 p-5 bg-slate-50 border border-slate-200 rounded-2xl">
                                                     <label class="flex items-center gap-3 cursor-pointer group">
                                                         <input type="checkbox" :name="'tuteurs[' + i + '][adhere]'"
@@ -2211,6 +2215,7 @@
                         prenom: '',
                         tel: '',
                         mail: '',
+                        profession: '',
                     };
                     if (type === 'parent_tuteur') {
                         Object.assign(base, {
