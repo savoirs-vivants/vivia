@@ -15,11 +15,95 @@ class DashboardController extends Controller
     public function index()
     {
         $saison = $this->currentSaison();
+        $user   = Auth::user();
+
         $mesActivitesIds = DB::table('activites_gestionnaire')
             ->where('id_users', Auth::id())
             ->pluck('id_activite');
 
-        $isGestionnaire = $mesActivitesIds->isNotEmpty();
+        $isGestionnaire  = $mesActivitesIds->isNotEmpty();
+        $isRoleRestreint = in_array($user->role, ['coordinateur', 'animateur']);
+
+        if ($isRoleRestreint && !$isGestionnaire) {
+            return redirect()->route('activites.index');
+        }
+
+        if ($isRoleRestreint) {
+            $prochaineSeance  = null;
+            $adherentsSeance  = collect();
+            $absentsSeanceIds = [];
+
+            $prochaineSeance = DB::table('seances')
+                ->join('activites', 'seances.id_activite', '=', 'activites.id')
+                ->whereIn('activites.id', $mesActivitesIds)
+                ->where(function ($q) {
+                    $q->where('seances.statut', 'appel_fait')
+                      ->orWhere(function ($q2) {
+                          $q2->where('seances.date', '>', now())
+                             ->where(function ($q3) {
+                                 $q3->whereNull('seances.statut')
+                                    ->orWhere('seances.statut', '!=', 'terminee');
+                             });
+                      });
+                })
+                ->select(
+                    'seances.id_seance',
+                    'seances.id_activite',
+                    'seances.date',
+                    'seances.statut',
+                    'activites.nom as activite_nom',
+                    'activites.adresse',
+                    'activites.ville',
+                    DB::raw('(SELECT COUNT(*) FROM activites_adherents WHERE activites_adherents.id_activite = seances.id_activite AND activites_adherents.saison = "' . $saison . '" AND activites_adherents.est_un_abandon = 0) as nb_inscrits')
+                )
+                ->orderByRaw("CASE WHEN seances.statut = 'appel_fait' THEN 0 ELSE 1 END")
+                ->orderBy('seances.date')
+                ->first();
+
+            if ($prochaineSeance) {
+                $adherentsIds = DB::table('activites_adherents')
+                    ->join('inscriptions', function ($join) use ($saison) {
+                        $join->on('activites_adherents.id_adherent', '=', 'inscriptions.id_adherent')
+                             ->where('inscriptions.saison', '=', $saison);
+                    })
+                    ->where('activites_adherents.id_activite', $prochaineSeance->id_activite)
+                    ->where('activites_adherents.est_un_abandon', 0)
+                    ->whereNull('activites_adherents.date_sortie')
+                    ->where('inscriptions.a_paye', '!=', 'En attente')
+                    ->pluck('activites_adherents.id_adherent');
+
+                $adherentsSeance = \App\Models\Adherent::with('tousLesTuteurs')
+                    ->whereIn('id', $adherentsIds)
+                    ->orderBy('nom')
+                    ->orderBy('prenom')
+                    ->get();
+
+                $absentsSeanceIds = DB::table('presence')
+                    ->where('id_seance', $prochaineSeance->id_seance)
+                    ->where('statut', 'Absent')
+                    ->pluck('id_adherent')
+                    ->toArray();
+            }
+
+            return view('dashboard', [
+                'isGestionnaire'   => $isGestionnaire,
+                'isRoleRestreint'  => true,
+                'prochaineSeance'  => $prochaineSeance,
+                'adherentsSeance'  => $adherentsSeance,
+                'absentsSeanceIds' => $absentsSeanceIds,
+                'saison'           => $saison,
+                'totalAdherents'   => 0,
+                'newThisMonth'     => 0,
+                'totalCotisations' => 0,
+                'totalEnAttente'   => 0,
+                'statutPaye'       => 0,
+                'statutAttente'    => 0,
+                'statutPartiel'    => 0,
+                'activitesStats'   => collect(),
+                'maxInscrits'      => 1,
+                'repartitionTypes' => collect(),
+            ]);
+        }
 
         // ── KPIs : Adhérents ──────────────────────────────────────────────
         $totalAdherents = DB::table('inscriptions')
@@ -161,7 +245,8 @@ class DashboardController extends Controller
             'prochaineSeance',
             'adherentsSeance',
             'absentsSeanceIds',
-            'isGestionnaire'
+            'isGestionnaire',
+            'isRoleRestreint'
         ));
     }
 
@@ -223,7 +308,7 @@ class DashboardController extends Controller
         }
 
         DB::table('seances')->where('id_seance', $seance)->update([
-            'statut'     => 'appel_fait', 
+            'statut'     => 'appel_fait',
             'updated_at' => now(),
         ]);
 
@@ -233,7 +318,7 @@ class DashboardController extends Controller
     /**
      * Clôturer la séance (fin de l'activité).
      */
-    public function terminerSeance(Request $request, int $seance)
+    public function terminerSeance(int $seance)
     {
         $seanceData = DB::table('seances')->where('id_seance', $seance)->first();
         abort_if(!$seanceData, 404);
