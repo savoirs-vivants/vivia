@@ -341,6 +341,41 @@ class AdherentFormulaireController extends Controller
                 $formData['_adherent_id'] = $adherentId;
                 $request->session()->put("adhesion_{$token}", $formData);
             }
+            if (empty($formData['_admin_mail_sent'])) {
+                try {
+                    $entity = null;
+                    $dataMail = [];
+
+                    if ($isStructure && !empty($formData['_structure_id'])) {
+                        $entity = AdherentStructure::find($formData['_structure_id']);
+                        $dataMail = [
+                            'nom' => $entity->nom,
+                            'prenom' => '',
+                            'numero' => $entity->numero_adherent
+                        ];
+                    } elseif (!empty($formData['_adherent_id'])) {
+                        $entity = Adherent::find($formData['_adherent_id']);
+                        $dataMail = [
+                            'nom' => $entity->nom,
+                            'prenom' => $entity->prenom,
+                            'numero' => $entity->numero_adherent
+                        ];
+                    }
+
+                    if ($entity) {
+                        Mail::send('emails.admin_nouvelle_inscription', $dataMail, function ($message) {
+                            $message->to('contact@savoirsvivants.fr')
+                                    ->subject('🎉 Nouvelle inscription - Savoirs Vivants');
+                        });
+                    }
+
+                    $formData['_admin_mail_sent'] = true;
+                    $request->session()->put("adhesion_{$token}", $formData);
+
+                } catch (\Exception $e) {
+                    Log::error("Erreur envoi mail admin direction : " . $e->getMessage());
+                }
+            }
         }
 
         return view('adhesion', compact(

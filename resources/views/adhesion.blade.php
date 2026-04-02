@@ -2075,9 +2075,9 @@
                                 <p class="text-sm text-gray-600 mb-3">
                                     Vous avez choisi le paiement en personne. Contactez-nous pour fixer un rendez-vous :
                                 </p>
-                                <a href="mailto:contact@savoirsvivants.fr"
+                                <a href="mailto:direction@savoirsvivants.fr"
                                     class="inline-flex items-center gap-2 bg-teal-600 text-white text-sm font-semibold px-4 py-2 rounded-lg hover:bg-teal-700 transition-colors">
-                                    ✉️ contact@savoirsvivants.fr
+                                    ✉️ direction@savoirsvivants.fr
                                 </a>
                             </div>
                         @endif
