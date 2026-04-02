@@ -147,6 +147,21 @@
         </div>
         @endif
 
+        @if(!empty($isRoleRestreint) && $isGestionnaire)
+        <div class="flex flex-col flex-1 min-h-0">
+            <div class="bg-gradient-to-r from-[#083325] to-[#0f4a35] rounded-2xl px-6 sm:px-8 py-5 sm:py-6 mb-4 flex items-center gap-4 shrink-0">
+                <div class="w-12 h-12 rounded-xl bg-white/10 border border-white/20 flex items-center justify-center shrink-0">
+                    <svg class="w-6 h-6 text-[#16A37A]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+                    </svg>
+                </div>
+                <div>
+                    <h1 class="font-grotesk font-black text-xl sm:text-2xl text-white tracking-tight">Carnet de bord</h1>
+                    <p class="text-sm text-white/60 mt-0.5">Gérez votre prochaine intervention sur le terrain</p>
+                </div>
+            </div>
+            <div class="bg-white rounded-2xl border border-gray-100 shadow-[0_4px_24px_rgba(0,0,0,0.04)] overflow-hidden flex flex-col flex-1 min-h-0">
+        @else
         <div class="bg-white rounded-3xl border border-gray-200 shadow-sm overflow-hidden flex flex-col flex-1 min-h-0">
 
             <div
@@ -155,30 +170,23 @@
                     <h3
                         class="font-grotesk font-black text-lg sm:text-xl text-gray-900 tracking-tight flex items-center gap-2 sm:gap-3">
                         @if ($isGestionnaire)
-                            <span
-                                class="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-teal-50 text-teal-600 flex items-center justify-center text-sm sm:text-base">📋</span>
+                            <span class="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-teal-50 text-teal-600 flex items-center justify-center text-sm sm:text-base">📋</span>
                             Carnet de bord
-                        @elseif (Auth::user()->role === 'admin')
-                            <span
-                                class="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center text-sm sm:text-base">📊</span>
-                            Analyse des effectifs
                         @else
-                            <span
-                                class="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-gray-50 text-gray-400 flex items-center justify-center text-sm sm:text-base">☕</span>
-                            Espace personnel
+                            <span class="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center text-sm sm:text-base">📊</span>
+                            Analyse des effectifs
                         @endif
                     </h3>
                     <p class="text-xs sm:text-sm text-gray-500 font-medium mt-1 pl-9 sm:pl-11">
                         @if ($isGestionnaire)
                             Gérez votre prochaine intervention sur le terrain
-                        @elseif (Auth::user()->role === 'admin')
-                            Répartition de la structure et palmarès des activités
                         @else
-                            Aucune activité assignée pour le moment
+                            Répartition des inscriptions et palmarès des activités
                         @endif
                     </p>
                 </div>
             </div>
+        @endif
 
             <div class="flex flex-col lg:flex-row flex-1 bg-gray-50/30">
 
@@ -359,19 +367,42 @@
                         </div>
                     </div>
                 @else
-                    <div class="flex-1 flex flex-col items-center justify-center text-gray-400 py-16 w-full">
-                        <div
-                            class="w-16 h-16 rounded-full bg-white flex items-center justify-center mb-4
-                                    border border-gray-200 shadow-sm">
-                            <span class="text-3xl opacity-80">☕</span>
+                    <div class="flex-1 p-5 sm:p-8 flex flex-col gap-6">
+                        <div>
+                            <p class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-5">Répartition des inscriptions</p>
+                            @if($repartitionTypes->isNotEmpty())
+                                <div class="space-y-3">
+                                    @php
+                                        $totalInsc = $repartitionTypes->sum('total') ?: 1;
+                                        $insc_colors = ['bg-[#16A37A]', 'bg-[#222A60]', 'bg-amber-400', 'bg-rose-400', 'bg-violet-400'];
+                                    @endphp
+                                    @foreach($repartitionTypes->sortByDesc('total') as $i => $type)
+                                        @php $pct = round(($type->total / $totalInsc) * 100); @endphp
+                                        <div>
+                                            <div class="flex items-center justify-between text-xs mb-1.5">
+                                                <span class="font-bold text-gray-700 capitalize">{{ $type->type_adhesion ?? 'Autre' }}</span>
+                                                <span class="font-black text-gray-900">{{ $type->total }} <span class="text-gray-400 font-normal">({{ $pct }}%)</span></span>
+                                            </div>
+                                            <div class="h-2.5 w-full bg-gray-100 rounded-full overflow-hidden">
+                                                <div class="h-full rounded-full transition-all duration-500 {{ $insc_colors[$loop->index % count($insc_colors)] }}"
+                                                     style="width: {{ $pct }}%"></div>
+                                            </div>
+                                        </div>
+                                    @endforeach
+                                </div>
+                            @else
+                                <p class="text-sm text-gray-400">Aucune donnée disponible pour cette saison.</p>
+                            @endif
                         </div>
-                        <p class="text-sm sm:text-base font-bold text-gray-600 text-center px-6">
-                            Vous n'êtes assigné·e à la gestion d'aucune activité.
-                        </p>
                     </div>
                 @endif
             </div>
+        @if(!empty($isRoleRestreint) && $isGestionnaire)
+            </div>
         </div>
+        @else
+        </div>
+        @endif
     </div>
 
     @if ($isGestionnaire && $prochaineSeance && $prochaineSeance->statut !== 'terminee')
