@@ -49,10 +49,12 @@ Route::middleware('auth')->group(function () {
 
     Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
-    Route::get('/backoffice', [BackOfficeController::class, 'index'])->name('backoffice');
-    Route::get('/backoffice/user/{user}/edit', EditUser::class)->name('user.edit');
-    Route::delete('backoffice/bulk', [BackofficeController::class, 'destroyMultiple'])->name('backoffice.destroyMultiple');
-    Route::delete('/backoffice/users/{user}', [BackOfficeController::class, 'destroy'])->name('backoffice.destroy');
+    Route::middleware('role:admin')->group(function () {
+        Route::get('/backoffice', [BackOfficeController::class, 'index'])->name('backoffice');
+        Route::get('/backoffice/user/{user}/edit', EditUser::class)->name('user.edit');
+        Route::delete('backoffice/bulk', [BackofficeController::class, 'destroyMultiple'])->name('backoffice.destroyMultiple');
+        Route::delete('/backoffice/users/{user}', [BackOfficeController::class, 'destroy'])->name('backoffice.destroy');
+    });
 
     Route::get('/adherents', [AdherentController::class, 'index'])->name('adherents.index');
     Route::get('/adherents/{adherent}', [AdherentController::class, 'show'])->name('adherents.show');
@@ -67,22 +69,26 @@ Route::middleware('auth')->group(function () {
     Route::get('/structures/{structure}/pdf', [AdherentController::class, 'downloadPdfStructure'])->name('structures.pdf');
 
     Route::get('/activites', [ActiviteController::class, 'index'])->name('activites.index');
-    Route::get('/activites/create', [ActiviteController::class, 'create'])->name('activites.create');
-    Route::post('/activites', [ActiviteController::class, 'store'])->name('activites.store');
     Route::get('/activites/{activite}', [ActiviteController::class, 'show'])->name('activites.show');
     Route::delete('/activites/{activite}/seances/{seance}/annuler', [ActiviteController::class, 'annulerSeance'])->name('seances.annuler');
     Route::post('/activites/{activite}/seances/{seance}/presences', [ActiviteController::class, 'storePresences'])->name('activites.presences.store');
-    Route::get('/activites/{activite}/edit', [ActiviteController::class, 'edit'])->name('activites.edit');
-    Route::put('/activites/{activite}', [ActiviteController::class, 'update'])->name('activites.update');
-    Route::post('/activites/{activite}/toggle-archive', [ActiviteController::class, 'toggleArchive'])->name('activites.toggleArchive');
     Route::post('/activites/{activite}/adherents/{adherent}/abandon', [ActiviteController::class, 'abandonner'])->name('activites.abandonner');
+    Route::middleware('role:admin,comptable,coordinateur')->group(function () {
+        Route::get('/activites/create', [ActiviteController::class, 'create'])->name('activites.create');
+        Route::post('/activites', [ActiviteController::class, 'store'])->name('activites.store');
+        Route::get('/activites/{activite}/edit', [ActiviteController::class, 'edit'])->name('activites.edit');
+        Route::put('/activites/{activite}', [ActiviteController::class, 'update'])->name('activites.update');
+        Route::post('/activites/{activite}/toggle-archive', [ActiviteController::class, 'toggleArchive'])->name('activites.toggleArchive');
+    });
 
     Route::get('/ressourcerie', [RessourcerieController::class, 'index'])->name('ressourcerie.index');
-    Route::get('/ressourcerie/create', [RessourcerieController::class, 'create'])->name('ressourcerie.create');
-    Route::post('/ressourcerie', [RessourcerieController::class, 'store'])->name('ressourcerie.store');
-    Route::get('/ressourcerie/{ressourcerie}/edit', [RessourcerieController::class, 'edit'])->name('ressourcerie.edit');
-    Route::put('/ressourcerie/{ressourcerie}', [RessourcerieController::class, 'update'])->name('ressourcerie.update');
-    Route::post('/ressourcerie/{ressourcerie}/toggle-archive', [RessourcerieController::class, 'toggleArchive'])->name('ressourcerie.toggleArchive');
+    Route::middleware('role:admin,comptable,coordinateur')->group(function () {
+        Route::get('/ressourcerie/create', [RessourcerieController::class, 'create'])->name('ressourcerie.create');
+        Route::post('/ressourcerie', [RessourcerieController::class, 'store'])->name('ressourcerie.store');
+        Route::get('/ressourcerie/{ressourcerie}/edit', [RessourcerieController::class, 'edit'])->name('ressourcerie.edit');
+        Route::put('/ressourcerie/{ressourcerie}', [RessourcerieController::class, 'update'])->name('ressourcerie.update');
+        Route::post('/ressourcerie/{ressourcerie}/toggle-archive', [RessourcerieController::class, 'toggleArchive'])->name('ressourcerie.toggleArchive');
+    });
 
     Route::post('/dossiers-activite', [DossierActiviteController::class, 'store'])->name('dossiers.store');
     Route::delete('/dossiers-activite/{dossier}', [DossierActiviteController::class, 'destroy'])->name('dossiers.destroy');
@@ -91,7 +97,7 @@ Route::middleware('auth')->group(function () {
     Route::put('/profil', [ProfileController::class, 'update'])->name('profile.update');
     Route::get('/profil/logs-synchronisation', [ProfileController::class, 'logs'])->name('profile.logs');
 
-    Route::get('/statistiques', [StatistiqueController::class, 'index'])->name('statistiques.index');
+    Route::get('/statistiques', [StatistiqueController::class, 'index'])->middleware('role:admin,comptable')->name('statistiques.index');
 
     Route::get('/users/search', [ActiviteController::class, 'searchUsers'])->name('users.search');
 
