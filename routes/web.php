@@ -40,6 +40,7 @@ Route::get('/adhesion/{token}/helloasso2/{status}', [AdherentFormulaireControlle
 Route::post('/adhesion/{token}/verifier-cotisation', [AdherentFormulaireController::class, 'verifierCotisation'])->name('adhesion.verifier.cotisation');
 Route::post('/adhesion/helloasso/webhook', [AdherentFormulaireController::class, 'helloassoWebhook'])->name('adhesion.helloasso.webhook');
 
+Route::post('/helloasso/webhook', [AdherentFormulaireController::class, 'helloassoWebhook']);
 
 Route::middleware('auth')->group(function () {
 
@@ -91,7 +92,7 @@ Route::middleware('auth')->group(function () {
 
     Route::get('/profil/modifier', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::put('/profil', [ProfileController::class, 'update'])->name('profile.update');
-    Route::get('/profil/logs-synchronisation', [ProfileController::class, 'logs'])->name('profile.logs');
+    Route::get('/profil/logs-synchronisation', [ProfileController::class, 'journalSync'])->name('profile.logs');
 
     Route::get('/statistiques', [StatistiqueController::class, 'index'])->middleware('role:admin,comptable')->name('statistiques.index');
 

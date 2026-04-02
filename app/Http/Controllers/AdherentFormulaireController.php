@@ -1073,9 +1073,6 @@ class AdherentFormulaireController extends Controller
     public function helloassoWebhook(Request $request)
     {
         $payload = $request->all();
-
-        Log::info('HelloAsso webhook reçu', $payload);
-
         $eventType = $payload['eventType'] ?? null;
         $state     = $payload['data']['state'] ?? null;
 
@@ -1083,94 +1080,94 @@ class AdherentFormulaireController extends Controller
             return response()->json(['status' => 'ignored'], 200);
         }
 
-        $email     = $payload['data']['payer']['email']  ?? null;
-        $firstName = $payload['data']['payer']['firstName'] ?? null;
-        $lastName  = $payload['data']['payer']['lastName']  ?? null;
-        $amount    = ($payload['data']['amount'] ?? 0) / 100;
-        $formSlug  = $payload['data']['order']['formSlug'] ?? null;
-        $orderId   = $payload['data']['order']['id'] ?? null;
-
-        Log::info('HelloAsso paiement adhésion reçu', [
-            'email'    => $email,
-            'nom'      => "{$firstName} {$lastName}",
-            'montant'  => $amount,
-            'formSlug' => $formSlug,
-            'orderId'  => $orderId,
+        $syncLog = \App\Models\SyncLog::create([
+            'source' => 'webhook_helloasso',
+            'status' => 'running',
+            'payments_imported' => 0,
+            'errors' => []
         ]);
 
-        if (!$email) {
-            Log::warning('HelloAsso webhook : Email manquant dans le payload.');
-            return response()->json(['status' => 'missing_email'], 400);
-        }
+        try {
+            $email     = $payload['data']['payer']['email']  ?? null;
+            $firstName = $payload['data']['payer']['firstName'] ?? null;
+            $lastName  = $payload['data']['payer']['lastName']  ?? null;
+            $amount    = ($payload['data']['amount'] ?? 0) / 100;
+            $formSlug  = $payload['data']['order']['formSlug'] ?? null;
 
-        $adherent = \App\Models\Adherent::where('mail', $email)->latest()->first();
-
-        if ($adherent) {
-            Log::info('HelloAsso webhook : adhérent trouvé', [
-                'id'              => $adherent->id,
-                'numero_adherent' => $adherent->numero_adherent,
-            ]);
-
-            $inscription = \App\Models\Inscription::where('id_adherent', $adherent->id)
-                ->where('a_paye', \App\Models\Inscription::EN_ATTENTE)
-                ->latest()
-                ->first();
-
-            if ($inscription) {
-                $inscription->update(['a_paye' => \App\Models\Inscription::PAYE]);
-                Log::info("Inscription de l'adhérent {$adherent->id} validée.");
-            }
-
-            $dejaCreee = \App\Models\Paiement::where('id_adherent', $adherent->id)
-                ->where('source', 'HelloAsso')
-                ->where('montant', $amount)
-                ->whereDate('date_paiement', today())
-                ->exists();
-
-            if (!$dejaCreee) {
-                \App\Models\Paiement::create([
-                    'id_adherent'   => $adherent->id,
-                    'montant'       => $amount,
-                    'source'        => 'HelloAsso',
-                    'date_paiement' => now()->toDateString(),
+            if (!$email) {
+                $syncLog->update([
+                    'status' => 'error',
+                    'errors' => ["Email manquant dans le payload HelloAsso (Formulaire: {$formSlug})"]
                 ]);
-            } else {
-                Log::info("HelloAsso webhook : paiement {$amount}€ déjà enregistré pour adhérent {$adherent->id}, ignoré.");
+                return response()->json(['status' => 'missing_email'], 400);
             }
 
-            return response()->json(['status' => 'ok'], 200);
-        }
+            $adherent = \App\Models\Adherent::where('mail', $email)->latest()->first();
 
-        $structure = \App\Models\AdherentStructure::where('mail', $email)->latest()->first();
+            if ($adherent) {
+                $inscription = \App\Models\Inscription::where('id_adherent', $adherent->id)
+                    ->where('a_paye', \App\Models\Inscription::EN_ATTENTE)
+                    ->latest()
+                    ->first();
 
-        if ($structure) {
-            Log::info('HelloAsso webhook : structure trouvée', [
-                'id'  => $structure->id,
-                'nom' => $structure->nom,
+                if ($inscription) {
+                    $inscription->update(['a_paye' => \App\Models\Inscription::PAYE]);
+                }
+
+                $dejaCreee = \App\Models\Paiement::where('id_adherent', $adherent->id)
+                    ->where('source', 'HelloAsso')
+                    ->where('montant', $amount)
+                    ->whereDate('date_paiement', today())
+                    ->exists();
+
+                if (!$dejaCreee) {
+                    \App\Models\Paiement::create([
+                        'id_adherent'   => $adherent->id,
+                        'montant'       => $amount,
+                        'source'        => 'HelloAsso',
+                        'date_paiement' => now()->toDateString(),
+                    ]);
+                }
+
+                $syncLog->update(['status' => 'success', 'payments_imported' => 1]);
+                return response()->json(['status' => 'ok'], 200);
+            }
+
+            $structure = \App\Models\AdherentStructure::where('mail', $email)->latest()->first();
+
+            if ($structure) {
+                $inscriptionStructure = \Illuminate\Support\Facades\DB::table('inscriptions')
+                    ->where('id_structure', $structure->id)
+                    ->where('a_paye', \App\Models\Inscription::EN_ATTENTE)
+                    ->orderByDesc('id')
+                    ->first();
+
+                if ($inscriptionStructure) {
+                    \Illuminate\Support\Facades\DB::table('inscriptions')
+                        ->where('id', $inscriptionStructure->id)
+                        ->update(['a_paye' => \App\Models\Inscription::PAYE, 'updated_at' => now()]);
+                }
+
+                $syncLog->update(['status' => 'success', 'payments_imported' => 1]);
+                return response()->json(['status' => 'ok'], 200);
+            }
+
+            $syncLog->update([
+                'status' => 'warning',
+                'errors' => ["Paiement de {$amount}€ reçu pour {$firstName} {$lastName}, mais l'email {$email} est introuvable dans la base Savoirs Vivants."]
             ]);
 
-            $inscriptionStructure = \Illuminate\Support\Facades\DB::table('inscriptions')
-                ->where('id_structure', $structure->id)
-                ->where('a_paye', \App\Models\Inscription::EN_ATTENTE)
-                ->orderByDesc('id')
-                ->first();
+            return response()->json(['status' => 'not_found'], 404);
 
-            if ($inscriptionStructure) {
-                \Illuminate\Support\Facades\DB::table('inscriptions')
-                    ->where('id', $inscriptionStructure->id)
-                    ->update([
-                        'a_paye'     => \App\Models\Inscription::PAYE,
-                        'updated_at' => now()
-                    ]);
-                Log::info("Inscription de la structure {$structure->id} validée.");
-            }
+        } catch (\Exception $e) {
+            Log::error("Erreur critique Webhook HelloAsso : " . $e->getMessage());
 
-            return response()->json(['status' => 'ok'], 200);
+            $syncLog->update([
+                'status' => 'error',
+                'errors' => ["Erreur serveur durant le traitement : " . $e->getMessage()]
+            ]);
+
+            return response()->json(['status' => 'error'], 500);
         }
-
-        // 3. Aucun compte trouvé
-        Log::warning("HelloAsso webhook : Aucun compte (adhérent ou structure) trouvé pour l'email {$email}. Le paiement a réussi chez HelloAsso mais n'a pas pu être lié automatiquement dans la base.");
-
-        return response()->json(['status' => 'not_found'], 404);
     }
 }

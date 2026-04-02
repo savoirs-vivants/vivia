@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\SyncLog;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use App\Models\User;
@@ -41,10 +42,10 @@ class ProfileController extends Controller
         return redirect()->route('dashboard')->with('success', 'Votre profil a été mis à jour avec succès.');
     }
 
-    public function logs()
+    public function journalSync()
     {
-        $logs = [];
+        $logs = SyncLog::latest()->paginate(20);
+
         return view('profile.logs', compact('logs'));
     }
-
 }

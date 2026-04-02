@@ -12,7 +12,7 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->validateCsrfTokens(except: [
-            'adhesion/helloasso/webhook',
+            'helloasso/webhook',
         ]);
         $middleware->alias([
             'role' => \App\Http\Middleware\CheckRole::class,
