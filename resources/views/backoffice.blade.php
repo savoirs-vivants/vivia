@@ -103,23 +103,31 @@
                             $initials = strtoupper(substr($user->firstname ?? '', 0, 1) . substr($user->name ?? '', 0, 1));
                             $avatarBg = match ($user->role) {
                                 'admin' => 'bg-red-100 text-red-600',
-                                'gestionnaire' => 'bg-sv-blue/10 text-sv-blue',
+                                'comptable' => 'bg-sv-blue/10 text-sv-blue',
+                                'coordinateur' => 'bg-sv-green/15 text-sv-green',
+                                'animateur' => 'bg-yellow-100 text-yellow-600',
                                 default => 'bg-sv-green/15 text-sv-green',
                             };
                             $rolePill = match ($user->role) {
                                 'admin' => 'bg-red-50 text-red-600 border-red-100',
-                                'gestionnaire' => 'bg-sv-blue/5 text-sv-blue border-sv-blue/10',
+                                'comptable' => 'bg-sv-blue/5 text-sv-blue border-sv-blue/10',
+                                'coordinateur' => 'bg-sv-green/10 text-sv-green border-sv-green/15',
+                                'animateur' => 'bg-yellow-100 text-yellow-600 border-yellow-100',
                                 default => 'bg-sv-green/10 text-sv-green border-sv-green/15',
                             };
                             $roleDot = match ($user->role) {
                                 'admin' => 'bg-red-500',
-                                'gestionnaire' => 'bg-sv-blue',
+                                'comptable' => 'bg-sv-blue',
+                                'coordinateur' => 'bg-sv-green',
+                                'animateur' => 'bg-yellow-500',
                                 default => 'bg-sv-green',
                             };
                             $roleLabel = match ($user->role) {
                                 'admin' => 'Administrateur',
-                                'gestionnaire' => 'Gestionnaire',
-                                default => 'Lecteur',
+                                'comptable' => 'Comptable',
+                                'coordinateur' => 'Coordinateur',
+                                'animateur' => 'Animateur',
+                                default => 'Animateur',
                             };
                         @endphp
                         <div class="relative flex flex-col md:grid md:grid-cols-12 gap-y-3 md:gap-4 md:items-center px-4 sm:px-6 py-4 transition-colors group cursor-pointer"
