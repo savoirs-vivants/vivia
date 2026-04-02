@@ -264,16 +264,6 @@
         </div>
     </div>
 
-    <div class="mb-6 pl-2">
-        <a href="#"
-           class="inline-flex items-center gap-2 px-5 py-2.5 bg-[#222A60] hover:bg-[#1a2050] text-white text-sm font-bold rounded-xl transition-all duration-200 shadow-sm hover:shadow-md">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/>
-            </svg>
-            Modifier le formulaire
-        </a>
-    </div>
-
     <div class="pl-2 mb-0">
         <div class="flex items-center gap-1 bg-gray-100/80 p-1 rounded-xl w-fit">
             <a href="{{ route('adherents.index', ['tab' => 'payes'] + request()->except('tab', 'page')) }}"
@@ -281,6 +271,7 @@
                 Adhérents
                 <span class="px-2 py-0.5 rounded-full text-xs font-black {{ $tab === 'payes' ? 'bg-[#16987C]/10 text-[#16987C]' : 'bg-gray-200 text-gray-500' }}">{{ $countPayes }}</span>
             </a>
+            @if(!empty($canVoirTousStatuts))
             <a href="{{ route('adherents.index', ['tab' => 'partiel'] + request()->except('tab', 'page')) }}"
                class="flex items-center gap-2 px-5 py-2 rounded-lg text-sm font-bold transition-all duration-200 {{ $tab === 'partiel' ? 'bg-white text-[#222A60] shadow-sm' : 'text-gray-500 hover:text-gray-700' }}">
                 Partiel
@@ -291,6 +282,7 @@
                 En attente
                 <span class="px-2 py-0.5 rounded-full text-xs font-black {{ $tab === 'attente' ? 'bg-rose-100 text-rose-500' : 'bg-gray-200 text-gray-500' }}">{{ $countAttente }}</span>
             </a>
+            @endif
         </div>
     </div>
 

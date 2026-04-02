@@ -8,16 +8,31 @@ use App\Models\AdherentStructure;
 use App\Models\Inscription;
 use App\Models\Presence;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
 
 class AdherentController extends Controller
 {
     public function index(Request $request)
     {
+        $user         = Auth::user();
         $tab          = $request->get('tab', 'payes');
         $search       = $request->get('q');
         $filterSource = $request->get('source');
         $filterStatut = $request->get('statut');
+
+        $canVoirTousStatuts = in_array($user->role, ['admin', 'comptable']);
+        if (!$canVoirTousStatuts) {
+            $tab = 'payes';
+        }
+
+        $mesActivitesIds = null;
+        if ($user->role === 'animateur') {
+            $mesActivitesIds = DB::table('activites_gestionnaire')
+                ->where('id_users', $user->id)
+                ->pluck('id_activite');
+        }
 
         $base = Adherent::with(['inscription', 'activitesActives', 'paiements'])
             ->when($search, fn($q) => $q->where(function ($q) use ($search) {
@@ -34,7 +49,10 @@ class AdherentController extends Controller
                 } else {
                     $q->whereHas('paiements', fn($p) => $p->where('source', $filterSource));
                 }
-            });
+            })
+            ->when($mesActivitesIds, fn($q) => $q->whereHas('activites',
+                fn($q2) => $q2->whereIn('activites_adherents.id_activite', $mesActivitesIds)
+            ));
 
         $queryPayes = (clone $base)
             ->whereHas('inscriptions', fn($q) => $q->where('a_paye', Inscription::PAYE));
@@ -46,12 +64,12 @@ class AdherentController extends Controller
             ->whereHas('inscriptions', fn($q) => $q->where('a_paye', Inscription::PARTIEL));
 
         $countPayes   = (clone $queryPayes)->count();
-        $countAttente = (clone $queryAttente)->count();
-        $countPartiel = (clone $queryPartiel)->count();
+        $countAttente = $canVoirTousStatuts ? (clone $queryAttente)->count() : 0;
+        $countPartiel = $canVoirTousStatuts ? (clone $queryPartiel)->count() : 0;
 
         $adherentsPayes     = $queryPayes->orderBy('nom')->paginate(25)->withQueryString();
-        $adherentsEnAttente = $queryAttente->orderBy('nom')->paginate(25)->withQueryString();
-        $adherentsPartiel   = $queryPartiel->orderBy('nom')->paginate(25)->withQueryString();
+        $adherentsEnAttente = $canVoirTousStatuts ? $queryAttente->orderBy('nom')->paginate(25)->withQueryString() : collect();
+        $adherentsPartiel   = $canVoirTousStatuts ? $queryPartiel->orderBy('nom')->paginate(25)->withQueryString() : collect();
 
         $baseStructures = AdherentStructure::with(['inscription', 'paiements'])
             ->when($search, fn($q) => $q->where(function ($q) use ($search) {
@@ -60,18 +78,19 @@ class AdherentController extends Controller
                     ->orWhere('nom_correspondant', 'like', "%{$search}%");
             }));
 
-        $structuresEnAttente = (clone $baseStructures)
-            ->whereHas('inscriptions', fn($q) => $q->where('a_paye', Inscription::EN_ATTENTE))
-            ->orderBy('nom')
-            ->get();
+        $structuresEnAttente = $canVoirTousStatuts
+            ? (clone $baseStructures)->whereHas('inscriptions', fn($q) => $q->where('a_paye', Inscription::EN_ATTENTE))->orderBy('nom')->get()
+            : collect();
 
         $structuresPayees = (clone $baseStructures)
             ->whereHas('inscriptions', fn($q) => $q->where('a_paye', Inscription::PAYE))
             ->orderBy('nom')
             ->get();
 
-        $countAttente += $structuresEnAttente->count();
-        $countPayes   += $structuresPayees->count();
+        if ($canVoirTousStatuts) {
+            $countAttente += $structuresEnAttente->count();
+        }
+        $countPayes += $structuresPayees->count();
 
         return view('adherents.index', compact(
             'tab',
@@ -86,6 +105,7 @@ class AdherentController extends Controller
             'countPartiel',
             'structuresEnAttente',
             'structuresPayees',
+            'canVoirTousStatuts',
         ));
     }
 
@@ -100,7 +120,7 @@ class AdherentController extends Controller
             ->orderByDesc('date')
             ->get();
 
-        $absencesMap = \App\Models\Presence::where('id_adherent', $adherent->id)
+        $absencesMap = Presence::where('id_adherent', $adherent->id)
             ->whereIn('id_seance', $seances->pluck('id_seance'))
             ->get()
             ->keyBy('id_seance');
