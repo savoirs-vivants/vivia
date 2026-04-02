@@ -146,6 +146,14 @@ class ActiviteController extends Controller
 
     public function show(Activite $activite)
     {
+        if (Auth::user()->role === 'animateur') {
+            $estGestionnaire = DB::table('activites_gestionnaire')
+                ->where('id_users', Auth::id())
+                ->where('id_activite', $activite->id)
+                ->exists();
+            abort_if(!$estGestionnaire, 403);
+        }
+        
         $activite->load(['adherentsActifs', 'gestionnaires', 'adherents']);
 
         $seances = $activite->seances()

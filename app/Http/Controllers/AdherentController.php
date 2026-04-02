@@ -111,6 +111,19 @@ class AdherentController extends Controller
 
     public function show(Adherent $adherent)
     {
+        if (Auth::user()->role === 'animateur') {
+            $mesActivitesIds = DB::table('activites_gestionnaire')
+                ->where('id_users', Auth::id())
+                ->pluck('id_activite');
+
+            $adherentDansMesActivites = DB::table('activites_adherents')
+                ->whereIn('id_activite', $mesActivitesIds)
+                ->where('id_adherent', $adherent->id)
+                ->exists();
+
+            abort_if(!$adherentDansMesActivites, 403);
+        }
+
         $adherent->load(['tousLesTuteurs', 'inscriptions', 'inscription', 'activitesActives', 'paiements']);
 
         $idActivites = $adherent->activitesActives->pluck('id');

@@ -28,12 +28,12 @@
             Oups ! Il semblerait que vous vous soyez égaré. La page que vous recherchez n'existe pas ou a été déplacée.
         </p>
 
-        <a href="{{ url('/') }}"
+        <a href="javascript:history.back()"
            class="inline-flex items-center justify-center gap-2 bg-[#1a9e7e] hover:bg-[#158a6c] text-white text-sm font-bold px-6 py-3.5 rounded-xl transition-all shadow-[0_4px_16px_rgba(26,158,126,0.3)] hover:shadow-[0_6px_20px_rgba(26,158,126,0.4)] hover:-translate-y-0.5 w-full group">
             <svg class="w-4 h-4 text-emerald-100 group-hover:text-white transition-colors" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
             </svg>
-            Retourner à l'accueil
+            Retour en arrière
         </a>
 
     </div>
