@@ -18,10 +18,6 @@ class CreateUser extends Component
 
         $currentUser = Auth::user();
 
-        if ($currentUser->role === 'gestionnaire') {
-            $this->form->role = 'lecteur';
-        }
-
         $this->isOpen = true;
     }
 

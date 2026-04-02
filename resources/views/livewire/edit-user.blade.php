@@ -72,9 +72,10 @@
                                     <select wire:model="form.role"
                                         class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm text-gray-900 font-bold transition-all duration-200 outline-none focus:bg-white focus:border-[#16A37A]/50 focus:ring-4 focus:ring-[#16A37A]/10 cursor-pointer appearance-none">
                                         <option value="">-- Sélectionner un rôle --</option>
-                                        <option value="lecteur">Lecteur</option>
-                                        <option value="gestionnaire">Gestionnaire</option>
                                         <option value="admin">Administrateur</option>
+                                        <option value="comptable">Comptable</option>
+                                        <option value="coordinateur">Coordinateur</option>
+                                        <option value="animateur">Animateur</option>
                                     </select>
                                     <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-gray-500">
                                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>

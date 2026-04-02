@@ -124,11 +124,10 @@
                             <select wire:model="form.role"
                                 class="w-full border-2 border-gray-100 focus:border-sv-green bg-gray-50 focus:bg-white rounded-xl px-3.5 py-2.5 outline-none text-sm font-semibold text-gray-800 transition-all duration-200 cursor-pointer">
                                 <option value="">— Choisir —</option>
-                                <option value="lecteur">Lecteur</option>
-                                @if (auth()->user()->role === 'admin')
-                                    <option value="gestionnaire">Gestionnaire</option>
-                                    <option value="admin">Administrateur</option>
-                                @endif
+                                <option value="admin">Administrateur</option>
+                                <option value="comptable">Comptable</option>
+                                <option value="coordinateur">Coordinateur</option>
+                                <option value="animateur">Animateur</option>
                             </select>
                             @error('form.role')
                                 <p class="text-red-500 text-xs flex items-center gap-1">
