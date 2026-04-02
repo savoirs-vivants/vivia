@@ -307,7 +307,12 @@
 
             <div class="flex items-center gap-2 flex-wrap">
                 <span class="text-xs font-bold text-gray-400 uppercase tracking-widest mr-1">Type</span>
-                @foreach (['tous' => 'Tous', 'physique' => 'Personnes physiques', 'structure' => 'Structures'] as $val => $label)
+                @php
+                    $typeOptions = Auth::user()->role === 'animateur'
+                        ? ['tous' => 'Tous', 'physique' => 'Personnes physiques']
+                        : ['tous' => 'Tous', 'physique' => 'Personnes physiques', 'structure' => 'Structures'];
+                @endphp
+                @foreach ($typeOptions as $val => $label)
                     <a href="{{ route('adherents.index', array_merge(request()->all(), ['type' => $val === 'tous' ? null : $val, 'page' => 1])) }}"
                        class="px-3 py-1.5 rounded-lg text-xs font-bold transition-all duration-150 {{ $filterType === $val ? 'bg-[#222A60] text-white shadow-sm' : 'bg-gray-100 text-gray-500 hover:bg-gray-200 hover:text-gray-700' }}">
                         {{ $label }}

@@ -19,9 +19,9 @@ class AppServiceProvider extends ServiceProvider
 
         Gate::define('acces-equipe', fn(User $u) => $u->role === 'admin');
 
-        Gate::define('gerer-activites', fn(User $u) => in_array($u->role, ['admin', 'comptable', 'coordinateur']));
+        Gate::define('gerer-activites', fn(User $u) => in_array($u->role, ['admin', 'coordinateur']));
 
-        Gate::define('gerer-ressourcerie', fn(User $u) => in_array($u->role, ['admin', 'comptable', 'coordinateur']));
+        Gate::define('gerer-ressourcerie', fn(User $u) => in_array($u->role, ['admin', 'coordinateur']));
 
         Gate::define('acces-statistiques', fn(User $u) => in_array($u->role, ['admin', 'comptable']));
 

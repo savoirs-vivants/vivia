@@ -69,26 +69,22 @@ Route::middleware('auth')->group(function () {
     Route::get('/structures/{structure}/pdf', [AdherentController::class, 'downloadPdfStructure'])->name('structures.pdf');
 
     Route::get('/activites', [ActiviteController::class, 'index'])->name('activites.index');
+    Route::get('/activites/create', [ActiviteController::class, 'create'])->middleware('role:admin,coordinateur')->name('activites.create');
+    Route::post('/activites', [ActiviteController::class, 'store'])->middleware('role:admin,coordinateur')->name('activites.store');
     Route::get('/activites/{activite}', [ActiviteController::class, 'show'])->name('activites.show');
+    Route::get('/activites/{activite}/edit', [ActiviteController::class, 'edit'])->middleware('role:admin,coordinateur')->name('activites.edit');
+    Route::put('/activites/{activite}', [ActiviteController::class, 'update'])->middleware('role:admin,coordinateur')->name('activites.update');
+    Route::post('/activites/{activite}/toggle-archive', [ActiviteController::class, 'toggleArchive'])->middleware('role:admin,coordinateur')->name('activites.toggleArchive');
     Route::delete('/activites/{activite}/seances/{seance}/annuler', [ActiviteController::class, 'annulerSeance'])->name('seances.annuler');
     Route::post('/activites/{activite}/seances/{seance}/presences', [ActiviteController::class, 'storePresences'])->name('activites.presences.store');
     Route::post('/activites/{activite}/adherents/{adherent}/abandon', [ActiviteController::class, 'abandonner'])->name('activites.abandonner');
-    Route::middleware('role:admin,comptable,coordinateur')->group(function () {
-        Route::get('/activites/create', [ActiviteController::class, 'create'])->name('activites.create');
-        Route::post('/activites', [ActiviteController::class, 'store'])->name('activites.store');
-        Route::get('/activites/{activite}/edit', [ActiviteController::class, 'edit'])->name('activites.edit');
-        Route::put('/activites/{activite}', [ActiviteController::class, 'update'])->name('activites.update');
-        Route::post('/activites/{activite}/toggle-archive', [ActiviteController::class, 'toggleArchive'])->name('activites.toggleArchive');
-    });
 
     Route::get('/ressourcerie', [RessourcerieController::class, 'index'])->name('ressourcerie.index');
-    Route::middleware('role:admin,comptable,coordinateur')->group(function () {
-        Route::get('/ressourcerie/create', [RessourcerieController::class, 'create'])->name('ressourcerie.create');
-        Route::post('/ressourcerie', [RessourcerieController::class, 'store'])->name('ressourcerie.store');
-        Route::get('/ressourcerie/{ressourcerie}/edit', [RessourcerieController::class, 'edit'])->name('ressourcerie.edit');
-        Route::put('/ressourcerie/{ressourcerie}', [RessourcerieController::class, 'update'])->name('ressourcerie.update');
-        Route::post('/ressourcerie/{ressourcerie}/toggle-archive', [RessourcerieController::class, 'toggleArchive'])->name('ressourcerie.toggleArchive');
-    });
+    Route::get('/ressourcerie/create', [RessourcerieController::class, 'create'])->middleware('role:admin,coordinateur')->name('ressourcerie.create');
+    Route::post('/ressourcerie', [RessourcerieController::class, 'store'])->middleware('role:admin,coordinateur')->name('ressourcerie.store');
+    Route::get('/ressourcerie/{ressourcerie}/edit', [RessourcerieController::class, 'edit'])->middleware('role:admin,coordinateur')->name('ressourcerie.edit');
+    Route::put('/ressourcerie/{ressourcerie}', [RessourcerieController::class, 'update'])->middleware('role:admin,coordinateur')->name('ressourcerie.update');
+    Route::post('/ressourcerie/{ressourcerie}/toggle-archive', [RessourcerieController::class, 'toggleArchive'])->middleware('role:admin,coordinateur')->name('ressourcerie.toggleArchive');
 
     Route::post('/dossiers-activite', [DossierActiviteController::class, 'store'])->name('dossiers.store');
     Route::delete('/dossiers-activite/{dossier}', [DossierActiviteController::class, 'destroy'])->name('dossiers.destroy');

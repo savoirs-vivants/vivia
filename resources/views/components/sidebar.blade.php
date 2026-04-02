@@ -30,6 +30,10 @@
         <p class="px-3 pb-3 text-white/40 text-[10px] font-bold uppercase tracking-widest lg:block md:hidden block">Menu</p>
 
         @php
+            $sidebarIsGestionnaire = \Illuminate\Support\Facades\DB::table('activites_gestionnaire')
+                ->where('id_users', Auth::id())
+                ->exists();
+
             $navItems = [
                 [
                     'route'  => 'dashboard',
@@ -72,6 +76,9 @@
 
         @foreach ($navItems as $item)
             @if (!empty($item['roles']) && !in_array(Auth::user()->role, $item['roles']))
+                @continue
+            @endif
+            @if ($item['route'] === 'dashboard' && in_array(Auth::user()->role, ['coordinateur', 'animateur']) && !$sidebarIsGestionnaire)
                 @continue
             @endif
 
