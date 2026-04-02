@@ -10,6 +10,7 @@
             <span class="font-bold text-gray-600">{{ $activites->count() }}</span> activités cette saison
         </p>
     </div>
+    @can('gerer-activites')
     <div class="flex items-center gap-2">
         <button onclick="toggleModalDossier()"
             class="inline-flex items-center gap-2 px-4 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-600 text-sm font-bold rounded-xl transition-all">
@@ -26,6 +27,7 @@
             Ajouter une activité
         </a>
     </div>
+    @endcan
 </div>
 
 <div class="flex flex-wrap items-center gap-2 mb-6 pl-2">
@@ -112,6 +114,7 @@
             @endif
         @endforelse
 
+        @can('gerer-activites')
         <a href="{{ route('activites.create') }}"
            class="border-2 border-dashed border-gray-200 rounded-2xl p-5 flex flex-col items-center justify-center gap-3
            text-gray-400 hover:border-[#16987C] hover:text-[#16987C] transition-all group min-h-[200px]">
@@ -122,6 +125,7 @@
             </div>
             <span class="font-grotesk font-black text-xs uppercase tracking-widest">Nouvelle activité</span>
         </a>
+        @endcan
 
         @if($archives->count() > 0)
             <button onclick="toggleArchives()"

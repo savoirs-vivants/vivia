@@ -9,6 +9,7 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Mail;
 
 class ActiviteController extends Controller
@@ -18,9 +19,18 @@ class ActiviteController extends Controller
         $search = $request->get('q');
         $type   = $request->get('type');
         $ville  = $request->get('ville');
+        $user   = Auth::user();
+
+        $mesActivitesIds = null;
+        if ($user->role === 'animateur') {
+            $mesActivitesIds = DB::table('activites_gestionnaire')
+                ->where('id_users', $user->id)
+                ->pluck('id_activite');
+        }
 
         $toutesActivites = Activite::withCount(['adherentsActifs as nb_inscrits'])
             ->with('dossier')
+            ->when($mesActivitesIds, fn($q) => $q->whereIn('id', $mesActivitesIds))
             ->when($search, fn($q) => $q->where('nom', 'like', "%{$search}%"))
             ->when($type,   fn($q) => $q->where('type', $type))
             ->when($ville,  fn($q) => $q->where(function ($q2) use ($ville) {
