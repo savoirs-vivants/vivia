@@ -64,7 +64,7 @@ class AdherentFormulaireController extends Controller
         $activite      =  $formData['type_activite'] ?? '';
         $isMineur      = $this->isMineur($formData['date_naiss'] ?? null);
         $isClubMaker      = ($activite === 'club_maker');
-        $needsActivite    = in_array($activite, ['atelier', 'stage', 'ressourcerie']);
+        $needsActivite = in_array($activite, ['atelier', 'stage', 'ressourcerie']);
 
         if ($this->isStructure($formData)) {
             $path = $isAdherent ? [1, 2] : [1, 12, 2];
@@ -77,7 +77,7 @@ class AdherentFormulaireController extends Controller
         if (!$isAdherent && $isMineur) $path[] = 15;
         if ($isMineur) $path[] = 4;
         $path[] = 5;
-        if ($needsActivite) $path[] = 6;
+        if ($needsActivite || $isClubMaker) $path[] = 6;
         if (! $isClubMaker) $path[] = 7;
         if ($isMineur) $path[] = 8;
         $path[] = 9;
@@ -378,6 +378,13 @@ class AdherentFormulaireController extends Controller
             }
         }
 
+        $clubMakerActivites = $activites
+            ->filter(function($a) use ($activitesDejaInscritesIds) {
+            return Str::startsWith($a->nom, 'Club Maker')
+            && !in_array($a->id, $activitesDejaInscritesIds);
+        })
+        ->values();
+
         return view('adhesion.index', compact(
             'step',
             'formData',
@@ -397,7 +404,8 @@ class AdherentFormulaireController extends Controller
             'isStructure',
             'montantStructure',
             'ressourcerieSelectionnees',
-            'totalRessourcerieStructure'
+            'totalRessourcerieStructure',
+            'clubMakerActivites'
         ));
     }
 
