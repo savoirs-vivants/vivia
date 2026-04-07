@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'Vivia - Connexion')
+@section('title', 'Connexion')
 
 @section('content')
 

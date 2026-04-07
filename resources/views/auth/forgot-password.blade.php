@@ -1,5 +1,5 @@
 @extends('layouts.app')
-@section('title', 'Vivia - Mot de passe oublié')
+@section('title', 'Mot de passe oublié')
 @section('content')
 
 <section class="bg-gray-50 min-h-screen flex items-center justify-center px-4 sm:px-6 py-12">
