@@ -121,17 +121,16 @@ class DashboardController extends Controller
             ->where('saison', $saison)
             ->pluck('id_adherent');
 
-        $totalGlobal = DB::table('paiement')
-            ->whereIn('id_adherent', $adherentsSaison)
+        $totalCotisations = DB::table('inscriptions')
+            ->where('saison', $saison)
+            ->whereIn('a_paye', ['oui', 'Payé'])
             ->sum('montant');
 
         $totalEnAttente = DB::table('inscriptions')
-            ->join('paiement', 'inscriptions.id_adherent', '=', 'paiement.id_adherent')
-            ->where('inscriptions.saison', $saison)
-            ->where('inscriptions.a_paye', 'En attente')
-            ->sum('paiement.montant');
+            ->where('saison', $saison)
+            ->whereIn('a_paye', ['en attente', 'En attente', 'partiel', 'Partiel', 'non', 'Non'])
+            ->sum('montant');
 
-        $totalCotisations = $totalGlobal - $totalEnAttente;
 
         // ── Statuts d'adhésion ────────────────────────────────────────────
         $statuts = DB::table('inscriptions')
@@ -140,9 +139,9 @@ class DashboardController extends Controller
             ->groupBy('a_paye')
             ->pluck('nb', 'a_paye');
 
-        $statutPaye    = $statuts->get('Payé', 0);
-        $statutAttente = $statuts->get('En attente', 0);
-        $statutPartiel = $statuts->get('Partiel', 0);
+        $statutPaye    = $statuts->get('oui', 0) + $statuts->get('Payé', 0);
+        $statutAttente = $statuts->get('en attente', 0) + $statuts->get('En attente', 0) + $statuts->get('non', 0) + $statuts->get('Non', 0);
+        $statutPartiel = $statuts->get('partiel', 0) + $statuts->get('Partiel', 0);
 
         // ── Prochaine séance (gestionnaire) ───────────────────────────────
         $prochaineSeance  = null;
