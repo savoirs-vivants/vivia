@@ -16,9 +16,7 @@
                 </div>
 
                 <div class="flex flex-wrap items-center gap-3 w-full md:w-auto">
-
                     <livewire:export-statistiques :saison="$saisonCourante" />
-
                 </div>
             </div>
 
@@ -92,6 +90,7 @@
             </div>
 
             <div class="grid grid-cols-1 xl:grid-cols-4 gap-6">
+
                 <div
                     class="xl:col-span-2 bg-white rounded-3xl border border-gray-100 p-6 shadow-[0_2px_10px_rgba(0,0,0,0.02)]">
                     <div class="flex items-start justify-between mb-6">
@@ -173,6 +172,7 @@
                         @endforelse
                     </div>
                 </div>
+
                 <div
                     class="xl:col-span-2 bg-white rounded-3xl border border-gray-100 p-6 shadow-[0_2px_10px_rgba(0,0,0,0.02)]">
                     <div class="flex items-start justify-between mb-6">
@@ -187,261 +187,265 @@
                         <canvas id="evolutionChart"></canvas>
                     </div>
                 </div>
-                <div
-                    class="xl:col-span-1 bg-white rounded-3xl border border-gray-100 p-6 shadow-[0_2px_10px_rgba(0,0,0,0.02)]">
-                    <h2 class="font-bold text-[#0F143A]">Villes / Quartiers d'origine</h2>
-                    <p class="text-xs text-gray-400 font-medium mb-8">Lieux de résidence</p>
-
-                    <div class="space-y-4.5">
-                        @php
-                            $maxQuartier = $quartiersData->max('count') ?: 1;
-                        @endphp
-
-                        @foreach ($quartiersData as $index => $q)
-                            <div class="flex items-center gap-3 mb-4">
-                                <span class="text-[11px] font-bold text-gray-600 w-24 truncate"
-                                    title="{{ $q['label'] }}">{{ $q['label'] }}</span>
-                                <div class="flex-1 h-1.5 bg-gray-50 rounded-full overflow-hidden flex">
-                                    <div class="h-full {{ $index > 4 ? 'bg-gray-400' : 'bg-[#16987C]' }} rounded-full"
-                                        style="width: {{ ($q['count'] / $maxQuartier) * 100 }}%"></div>
-                                </div>
-                                <span class="text-xs font-black text-[#0F143A] w-6 text-right">{{ $q['count'] }}</span>
-                            </div>
-                        @endforeach
-                    </div>
-                </div>
 
                 <div
-                    class="xl:col-span-1 bg-white rounded-3xl border border-gray-100 p-6 shadow-[0_2px_10px_rgba(0,0,0,0.02)]">
+                    class="xl:col-span-2 bg-white rounded-3xl border border-gray-100 p-6 shadow-[0_2px_10px_rgba(0,0,0,0.02)]">
                     <h2 class="font-bold text-[#0F143A]">Statut des adhérents</h2>
                     <p class="text-xs text-gray-400 font-medium mb-6">Aperçu global</p>
 
-                    <div class="space-y-3">
+                    <div class="space-y-4">
                         <div
-                            class="flex items-center justify-between p-3.5 rounded-xl border border-gray-100 bg-gray-50/50 hover:bg-white hover:shadow-sm transition-all">
+                            class="flex items-center justify-between p-4 rounded-xl border border-gray-100 bg-gray-50/50 hover:bg-white hover:shadow-sm transition-all">
                             <div class="flex items-center gap-3">
-                                <div class="w-8 h-8 rounded-lg bg-blue-100 text-blue-600 flex items-center justify-center">
-                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <div
+                                    class="w-10 h-10 rounded-lg bg-blue-100 text-blue-600 flex items-center justify-center">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
                                             d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                                     </svg>
                                 </div>
-                                <span class="text-xs font-bold text-gray-700">Réinscrits (fidèles)</span>
+                                <span class="text-sm font-bold text-gray-700">Réinscrits (fidèles)</span>
                             </div>
                             <div class="text-right">
-                                <p class="text-sm font-black text-[#0F143A]">{{ $statutData['reinscrits']['count'] }}</p>
-                                <p class="text-[10px] font-bold text-gray-400">{{ $statutData['reinscrits']['pct'] }}%</p>
+                                <p class="text-lg font-black text-[#0F143A]">{{ $statutData['reinscrits']['count'] }}</p>
+                                <p class="text-xs font-bold text-gray-400">{{ $statutData['reinscrits']['pct'] }}%</p>
                             </div>
                         </div>
 
                         <div
-                            class="flex items-center justify-between p-3.5 rounded-xl border border-gray-100 bg-gray-50/50 hover:bg-white hover:shadow-sm transition-all">
+                            class="flex items-center justify-between p-4 rounded-xl border border-gray-100 bg-gray-50/50 hover:bg-white hover:shadow-sm transition-all">
                             <div class="flex items-center gap-3">
                                 <div
-                                    class="w-8 h-8 rounded-lg bg-amber-100 text-amber-500 flex items-center justify-center">
-                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    class="w-10 h-10 rounded-lg bg-amber-100 text-amber-500 flex items-center justify-center">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
                                             d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
                                     </svg>
                                 </div>
-                                <span class="text-xs font-bold text-gray-700">Nouveaux inscrits</span>
+                                <span class="text-sm font-bold text-gray-700">Nouveaux inscrits</span>
                             </div>
                             <div class="text-right">
-                                <p class="text-sm font-black text-[#0F143A]">{{ $statutData['nouveaux']['count'] }}</p>
-                                <p class="text-[10px] font-bold text-gray-400">{{ $statutData['nouveaux']['pct'] }}%</p>
+                                <p class="text-lg font-black text-[#0F143A]">{{ $statutData['nouveaux']['count'] }}</p>
+                                <p class="text-xs font-bold text-gray-400">{{ $statutData['nouveaux']['pct'] }}%</p>
                             </div>
                         </div>
 
                         <div
-                            class="flex items-center justify-between p-3.5 rounded-xl border border-gray-100 bg-gray-50/50 hover:bg-white hover:shadow-sm transition-all">
+                            class="flex items-center justify-between p-4 rounded-xl border border-gray-100 bg-gray-50/50 hover:bg-white hover:shadow-sm transition-all">
                             <div class="flex items-center gap-3">
-                                <div class="w-8 h-8 rounded-lg bg-rose-100 text-rose-500 flex items-center justify-center">
-                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <div
+                                    class="w-10 h-10 rounded-lg bg-rose-100 text-rose-500 flex items-center justify-center">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
                                             d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
                                     </svg>
                                 </div>
-                                <span class="text-xs font-bold text-gray-700">Abandons en cours</span>
+                                <span class="text-sm font-bold text-gray-700">Abandons en cours</span>
                             </div>
                             <div class="text-right">
-                                <p class="text-sm font-black text-rose-500">{{ $statutData['abandons']['count'] }}</p>
-                                <p class="text-[10px] font-bold text-gray-400">{{ $statutData['abandons']['pct'] }}%</p>
+                                <p class="text-lg font-black text-rose-500">{{ $statutData['abandons']['count'] }}</p>
+                                <p class="text-xs font-bold text-gray-400">{{ $statutData['abandons']['pct'] }}%</p>
                             </div>
                         </div>
                     </div>
                 </div>
 
             </div>
+            <div class="bg-white rounded-3xl border border-gray-100 p-6 shadow-[0_2px_10px_rgba(0,0,0,0.02)]">
+                <div class="flex items-start justify-between mb-4">
+                    <div>
+                        <h2 class="font-bold text-[#0F143A]">Carte d'origine des adhérents</h2>
+                        <p class="text-xs text-gray-400 font-medium">Répartition géographique</p>
+                    </div>
+                </div>
+
+                <div class="w-full rounded-2xl overflow-hidden border border-gray-100 shadow-inner">
+                    <iframe style="width: 100%; height: 600px; border: 0;" allowfullscreen allow="geolocation"
+                        src="//umap.openstreetmap.fr/fr/map/reseau-iut-savoirs-vivants_1132770?scaleControl=false&miniMap=false&scrollWheelZoom=true&zoomControl=true&editMode=disabled&moreControl=false&searchControl=true&tilelayersControl=null&embedControl=null&datalayersControl=true&onLoadPanel=none&captionBar=false&captionMenus=false&captionControl=true&homeControl=false"></iframe>
+                </div>
+
+                <div class="text-right mt-3">
+                    <a href="//umap.openstreetmap.fr/fr/map/reseau-iut-savoirs-vivants_1132770?scaleControl=false&miniMap=false&scrollWheelZoom=true&zoomControl=true&editMode=disabled&moreControl=false&searchControl=true&tilelayersControl=null&embedControl=null&datalayersControl=true&onLoadPanel=none&captionBar=false&captionMenus=false&captionControl=true&homeControl=false"
+                        target="_blank"
+                        class="inline-flex items-center gap-1.5 text-xs font-bold text-[#16987C] hover:text-[#138a6f] hover:underline transition-colors">
+                        Ouvrir la carte en plein écran
+                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
+                                d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                        </svg>
+                    </a>
+                </div>
+
+            </div>
         </div>
-    </div>
 
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
+        <script>
+            document.addEventListener('DOMContentLoaded', function() {
 
-            Chart.defaults.color = '#9ca3af';
+                Chart.defaults.color = '#9ca3af';
 
-            const ctxAge = document.getElementById('ageChart').getContext('2d');
-            new Chart(ctxAge, {
-                type: 'bar',
-                data: {
-                    labels: @json($ageData['labels']),
-                    datasets: [{
-                            label: 'Filles / Femmes',
-                            data: @json($ageData['filles']),
-                            backgroundColor: '#16987C',
-                            borderRadius: 4,
-                            barPercentage: 0.6,
-                            categoryPercentage: 0.8
+                const ctxAge = document.getElementById('ageChart').getContext('2d');
+                new Chart(ctxAge, {
+                    type: 'bar',
+                    data: {
+                        labels: @json($ageData['labels']),
+                        datasets: [{
+                                label: 'Filles / Femmes',
+                                data: @json($ageData['filles']),
+                                backgroundColor: '#16987C',
+                                borderRadius: 4,
+                                barPercentage: 0.6,
+                                categoryPercentage: 0.8
+                            },
+                            {
+                                label: 'Garçons / Hommes',
+                                data: @json($ageData['garcons']),
+                                backgroundColor: '#3b82f6',
+                                borderRadius: 4,
+                                barPercentage: 0.6,
+                                categoryPercentage: 0.8
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                position: 'top',
+                                labels: {
+                                    usePointStyle: true,
+                                    boxWidth: 8,
+                                    font: {
+                                        weight: 'bold',
+                                        size: 11
+                                    }
+                                }
+                            }
                         },
-                        {
-                            label: 'Garçons / Hommes',
-                            data: @json($ageData['garcons']),
-                            backgroundColor: '#3b82f6',
-                            borderRadius: 4,
-                            barPercentage: 0.6,
-                            categoryPercentage: 0.8
-                        }
-                    ]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: {
-                            position: 'top',
-                            labels: {
-                                usePointStyle: true,
-                                boxWidth: 8,
-                                font: {
-                                    weight: 'bold',
-                                    size: 11
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                grid: {
+                                    color: '#f3f4f6',
+                                    drawBorder: false
+                                },
+                                border: {
+                                    display: false
+                                }
+                            },
+                            x: {
+                                grid: {
+                                    display: false
+                                },
+                                border: {
+                                    display: false
                                 }
                             }
                         }
+                    }
+                });
+
+                const ctxGender = document.getElementById('genderChart').getContext('2d');
+                new Chart(ctxGender, {
+                    type: 'doughnut',
+                    data: {
+                        labels: ['Filles / Femmes', 'Garçons / Hommes'],
+                        datasets: [{
+                            data: [{{ $nbFilles }}, {{ $nbGarcons }}],
+                            backgroundColor: ['#16987C', '#3b82f6'],
+                            borderWidth: 0,
+                            hoverOffset: 4
+                        }]
                     },
-                    scales: {
-                        y: {
-                            beginAtZero: true,
-                            grid: {
-                                color: '#f3f4f6',
-                                drawBorder: false
-                            },
-                            border: {
-                                display: false
-                            }
-                        },
-                        x: {
-                            grid: {
-                                display: false
-                            },
-                            border: {
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        cutout: '70%',
+                        plugins: {
+                            legend: {
                                 display: false
                             }
                         }
                     }
-                }
-            });
+                });
 
-            const ctxGender = document.getElementById('genderChart').getContext('2d');
-            new Chart(ctxGender, {
-                type: 'doughnut',
-                data: {
-                    labels: ['Filles / Femmes', 'Garçons / Hommes'],
-                    datasets: [{
-                        data: [{{ $nbFilles }}, {{ $nbGarcons }}],
-                        backgroundColor: ['#16987C', '#3b82f6'],
-                        borderWidth: 0,
-                        hoverOffset: 4
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    cutout: '70%',
-                    plugins: {
-                        legend: {
-                            display: false
-                        }
-                    }
-                }
-            });
+                const ctxEvol = document.getElementById('evolutionChart').getContext('2d');
 
-            const ctxEvol = document.getElementById('evolutionChart').getContext('2d');
+                let gradientSaisonActuelle = ctxEvol.createLinearGradient(0, 0, 0, 300);
+                gradientSaisonActuelle.addColorStop(0, 'rgba(22, 152, 124, 0.2)');
+                gradientSaisonActuelle.addColorStop(1, 'rgba(22, 152, 124, 0)');
 
-            let gradientSaisonActuelle = ctxEvol.createLinearGradient(0, 0, 0, 300);
-            gradientSaisonActuelle.addColorStop(0, 'rgba(22, 152, 124, 0.2)');
-            gradientSaisonActuelle.addColorStop(1, 'rgba(22, 152, 124, 0)');
-
-            new Chart(ctxEvol, {
-                type: 'line',
-                data: {
-                    labels: @json($evolutionData['labels']),
-                    datasets: [{
-                            label: 'Saison {{ $saisonCourante }}',
-                            data: @json($evolutionData['courante']),
-                            borderColor: '#16987C',
-                            backgroundColor: gradientSaisonActuelle,
-                            borderWidth: 3,
-                            pointBackgroundColor: '#16987C',
-                            pointBorderColor: '#fff',
-                            pointBorderWidth: 2,
-                            pointRadius: 5,
-                            fill: true,
-                            tension: 0.4
+                new Chart(ctxEvol, {
+                    type: 'line',
+                    data: {
+                        labels: @json($evolutionData['labels']),
+                        datasets: [{
+                                label: 'Saison {{ $saisonCourante }}',
+                                data: @json($evolutionData['courante']),
+                                borderColor: '#16987C',
+                                backgroundColor: gradientSaisonActuelle,
+                                borderWidth: 3,
+                                pointBackgroundColor: '#16987C',
+                                pointBorderColor: '#fff',
+                                pointBorderWidth: 2,
+                                pointRadius: 5,
+                                fill: true,
+                                tension: 0.4
+                            },
+                            {
+                                label: 'Saison {{ $saisonPrecedente ?? 'Précédente' }}',
+                                data: @json($evolutionData['precedente']),
+                                borderColor: '#9ca3af',
+                                borderWidth: 2,
+                                borderDash: [5, 5],
+                                pointBackgroundColor: '#9ca3af',
+                                pointRadius: 0,
+                                fill: false,
+                                tension: 0.4
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                position: 'top',
+                                labels: {
+                                    usePointStyle: true,
+                                    boxWidth: 8,
+                                    font: {
+                                        weight: 'bold',
+                                        size: 11
+                                    }
+                                }
+                            }
                         },
-                        {
-                            label: 'Saison {{ $saisonPrecedente ?? 'Précédente' }}',
-                            data: @json($evolutionData['precedente']),
-                            borderColor: '#9ca3af',
-                            borderWidth: 2,
-                            borderDash: [5, 5],
-                            pointBackgroundColor: '#9ca3af',
-                            pointRadius: 0,
-                            fill: false,
-                            tension: 0.4
-                        }
-                    ]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: {
-                            position: 'top',
-                            labels: {
-                                usePointStyle: true,
-                                boxWidth: 8,
-                                font: {
-                                    weight: 'bold',
-                                    size: 11
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                grid: {
+                                    color: '#f3f4f6',
+                                    drawBorder: false
+                                },
+                                border: {
+                                    display: false
+                                }
+                            },
+                            x: {
+                                grid: {
+                                    display: false
+                                },
+                                border: {
+                                    display: false
                                 }
                             }
                         }
-                    },
-                    scales: {
-                        y: {
-                            beginAtZero: true,
-                            grid: {
-                                color: '#f3f4f6',
-                                drawBorder: false
-                            },
-                            border: {
-                                display: false
-                            }
-                        },
-                        x: {
-                            grid: {
-                                display: false
-                            },
-                            border: {
-                                display: false
-                            }
-                        }
                     }
-                }
+                });
+
             });
+        </script>
 
-        });
-    </script>
-
-@endsection
+    @endsection
