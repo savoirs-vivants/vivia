@@ -572,23 +572,30 @@
                     </div>
                 </div>
 
-                @if ($saisons->count() > 1)
+                @php
+                    $year = now()->month >= 9 ? now()->year : now()->year - 1;
+                    $saisonActuelle = $year . '-' . ($year + 1);
+                    $saisonsPrecedentes = $saisons->filter(fn($s) => $s->saison !== $saisonActuelle);
+                @endphp
+                @if ($saisonsPrecedentes->count() > 0)
                     <div
                         class="bg-white rounded-2xl border border-gray-100 shadow-[0_2px_12px_rgba(0,0,0,0.03)] overflow-hidden">
                         <div class="px-6 py-4 border-b border-gray-50 flex items-center gap-2">
-                            <svg class="w-4 h-4 text-[#222A60]/40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <svg class="w-4 h-4 text-[#222A60]/40" fill="none" stroke="currentColor"
+                                viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                     d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                             </svg>
                             <h2 class="text-xs font-black text-gray-400 uppercase tracking-widest">Saisons précédentes</h2>
                         </div>
                         <div class="divide-y divide-gray-50">
-                            @foreach ($saisons->skip(1) as $inscription)
+                            @foreach ($saisonsPrecedentes as $inscription)
                                 <div class="flex items-center justify-between px-6 py-3">
                                     <div class="flex items-center gap-2">
                                         <span
                                             class="w-1.5 h-1.5 rounded-full {{ $inscription->a_paye === 'Payé' ? 'bg-[#16987C]' : 'bg-gray-300' }}"></span>
-                                        <span class="text-sm font-semibold text-gray-600">{{ $inscription->saison }}</span>
+                                        <span
+                                            class="text-sm font-semibold text-gray-600">{{ $inscription->saison }}</span>
                                     </div>
                                     <div class="text-right">
                                         @if ($inscription->a_paye === 'Payé')
