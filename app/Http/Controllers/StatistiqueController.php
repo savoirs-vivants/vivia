@@ -22,7 +22,7 @@ class StatistiqueController extends Controller
         $totalAdherents = $inscriptionsCourantes->count();
 
         $adherentsIdsCourants = $inscriptionsCourantes->pluck('id_adherent');
-        $adherents = Adherent::with('tuteur')->whereIn('id', $adherentsIdsCourants)->get();
+        $adherents = Adherent::with('tousLesTuteurs')->whereIn('id', $adherentsIdsCourants)->get();
 
         $idsSaisonsPassees = Inscription::where('saison', '<', $saisonCourante)->pluck('id_adherent')->unique();
 
@@ -99,13 +99,21 @@ class StatistiqueController extends Controller
         }
 
         $adherentsAvecCsp = $adherents->filter(function ($a) {
-            return $a->tuteur && !empty($a->tuteur->profession);
+            $parent = $a->tousLesTuteurs->first(function ($t) {
+                return $t->type === 'parent_tuteur';
+            });
+
+            return $parent && !empty($parent->profession);
         });
 
         $totalAvecCsp = $adherentsAvecCsp->count();
 
         $cspData = $adherentsAvecCsp->groupBy(function ($a) {
-            return $a->tuteur->profession;
+            $parent = $a->tousLesTuteurs->first(function ($t) {
+                return $t->type === 'parent_tuteur';
+            });
+
+            return $parent->profession;
         })->map->count()->sortDesc()->take(6)->map(function ($count, $label) use ($totalAvecCsp) {
             return [
                 'label' => $label,

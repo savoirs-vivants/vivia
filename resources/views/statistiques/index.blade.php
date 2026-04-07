@@ -9,18 +9,18 @@
         <div class="max-w-[1600px] mx-auto space-y-6">
 
             <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
-            <div>
-                <p class="text-xl text-gray-500 font-medium mt-1">
-                    {{ $totalAdherents }} participants · Saison {{ $saisonCourante }}
-                </p>
+                <div>
+                    <p class="text-xl text-gray-500 font-medium mt-1">
+                        {{ $totalAdherents }} participants · Saison {{ $saisonCourante }}
+                    </p>
+                </div>
+
+                <div class="flex flex-wrap items-center gap-3 w-full md:w-auto">
+
+                    <livewire:export-statistiques :saison="$saisonCourante" />
+
+                </div>
             </div>
-
-            <div class="flex flex-wrap items-center gap-3 w-full md:w-auto">
-
-                <livewire:export-statistiques :saison="$saisonCourante" />
-
-            </div>
-        </div>
 
             <div class="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-4">
 
@@ -152,7 +152,7 @@
                             ];
                         @endphp
 
-                        @foreach ($cspData as $index => $csp)
+                        @forelse ($cspData as $index => $csp)
                             <div>
                                 <div class="flex justify-between items-end mb-1.5">
                                     <span class="text-[11px] font-bold text-gray-600 leading-tight w-2/3 truncate"
@@ -164,7 +164,13 @@
                                         style="width: {{ $csp['pct'] }}%"></div>
                                 </div>
                             </div>
-                        @endforeach
+                        @empty
+                            <div
+                                class="flex items-center justify-center p-4 bg-gray-50 rounded-xl border border-gray-100 border-dashed">
+                                <p class="text-xs text-gray-400 font-medium text-center">Aucune profession renseignée pour
+                                    les adhérents de cette saison.</p>
+                            </div>
+                        @endforelse
                     </div>
                 </div>
                 <div
