@@ -378,7 +378,7 @@ class AdherentFormulaireController extends Controller
             }
         }
 
-        return view('adhesion', compact(
+        return view('adhesion.index', compact(
             'step',
             'formData',
             'token',
