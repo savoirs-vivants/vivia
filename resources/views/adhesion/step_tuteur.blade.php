@@ -15,13 +15,16 @@
                                     <div class="border-2 rounded-xl p-4 mb-4 bg-white relative transition-colors"
                                         :class="{
                                             'border-slate-300 hover:border-slate-400': tuteur.type === 'parent_tuteur',
-                                            'border-teal-300 hover:border-teal-400 bg-teal-50/30': tuteur.type === 'autre_autorise',
-                                            'border-red-200 hover:border-red-300 bg-red-50/20': tuteur.type === 'non_autorise'
+                                            'border-teal-300 hover:border-teal-400 bg-teal-50/30': tuteur
+                                                .type === 'autre_autorise',
+                                            'border-red-200 hover:border-red-300 bg-red-50/20': tuteur
+                                                .type === 'non_autorise'
                                         }">
 
                                         <div class="flex items-center justify-between mb-5">
                                             <h3 class="font-bold text-slate-900 text-lg flex items-center gap-3">
-                                                <span class="w-10 h-10 rounded-xl text-white flex items-center justify-center font-bold shadow-md text-sm"
+                                                <span
+                                                    class="w-10 h-10 rounded-xl text-white flex items-center justify-center font-bold shadow-md text-sm"
                                                     :class="{
                                                         'bg-slate-900': tuteur.type === 'parent_tuteur',
                                                         'bg-teal-600': tuteur.type === 'autre_autorise',
@@ -29,15 +32,22 @@
                                                     }"
                                                     x-text="tuteur.type === 'parent_tuteur' ? '👨‍👩‍👧' : (tuteur.type === 'autre_autorise' ? '✅' : '🚫')"></span>
                                                 <span>
-                                                    <span x-show="tuteur.type === 'parent_tuteur'" class="text-slate-900">Parent / Tuteur·trice</span>
-                                                    <span x-show="tuteur.type === 'autre_autorise'" class="text-teal-700">Personne autorisée à récupérer l'enfant</span>
-                                                    <span x-show="tuteur.type === 'non_autorise'" class="text-red-600">Personne non autorisée à récupérer l'enfant</span>
+                                                    <span x-show="tuteur.type === 'parent_tuteur'"
+                                                        class="text-slate-900">Parent / Tuteur·trice</span>
+                                                    <span x-show="tuteur.type === 'autre_autorise'"
+                                                        class="text-teal-700">Personne autorisée à récupérer
+                                                        l'enfant</span>
+                                                    <span x-show="tuteur.type === 'non_autorise'"
+                                                        class="text-red-600">Personne non autorisée à récupérer
+                                                        l'enfant</span>
                                                 </span>
                                             </h3>
                                             <button type="button" @click="removeTuteur(i)"
                                                 class="text-red-500 bg-red-50 px-3 py-1.5 rounded-lg font-bold text-sm hover:bg-red-500 hover:text-white transition-colors flex items-center gap-2">
-                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                <svg class="w-4 h-4" fill="none" stroke="currentColor"
+                                                    viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round"
+                                                        stroke-width="2"
                                                         d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                                                 </svg>
                                                 Retirer
@@ -79,16 +89,36 @@
                                         <template x-if="tuteur.type === 'parent_tuteur'">
                                             <div>
                                                 <div class="mb-5">
-                                                    <label class="{{ $label }}">💼 Profession</label>
-                                                    <input type="text" :name="'tuteurs[' + i + '][profession]'" x-model="tuteur.profession" placeholder="Ex : Enseignant, Indépendant..." class="{{ $field }}">
+                                                    <label class="{{ $label }}">💼 Profession (CSP)</label>
+                                                    <select :name="'tuteurs[' + i + '][profession]'"
+                                                        x-model="tuteur.profession" class="{{ $field }}">
+                                                        <option value="" disabled>Sélectionner une catégorie
+                                                        </option>
+                                                        <option value="Agriculteur exploitant">Agriculteur exploitant
+                                                        </option>
+                                                        <option value="Artisan, commerçant, chef d'entreprise">Artisan,
+                                                            commerçant, chef d'entreprise</option>
+                                                        <option value="Cadre et profession intellectuelle supérieure">
+                                                            Cadre et profession intellectuelle supérieure</option>
+                                                        <option value="Profession intermédiaire">Profession
+                                                            intermédiaire</option>
+                                                        <option value="Employé">Employé</option>
+                                                        <option value="Ouvrier">Ouvrier</option>
+                                                        <option value="Retraité">Retraité</option>
+                                                        <option value="Sans activité professionnelle">Sans activité
+                                                            professionnelle</option>
+                                                        <option value="Autre">Autre</option>
+                                                    </select>
                                                 </div>
-                                                <div class="space-y-3 mb-6 p-5 bg-slate-50 border border-slate-200 rounded-2xl">
+                                                <div
+                                                    class="space-y-3 mb-6 p-5 bg-slate-50 border border-slate-200 rounded-2xl">
                                                     <label class="flex items-center gap-3 cursor-pointer group">
                                                         <input type="checkbox" :name="'tuteurs[' + i + '][adhere]'"
                                                             value="1" :checked="tuteur.adhere"
                                                             @change="tuteur.adhere = $event.target.checked"
                                                             class="{{ $check }}">
-                                                        <span class="text-sm font-semibold text-slate-800">J'autorise mon enfant à
+                                                        <span class="text-sm font-semibold text-slate-800">J'autorise
+                                                            mon enfant à
                                                             adhérer à l'association Savoirs Vivants</span>
                                                     </label>
                                                     <label class="flex items-center gap-3 cursor-pointer group">
@@ -96,15 +126,18 @@
                                                             value="1" :checked="tuteur.rentre_fin"
                                                             @change="tuteur.rentre_fin = $event.target.checked"
                                                             class="{{ $check }}">
-                                                        <span class="text-sm font-semibold text-slate-800">J'autorise mon enfant à
+                                                        <span class="text-sm font-semibold text-slate-800">J'autorise
+                                                            mon enfant à
                                                             rentrer seul·e à la fin de l'activité</span>
                                                     </label>
                                                     <label class="flex items-center gap-3 cursor-pointer group">
-                                                        <input type="checkbox" :name="'tuteurs[' + i + '][rentre_annul]'"
-                                                            value="1" :checked="tuteur.rentre_annul"
+                                                        <input type="checkbox"
+                                                            :name="'tuteurs[' + i + '][rentre_annul]'" value="1"
+                                                            :checked="tuteur.rentre_annul"
                                                             @change="tuteur.rentre_annul = $event.target.checked"
                                                             class="{{ $check }}">
-                                                        <span class="text-sm font-semibold text-slate-800">J'autorise mon enfant à
+                                                        <span class="text-sm font-semibold text-slate-800">J'autorise
+                                                            mon enfant à
                                                             rentrer seul·e en cas d'annulation</span>
                                                     </label>
                                                 </div>
@@ -112,11 +145,13 @@
                                                 <div class="mb-5">
                                                     <label class="{{ $label }}">📅 Date</label>
                                                     <input type="date" :name="'tuteurs[' + i + '][date_signature]'"
-                                                        x-model="tuteur.date_signature" class="{{ $field }} max-w-xs">
+                                                        x-model="tuteur.date_signature"
+                                                        class="{{ $field }} max-w-xs">
                                                 </div>
 
                                                 <div>
-                                                    <label class="{{ $label }}">✍️ Signature du/de la tuteur·trice</label>
+                                                    <label class="{{ $label }}">✍️ Signature du/de la
+                                                        tuteur·trice</label>
                                                     <div class="border-2 border-dashed border-gray-300 rounded-2xl p-2 bg-gray-50 relative overflow-hidden"
                                                         style="max-width: 400px;">
                                                         <canvas :id="'canvas-tuteur-' + i"
@@ -158,7 +193,8 @@
                                 @if ($hasPrev)
                                     <a href="{{ route('adhesion.show', ['token' => $token, 'step' => $prevStep]) }}"
                                         class="{{ $btnBack }}">
-                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <svg class="w-5 h-5" fill="none" stroke="currentColor"
+                                            viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
                                                 d="M15 19l-7-7 7-7" />
                                         </svg>

@@ -359,18 +359,8 @@
                                     </div>
                                     <div class="text-right shrink-0">
                                         <p class="font-black text-sm text-[#0F143A]">{{ $activite->tarif_format }}</p>
-                                        <p class="text-xs text-gray-400 mt-0.5">{{ $nbPresent }} / {{ $nbSeances }}
-                                            séances</p>
                                     </div>
                                 </div>
-                                @if ($nbSeances > 0)
-                                    <div class="mt-3 ml-5">
-                                        <div class="h-1.5 bg-gray-100 rounded-full overflow-hidden">
-                                            <div class="h-full rounded-full transition-all duration-700 {{ $activite->est_stage ? 'bg-violet-400' : 'bg-[#16987C]' }}"
-                                                style="width: {{ $progression }}%"></div>
-                                        </div>
-                                    </div>
-                                @endif
                             </div>
                         @empty
                             <div class="px-6 py-8 text-center text-sm text-gray-300 font-medium">Aucune activité active</div>
