@@ -528,15 +528,7 @@ class AdherentFormulaireController extends Controller
                     }
                 }
 
-                // Membre existant (recherche gratuite ou autre) → pas de cotisation, step 11 direct
                 if ($isDejaAdherent) {
-                    if (!empty($formData['_structure_id'])) {
-                        DB::table('inscriptions')
-                            ->where('id_structure', $formData['_structure_id'])
-                            ->where('a_paye', Inscription::EN_ATTENTE)
-                            ->orderByDesc('id')->limit(1)
-                            ->update(['a_paye' => Inscription::PAYE, 'updated_at' => now()]);
-                    }
                     $formData['_paiement2_cree'] = true;
                     $formData['_helloasso_ok']   = true;
                     $formData['_last_completed'] = 11;
@@ -562,15 +554,7 @@ class AdherentFormulaireController extends Controller
 
             $isSinglePayment = in_array($formData['type_activite'] ?? '', ['soutien', 'recherche']);
             if ($isSinglePayment && $totalActiviteEuros == 0) {
-                // Membre existant + recherche gratuite → step 11 direct, pas de cotisation
                 if (!$estNouvelAdherent) {
-                    if (!empty($formData['_adherent_id'])) {
-                        DB::table('inscriptions')
-                            ->where('id_adherent', $formData['_adherent_id'])
-                            ->where('a_paye', Inscription::EN_ATTENTE)
-                            ->orderByDesc('id')->limit(1)
-                            ->update(['a_paye' => Inscription::PAYE, 'updated_at' => now()]);
-                    }
                     $formData['_paiement2_cree'] = true;
                     $formData['_helloasso_ok']   = true;
                     $formData['_last_completed'] = 11;
@@ -691,13 +675,7 @@ class AdherentFormulaireController extends Controller
                     }
                 }
 
-                // Membre existant : pas de cotisation, inscription PAYE, step 11 direct
                 if (($formData['is_adherent'] ?? 'non') === 'oui' && !empty($formData['_structure_id'])) {
-                    DB::table('inscriptions')
-                        ->where('id_structure', $formData['_structure_id'])
-                        ->where('a_paye', Inscription::EN_ATTENTE)
-                        ->orderByDesc('id')->limit(1)
-                        ->update(['a_paye' => Inscription::PAYE, 'updated_at' => now()]);
                     $formData['_paiement2_cree'] = true;
                     $formData['_helloasso_ok']   = true;
                     $formData['_last_completed'] = 11;
@@ -742,14 +720,6 @@ class AdherentFormulaireController extends Controller
             return redirect()->route('adhesion.show', ['token' => $token, 'step' => 10]);
         }
 
-        // Membre existant : marquer l'inscription comme payée (pas de cotisation)
-        if (!empty($formData['_adherent_id'])) {
-            DB::table('inscriptions')
-                ->where('id_adherent', $formData['_adherent_id'])
-                ->where('a_paye', Inscription::EN_ATTENTE)
-                ->orderByDesc('id')->limit(1)
-                ->update(['a_paye' => Inscription::PAYE, 'updated_at' => now()]);
-        }
         $formData['_helloasso_ok'] = true;
         $formData['_last_completed'] = 11;
         $request->session()->put("adhesion_{$token}", $formData);
@@ -879,13 +849,6 @@ class AdherentFormulaireController extends Controller
                 'commentaire'   => 'Cotisation annuelle via HelloAsso',
             ]);
         }
-
-        DB::table('inscriptions')
-            ->where('id_adherent', $formData['_adherent_id'])
-            ->where('a_paye', Inscription::EN_ATTENTE)
-            ->orderByDesc('id')
-            ->limit(1)
-            ->update(['a_paye' => Inscription::PAYE, 'updated_at' => now()]);
 
         $formData['_paiement2_cree'] = true;
         $formData['_helloasso_ok']   = true;
@@ -1115,6 +1078,7 @@ class AdherentFormulaireController extends Controller
             if ($adherent) {
                 $inscription = \App\Models\Inscription::where('id_adherent', $adherent->id)
                     ->where('a_paye', \App\Models\Inscription::EN_ATTENTE)
+                    ->where('renouvellement', false)
                     ->latest()
                     ->first();
 
@@ -1122,14 +1086,14 @@ class AdherentFormulaireController extends Controller
                     $inscription->update(['a_paye' => \App\Models\Inscription::PAYE]);
                 }
 
-                $dejaCreee = \App\Models\Paiement::where('id_adherent', $adherent->id)
+                $dejaCreee = Paiement::where('id_adherent', $adherent->id)
                     ->where('source', 'HelloAsso')
                     ->where('montant', $amount)
                     ->whereDate('date_paiement', today())
                     ->exists();
 
                 if (!$dejaCreee) {
-                    \App\Models\Paiement::create([
+                    Paiement::create([
                         'id_adherent'   => $adherent->id,
                         'montant'       => $amount,
                         'source'        => 'HelloAsso',
@@ -1141,12 +1105,13 @@ class AdherentFormulaireController extends Controller
                 return response()->json(['status' => 'ok'], 200);
             }
 
-            $structure = \App\Models\AdherentStructure::where('mail', $email)->latest()->first();
+            $structure = AdherentStructure::where('mail', $email)->latest()->first();
 
             if ($structure) {
                 $inscriptionStructure = \Illuminate\Support\Facades\DB::table('inscriptions')
                     ->where('id_structure', $structure->id)
                     ->where('a_paye', \App\Models\Inscription::EN_ATTENTE)
+                    ->where('renouvellement', false)
                     ->orderByDesc('id')
                     ->first();
 

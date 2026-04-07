@@ -243,7 +243,8 @@
                             <td colspan="8" class="px-6 py-20 text-center">
                                 <div class="flex flex-col items-center gap-3">
                                     <div class="w-14 h-14 rounded-2xl bg-gray-100 flex items-center justify-center">
-                                        <span class="text-2xl">🏛️</span></div>
+                                        <span class="text-2xl">🏛️</span>
+                                    </div>
                                     <p class="font-bold text-gray-400">Aucune structure trouvée</p>
                                 </div>
                             </td>
@@ -361,14 +362,30 @@
                                                 {{ number_format($restePartiel, 2, ',', ' ') }} €</span>
                                         </div>
                                     @else
-                                        @php $montantAffiche = $adherent->paiements->isNotEmpty() ? $adherent->paiements->sum('montant') : ($adherent->inscription?->montant ?? 0); @endphp
-                                        @if ($montantAffiche > 0)
-                                            <span
-                                                class="font-black text-sm text-[#0F143A]">{{ number_format((float) $montantAffiche, 2, ',', ' ') }}
-                                                €</span>
-                                        @else
-                                            <span class="text-xs text-gray-300">—</span>
-                                        @endif
+                                        @php
+                                            $isReinscription = $adherent->inscriptions
+                                                ->where(
+                                                    'saison',
+                                                    $saison ??
+                                                        (now()->month >= 9 ? now()->year : now()->year - 1) .
+                                                            '-' .
+                                                            ((now()->month >= 9 ? now()->year : now()->year - 1) + 1),
+                                                )
+                                                ->where('a_paye', \App\Models\Inscription::PAYE)
+                                                ->isNotEmpty();
+                                            $montantAffiche =
+                                                $isReinscription && $adherent->inscription
+                                                    ? $adherent->inscription->montant
+                                                    : ($adherent->paiements->isNotEmpty()
+                                                        ? $adherent->paiements->sum('montant')
+                                                        : $adherent->inscription?->montant ?? 0);
+                                        @endphp
+                                        <span class="font-black text-sm text-[#0F143A]">
+                                            {{ number_format((float) $montantAffiche, 2, ',', ' ') }} €
+                                            @if ($isReinscription)
+                                                <span class="text-xs text-amber-500">(ré-insc.)</span>
+                                            @endif
+                                        </span>
                                     @endif
                                 </td>
                                 <td class="px-4 py-4"><span
@@ -380,25 +397,67 @@
                                 <div class="flex items-center justify-end gap-2">
                                     @if ($tab === 'attente' || $tab === 'partiel')
                                         @php
+                                            $year = now()->month >= 9 ? now()->year : now()->year - 1;
+                                            $saison = $year . '-' . ($year + 1);
+
+                                            $isReinscription = $adherent->inscriptions
+                                                ->where('saison', $saison)
+                                                ->where('a_paye', \App\Models\Inscription::PAYE)
+                                                ->isNotEmpty();
+
                                             $modalSource = $adherent->paiements->first()?->source ?: 'Interne';
                                             $totalModal = (float) ($adherent->inscription?->montant ?? 0);
                                             $verseModal = (float) $adherent->paiements->sum('montant');
                                             $resteModal = max(0, $totalModal - $verseModal);
+
+                                            $dateInscriptionEnAttente = $adherent->inscription?->created_at;
+                                            $activitesModal =
+                                                $isReinscription && $dateInscriptionEnAttente
+                                                    ? $adherent->activitesActives
+                                                        ->filter(
+                                                            fn($a) => $a->pivot->created_at >=
+                                                                $dateInscriptionEnAttente->startOfDay(),
+                                                        )
+                                                        ->map(
+                                                            fn($a) => [
+                                                                'nom' => $a->nom,
+                                                                'info' => collect($a->horaires_list)->first() ?? '',
+                                                                'tarif' =>
+                                                                    number_format((float) $a->tarif, 2, ',', ' ') .
+                                                                    ' €',
+                                                            ],
+                                                        )
+                                                        ->values()
+                                                        ->toArray()
+                                                    : $adherent->activitesActives
+                                                        ->map(
+                                                            fn($a) => [
+                                                                'nom' => $a->nom,
+                                                                'info' => collect($a->horaires_list)->first() ?? '',
+                                                                'tarif' =>
+                                                                    number_format((float) $a->tarif, 2, ',', ' ') .
+                                                                    ' €',
+                                                            ],
+                                                        )
+                                                        ->values()
+                                                        ->toArray();
                                         @endphp
+
                                         <button
                                             @click="ouvrirModal({{ json_encode([
                                                 'actionUrl' => '/adherents/' . $adherent->id . '/valider',
                                                 'versementUrl' => '/adherents/' . $adherent->id . '/versement',
                                                 'isPartiel' => $tab === 'partiel',
                                                 'isStructure' => false,
+                                                'isReinscription' => $isReinscription,
                                                 'id' => $adherent->id,
                                                 'nom' => $adherent->prenom . ' ' . $adherent->nom,
                                                 'initiales' => $adherent->initiales,
                                                 'couleur' => $adherent->couleur_avatar,
                                                 'meta' =>
                                                     ($adherent->tranche_age ?? 'Adulte') .
-                                                    ' · Inscrit le ' .
-                                                    ($adherent->inscription?->date_inscription?->isoFormat('D MMM YYYY') ?? ''),
+                                                    ($isReinscription ? ' · Ré-inscription' : ' · Inscrit le ') .
+                                                    ($isReinscription ? '' : $adherent->inscription?->date_inscription?->isoFormat('D MMM YYYY') ?? ''),
                                                 'source' => $modalSource,
                                                 'sourceClass' => match ($modalSource) {
                                                     'HelloAsso' => 'bg-[#16987C]/10 text-[#16987C]',
@@ -412,17 +471,12 @@
                                                 'dejaVerseBrut' => $verseModal,
                                                 'resteDu' => number_format($resteModal, 2, ',', ' ') . ' €',
                                                 'resteDuBrut' => $resteModal,
-                                                'activites' => $adherent->activitesActives->map(
-                                                        fn($a) => [
-                                                            'nom' => $a->nom,
-                                                            'info' => collect($a->horaires_list)->first() ?? '',
-                                                            'tarif' => number_format((float) $a->tarif, 2, ',', ' ') . ' €',
-                                                        ],
-                                                    )->values()->toArray(),
+                                                'activites' => $activitesModal,
                                             ]) }})"
                                             class="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-[#16987C] hover:bg-[#138a6f] text-white rounded-lg text-xs font-bold transition-all duration-150 shadow-sm">
-                                            Valider <svg class="w-3 h-3 opacity-80" fill="none"
-                                                stroke="currentColor" viewBox="0 0 24 24">
+                                            {{ $isReinscription ? 'Valider (ré-inscription)' : 'Valider' }}
+                                            <svg class="w-3 h-3 opacity-80" fill="none" stroke="currentColor"
+                                                viewBox="0 0 24 24">
                                                 <path stroke-linecap="round" stroke-linejoin="round"
                                                     stroke-width="2.5" d="M9 5l7 7-7 7" />
                                             </svg>
@@ -450,7 +504,8 @@
                                             viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
                                                 d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
-                                        </svg></div>
+                                        </svg>
+                                    </div>
                                     <p class="font-bold text-gray-400">Aucun adhérent trouvé</p>
                                 </div>
                             </td>

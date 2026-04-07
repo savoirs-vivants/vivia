@@ -100,7 +100,8 @@
                             </select>
                         </div>
                         <p class="text-xs text-gray-400">Si le solde est soldé, le statut passera automatiquement en
-                            <span class="font-bold text-emerald-600">Payé</span>.</p>
+                            <span class="font-bold text-emerald-600">Payé</span>.
+                        </p>
                     </div>
                 </div>
             </template>
@@ -112,17 +113,20 @@
                             Inscription</p>
                         <div class="space-y-2.5">
                             <template x-for="activite in adherent.activites" :key="activite.nom">
-                                <div class="flex items-center justify-between">
+                                <div class="flex items-center justify-between" :class="adherent.isReinscription ? 'bg-amber-50/50 p-2 rounded mb-1' : ''">
                                     <div>
                                         <p class="text-sm font-semibold text-[#0F143A]" x-text="activite.nom"></p>
                                         <p class="text-xs text-gray-400" x-text="activite.info"></p>
+                                        <template x-if="adherent.isReinscription">
+                                            <p class="text-xs font-bold text-amber-600 mt-0.5">NOUVEAU</p>
+                                        </template>
                                     </div>
                                     <p class="text-sm font-black text-[#0F143A]" x-text="activite.tarif"></p>
                                 </div>
                             </template>
                         </div>
                         <div class="mt-3 pt-2 border-t border-gray-50 flex justify-end"
-                            x-show="!adherent.isStructure && !adherent.activites.some(a => a.nom.toLowerCase().includes('club maker'))">
+                            x-show="!adherent.isStructure && !adherent.isReinscription && !adherent.activites.some(a => a.nom.toLowerCase().includes('club maker'))">
                             <p class="text-xs text-gray-400">+ Adhésion annuelle : <span class="font-semibold">10,00
                                     €</span></p>
                         </div>
@@ -225,6 +229,20 @@
                                 </div>
                             </div>
                         </div>
+                        <template x-if="adherent.isReinscription">
+                            <div
+                                class="px-4 py-3 bg-indigo-50 border border-indigo-100 rounded-xl flex items-start gap-2.5 mb-1">
+                                <span style="font-size:16px">🔄</span>
+                                <div>
+                                    <p class="text-xs font-bold text-indigo-800">Ré-inscription</p>
+                                    <p class="text-xs text-indigo-600 mt-0.5 leading-relaxed">
+                                        Cet adhérent est déjà inscrit cette saison. Le montant ci-dessous correspond
+                                        uniquement aux nouvelles activités. Une fois validé, les deux inscriptions
+                                        seront fusionnées.
+                                    </p>
+                                </div>
+                            </div>
+                        </template>
                     </template>
                 </div>
             </template>
@@ -281,6 +299,7 @@
             adherent: {
                 isStructure: false,
                 isPartiel: false,
+                isReinscription: false,
                 id: null,
                 nom: '',
                 initiales: '',

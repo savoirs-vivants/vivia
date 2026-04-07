@@ -34,7 +34,7 @@ class AdherentController extends Controller
                 ->pluck('id_activite');
         }
 
-        $base = Adherent::with(['inscription', 'activitesActives', 'paiements'])
+        $base = Adherent::with(['inscriptions', 'inscription', 'activitesActives', 'paiements'])
             ->when($search, fn($q) => $q->where(function ($q) use ($search) {
                 $q->where('prenom', 'like', "%{$search}%")
                     ->orWhere('nom',   'like', "%{$search}%")
@@ -177,21 +177,50 @@ class AdherentController extends Controller
     }
 
     public function valider(Request $request, Adherent $adherent)
-    {
-        if ($request->filled('commentaire')) {
-            $adherent->update(['commentaire' => $request->commentaire]);
+{
+
+    $year   = now()->month >= 9 ? now()->year : now()->year - 1;
+    $saison = $year . '-' . ($year + 1);
+
+    $statut = $request->boolean('plusieurs_versements') ? Inscription::PARTIEL : Inscription::PAYE;
+
+    $inscriptionEnAttente = $adherent->inscriptions()
+        ->where('saison', $saison)
+        ->where('a_paye', Inscription::EN_ATTENTE)
+        ->latest()
+        ->first();
+
+    if (!$inscriptionEnAttente) {
+        return redirect()->route('adherents.index', ['tab' => 'attente'])
+            ->with('error', 'Aucune inscription en attente trouvée.');
+    }
+
+    $inscriptionPayeeExistante = $adherent->inscriptions()
+        ->where('saison', $saison)
+        ->where('a_paye', Inscription::PAYE)
+        ->first();
+
+    $isReinscription = $inscriptionPayeeExistante !== null;
+    $ancienStatut    = $isReinscription ? Inscription::PAYE : ($adherent->inscription?->a_paye);
+
+    if ($isReinscription && $statut === Inscription::PAYE) {
+        $inscriptionPayeeExistante->update([
+            'montant' => $inscriptionPayeeExistante->montant + $inscriptionEnAttente->montant,
+        ]);
+        $inscriptionEnAttente->update(['a_paye' => $statut]);
+
+    } elseif ($isReinscription && $statut === Inscription::PARTIEL) {
+        $inscriptionEnAttente->update(['a_paye' => $statut]);
+
+        if ($request->filled('montant_recu')) {
+            $paiement = $adherent->paiements()->latest()->first();
+            if ($paiement) {
+                $paiement->update(['montant' => (float) $request->montant_recu]);
+            }
         }
 
-        $statut = $request->boolean('plusieurs_versements') ? Inscription::PARTIEL : Inscription::PAYE;
-
-        $ancienStatut = $adherent->inscription->a_paye ?? null;
-
-        $totalAttendu = $adherent->load('activitesActives')->activitesActives->sum('tarif') + 10;
-
-        $adherent->inscription()->update([
-            'a_paye'  => $statut,
-            'montant' => $totalAttendu,
-        ]);
+    } else {
+        $inscriptionEnAttente->update(['a_paye' => $statut]);
 
         if ($statut === Inscription::PARTIEL && $request->filled('montant_recu')) {
             $paiement = $adherent->paiements()->latest()->first();
@@ -199,37 +228,37 @@ class AdherentController extends Controller
                 $paiement->update(['montant' => (float) $request->montant_recu]);
             }
         }
+    }
 
-        if ($statut === Inscription::PAYE && $ancienStatut !== Inscription::PAYE) {
+    if ($statut === Inscription::PAYE && $ancienStatut !== Inscription::PAYE) {
+        $destinataire = null;
 
-            $destinataire = null;
-
-            if ($adherent->tranche_age === 'Enfant' || $adherent->tranche_age === 'Adolescent') {
-                $premierTuteur = $adherent->tousLesTuteurs()->first();
-                if ($premierTuteur && $premierTuteur->mail) {
-                    $destinataire = $premierTuteur->mail;
-                }
-            } else {
-                if ($adherent->mail) {
-                    $destinataire = $adherent->mail;
-                }
+        if ($adherent->tranche_age === 'Enfant' || $adherent->tranche_age === 'Adolescent') {
+            $premierTuteur = $adherent->tousLesTuteurs()->first();
+            if ($premierTuteur && $premierTuteur->mail) {
+                $destinataire = $premierTuteur->mail;
             }
-
-            if ($destinataire) {
-                Mail::to($destinataire)->send(new AdhesionValidee($adherent));
+        } else {
+            if ($adherent->mail) {
+                $destinataire = $adherent->mail;
             }
         }
 
-        $tab = match ($statut) {
-            Inscription::PAYE    => 'payes',
-            Inscription::PARTIEL => 'partiel',
-            default              => 'attente',
-        };
-
-        return redirect()
-            ->route('adherents.index', ['tab' => $tab])
-            ->with('success', $adherent->prenom . ' ' . $adherent->nom . ' — ' . strtolower($statut) . '.');
+        if ($destinataire) {
+            Mail::to($destinataire)->send(new AdhesionValidee($adherent));
+        }
     }
+
+    $tab = match ($statut) {
+        Inscription::PAYE    => 'payes',
+        Inscription::PARTIEL => 'partiel',
+        default              => 'attente',
+    };
+
+    return redirect()
+        ->route('adherents.index', ['tab' => $tab])
+        ->with('success', $adherent->prenom . ' ' . $adherent->nom . ($isReinscription ? ' — réinscription fusionnée et ' : ' — ') . strtolower($statut) . '.');
+}
 
     public function showStructure(AdherentStructure $structure)
     {
@@ -241,55 +270,74 @@ class AdherentController extends Controller
     }
 
     public function ajouterVersement(Request $request, Adherent $adherent)
-    {
-        $request->validate([
-            'montant_versement' => ['required', 'numeric', 'min:0.01'],
-            'source'            => ['nullable', 'string', 'max:100'],
-            'date_paiement'     => ['nullable', 'date'],
-        ]);
+{
+    $request->validate([
+        'montant_versement' => ['required', 'numeric', 'min:0.01'],
+        'source'            => ['nullable', 'string', 'max:100'],
+        'date_paiement'     => ['nullable', 'date'],
+    ]);
 
-        $inscription = $adherent->inscription;
+    $year   = now()->month >= 9 ? now()->year : now()->year - 1;
+    $saison = $year . '-' . ($year + 1);
 
-        if (!$inscription || $inscription->a_paye !== Inscription::PARTIEL) {
-            return redirect()->route('adherents.index', ['tab' => 'partiel'])
-                ->with('error', 'Cet adhérent n\'est pas en statut Partiel.');
-        }
+    $inscription = $adherent->inscriptions()
+        ->where('saison', $saison)
+        ->where('a_paye', Inscription::PARTIEL)
+        ->latest()
+        ->first();
 
-        $adherent->paiements()->create([
-            'montant'       => (float) $request->montant_versement,
-            'source'        => $request->source ?? 'Interne',
-            'date_paiement' => $request->date_paiement ?? now()->toDateString(),
-            'commentaire'   => $request->commentaire ?? null,
-        ]);
-
-        $totalVerse = (float) $adherent->paiements()->sum('montant');
-        $totalDu    = (float) $inscription->montant;
-
-        if ($totalVerse >= $totalDu) {
-            $inscription->update(['a_paye' => Inscription::PAYE]);
-
-            $destinataire = null;
-            if (in_array($adherent->tranche_age, ['Enfant', 'Adolescent'])) {
-                $premierTuteur = $adherent->tousLesTuteurs()->first();
-                if ($premierTuteur?->mail) {
-                    $destinataire = $premierTuteur->mail;
-                }
-            } elseif ($adherent->mail) {
-                $destinataire = $adherent->mail;
-            }
-            if ($destinataire) {
-                Mail::to($destinataire)->send(new AdhesionValidee($adherent));
-            }
-
-            return redirect()->route('adherents.index', ['tab' => 'payes'])
-                ->with('success', $adherent->prenom . ' ' . $adherent->nom . ' — solde complet, passé en Payé.');
-        }
-
-        $reste = number_format($totalDu - $totalVerse, 2, ',', ' ');
-
+    if (!$inscription) {
         return redirect()->route('adherents.index', ['tab' => 'partiel'])
-            ->with('success', 'Versement enregistré. Reste dû : ' . $reste . ' €');
+            ->with('error', 'Cet adhérent n\'est pas en statut Partiel.');
     }
+
+    $adherent->paiements()->create([
+        'montant'       => (float) $request->montant_versement,
+        'source'        => $request->source ?? 'Interne',
+        'date_paiement' => $request->date_paiement ?? now()->toDateString(),
+        'commentaire'   => $request->commentaire ?? null,
+    ]);
+
+    $totalVerse = (float) $adherent->paiements()->sum('montant');
+    $totalDu    = (float) $inscription->montant;
+
+    if ($totalVerse >= $totalDu) {
+        $inscriptionPayeeExistante = $adherent->inscriptions()
+            ->where('saison', $saison)
+            ->where('a_paye', Inscription::PAYE)
+            ->first();
+
+        if ($inscriptionPayeeExistante) {
+            $inscriptionPayeeExistante->update([
+                'montant' => $inscriptionPayeeExistante->montant + $inscription->montant,
+            ]);
+            $inscription->delete();
+        } else {
+            $inscription->update(['a_paye' => Inscription::PAYE]);
+        }
+
+        $destinataire = null;
+        if (in_array($adherent->tranche_age, ['Enfant', 'Adolescent'])) {
+            $premierTuteur = $adherent->tousLesTuteurs()->first();
+            if ($premierTuteur?->mail) {
+                $destinataire = $premierTuteur->mail;
+            }
+        } elseif ($adherent->mail) {
+            $destinataire = $adherent->mail;
+        }
+        if ($destinataire) {
+            Mail::to($destinataire)->send(new AdhesionValidee($adherent));
+        }
+
+        return redirect()->route('adherents.index', ['tab' => 'payes'])
+            ->with('success', $adherent->prenom . ' ' . $adherent->nom . ' — solde complet, passé en Payé.');
+    }
+
+    $reste = number_format($totalDu - $totalVerse, 2, ',', ' ');
+
+    return redirect()->route('adherents.index', ['tab' => 'partiel'])
+        ->with('success', 'Versement enregistré. Reste dû : ' . $reste . ' €');
+}
 
     public function validerStructure(Request $request, AdherentStructure $structure)
     {

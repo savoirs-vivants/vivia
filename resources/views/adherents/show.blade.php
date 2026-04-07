@@ -327,26 +327,51 @@
                         <h2 class="text-xs font-black text-gray-400 uppercase tracking-widest">Activités inscrites</h2>
                     </div>
                     <div class="divide-y divide-gray-50">
+                        @php
+                            $year = now()->month >= 9 ? now()->year : now()->year - 1;
+                            $saison = $year . '-' . ($year + 1);
+                            $derniereInscription = $adherent->inscriptions
+                                ->where('saison', $saison)
+                                ->sortByDesc('created_at')
+                                ->first();
+                            $isReinscription = $adherent->inscriptions
+                                ->where('saison', $saison)
+                                ->where('a_paye', \App\Models\Inscription::PAYE)
+                                ->where('id', '!=', $derniereInscription?->id ?? 0)
+                                ->isNotEmpty();
+                            $activitesReins = $isReinscription && $derniereInscription
+                                ? $adherent->activitesActives->filter(fn($a) => $a->pivot->created_at >= $derniereInscription->created_at)
+                                : collect();
+                        @endphp
+
+                        @if($isReinscription && $activitesReins->isNotEmpty())
+                            <div class="px-6 py-3 bg-amber-50 border-b border-amber-200">
+                                <p class="text-xs font-bold text-amber-700 flex items-center gap-1.5">
+                                    <span>🔄</span> Ré-inscription récente ({{ $activitesReins->pluck('nom')->implode(', ') }})
+                                </p>
+                            </div>
+                        @endif
+
                         @forelse($adherent->activitesActives as $activite)
                             @php
                                 $nbSeances = $activite->seances()->count();
-
                                 $nbAbsentActivite = \App\Models\Presence::where('id_adherent', $adherent->id)
                                     ->whereIn('id_seance', $activite->seances()->pluck('id_seance'))
                                     ->whereRaw("LOWER(statut) = 'absent'")
                                     ->count();
-
                                 $nbPresent = max(0, $nbSeances - $nbAbsentActivite);
                                 $progression = $nbSeances > 0 ? round(($nbPresent / $nbSeances) * 100) : 0;
+                                $isNew = $activitesReins->contains($activite);
                             @endphp
-                            <div class="px-6 py-4">
+                            <div class="px-6 py-4 {{ $isNew ? 'bg-amber-50/30 border-r-4 border-amber-300' : '' }}">
                                 <div class="flex items-start justify-between gap-4">
                                     <div class="flex items-start gap-3">
-                                        <div
-                                            class="mt-0.5 w-2 h-2 rounded-full shrink-0 {{ $activite->est_stage ? 'bg-violet-400' : 'bg-[#16987C]' }}">
-                                        </div>
+                                        <div class="mt-0.5 w-2 h-2 rounded-full shrink-0 {{ $activite->est_stage ? 'bg-violet-400' : 'bg-[#16987C]' }} {{ $isNew ? 'animate-pulse' : '' }}"></div>
                                         <div>
                                             <p class="font-bold text-sm text-[#0F143A]">{{ $activite->nom }}</p>
+                                            @if($isNew)
+                                                <p class="text-xs font-semibold text-amber-600 mt-1 px-2 py-0.5 bg-amber-100 rounded">NOUVEAU</p>
+                                            @endif
                                             <p class="text-xs text-gray-400 mt-0.5">
                                                 @if ($activite->adresse)
                                                     {{ $activite->adresse }} ·
