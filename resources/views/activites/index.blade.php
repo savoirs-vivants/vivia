@@ -59,7 +59,7 @@
 
 @foreach($dossiersAvecActivites as $dossier)
     @php $activitesDuDossier = $activitesParDossier->get($dossier->id, collect()); @endphp
-    <div class="mb-8" x-data="{ open: true }">
+    <div class="mb-8" x-data="{ open: false }">
         <div class="flex items-center gap-3 mb-4 pl-1 cursor-pointer" @click="open = !open">
             <div class="w-8 h-8 rounded-lg bg-[#222A60]/10 flex items-center justify-center flex-shrink-0">
                 <svg class="w-4 h-4 text-[#222A60]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
