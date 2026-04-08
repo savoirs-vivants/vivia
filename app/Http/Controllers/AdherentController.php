@@ -7,6 +7,7 @@ use App\Models\Adherent;
 use App\Models\AdherentStructure;
 use App\Models\Inscription;
 use App\Models\Presence;
+use App\Models\Saison;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -21,6 +22,7 @@ class AdherentController extends Controller
         $search       = $request->get('q');
         $filterSource = $request->get('source');
         $filterStatut = $request->get('statut');
+        $saison = Saison::current();
 
         $canVoirTousStatuts = in_array($user->role, ['admin', 'comptable']);
         if (!$canVoirTousStatuts) {
@@ -55,13 +57,13 @@ class AdherentController extends Controller
             ));
 
         $queryPayes = (clone $base)
-            ->whereHas('inscriptions', fn($q) => $q->where('a_paye', Inscription::PAYE));
+            ->whereHas('inscriptions', fn($q) => $q->where('a_paye', Inscription::PAYE)->where('saison', $saison));
 
         $queryAttente = (clone $base)
-            ->whereHas('inscriptions', fn($q) => $q->where('a_paye', Inscription::EN_ATTENTE));
+            ->whereHas('inscriptions', fn($q) => $q->where('a_paye', Inscription::EN_ATTENTE)->where('saison', $saison));
 
         $queryPartiel = (clone $base)
-            ->whereHas('inscriptions', fn($q) => $q->where('a_paye', Inscription::PARTIEL));
+            ->whereHas('inscriptions', fn($q) => $q->where('a_paye', Inscription::PARTIEL)->where('saison', $saison));
 
         $countPayes   = (clone $queryPayes)->count();
         $countAttente = $canVoirTousStatuts ? (clone $queryAttente)->count() : 0;
@@ -79,11 +81,11 @@ class AdherentController extends Controller
             }));
 
         $structuresEnAttente = $canVoirTousStatuts
-            ? (clone $baseStructures)->whereHas('inscriptions', fn($q) => $q->where('a_paye', Inscription::EN_ATTENTE))->orderBy('nom')->get()
+            ? (clone $baseStructures)->whereHas('inscriptions', fn($q) => $q->where('a_paye', Inscription::EN_ATTENTE)->where('saison', $saison))->orderBy('nom')->get()
             : collect();
 
         $structuresPayees = (clone $baseStructures)
-            ->whereHas('inscriptions', fn($q) => $q->where('a_paye', Inscription::PAYE))
+            ->whereHas('inscriptions', fn($q) => $q->where('a_paye', Inscription::PAYE)->where('saison', $saison))
             ->orderBy('nom')
             ->get();
 
@@ -138,7 +140,7 @@ class AdherentController extends Controller
                 $q->whereNull('activites_adherents.date_sortie')
                   ->orWhereRaw('DATE(seances.date) <= activites_adherents.date_sortie');
             })
-            ->select('seances.*') 
+            ->select('seances.*')
             ->orderByDesc('seances.date')
             ->get();
 
@@ -189,8 +191,7 @@ class AdherentController extends Controller
     public function valider(Request $request, Adherent $adherent)
 {
 
-    $year   = now()->month >= 9 ? now()->year : now()->year - 1;
-    $saison = $year . '-' . ($year + 1);
+    $saison = Saison::current();
 
     $statut = $request->boolean('plusieurs_versements') ? Inscription::PARTIEL : Inscription::PAYE;
 
@@ -287,8 +288,7 @@ class AdherentController extends Controller
         'date_paiement'     => ['nullable', 'date'],
     ]);
 
-    $year   = now()->month >= 9 ? now()->year : now()->year - 1;
-    $saison = $year . '-' . ($year + 1);
+    $saison = Saison::current();
 
     $inscription = $adherent->inscriptions()
         ->where('saison', $saison)

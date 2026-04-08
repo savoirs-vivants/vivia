@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Mail\EnfantAbsent;
 use App\Models\Adherent;
+use App\Models\Saison;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -340,7 +341,6 @@ class DashboardController extends Controller
 
     private function currentSaison(): string
     {
-        $year = now()->month >= 9 ? now()->year : now()->year - 1;
-        return $year . '-' . ($year + 1);
+        return Saison::current();
     }
 }

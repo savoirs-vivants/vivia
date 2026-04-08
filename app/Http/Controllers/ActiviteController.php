@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Mail\CoursAnnule;
 use App\Models\Activite;
 use App\Models\DossierActivite;
+use App\Models\Saison;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -154,20 +155,40 @@ class ActiviteController extends Controller
             abort_if(!$estGestionnaire, 403);
         }
 
-        $activite->load(['adherentsActifs', 'gestionnaires', 'adherents']);
+        $saison      = Saison::current();
+        $saisonModel = Saison::where('nom', $saison)->first();
+
+        if ($saisonModel) {
+            $dateDebutSaison = $saisonModel->date_debut;
+            $dateFinSaison   = $saisonModel->date_fin;
+        } else {
+            $parts = explode('-', $saison);
+            $dateDebutSaison = Carbon::create((int)$parts[0], 9, 1);
+            $dateFinSaison   = Carbon::create((int)$parts[1], 6, 30);
+        }
+
+        $activite->load(['gestionnaires', 'adherents']);
+
+        $adherentsActifs = $activite->adherents()
+            ->wherePivot('saison', $saison)
+            ->wherePivot('est_un_abandon', false)
+            ->wherePivotNull('date_sortie')
+            ->get();
 
         $seances = $activite->seances()
             ->with('presences.adherent')
-            ->where(function($q) {
+            ->where('date', '>=', $dateDebutSaison)
+            ->where(function ($q) use ($dateFinSaison) {
                 $q->where('date', '<=', now())
                   ->orWhere('statut', 'terminee');
             })
+            ->where('date', '<=', $dateFinSaison)
             ->orderByDesc('date')
             ->get();
 
         $seancesAVenir = $activite->seances()
             ->where('date', '>', now())
-            ->where(function($q) {
+            ->where(function ($q) {
                 $q->where('statut', '!=', 'terminee')
                   ->orWhereNull('statut');
             })
@@ -191,7 +212,6 @@ class ActiviteController extends Controller
         });
 
         $nbSeancesPassees = $seances->count();
-        $adherentsActifs = $activite->adherentsActifs;
 
         $totalEligibleAcrossSeances = $seancesEligibles->sum('eligible_count');
         $totalPresencesEligible = 0;
@@ -201,38 +221,36 @@ class ActiviteController extends Controller
         }
         $tauxMoyen = $totalEligibleAcrossSeances > 0 ? round(($totalPresencesEligible / $totalEligibleAcrossSeances) * 100) : 0;
 
-        $tousLesAdherents = $activite->adherents;
-        $saisons = $tousLesAdherents->pluck('pivot.saison')->unique()->sortDesc()->values();
+        $tousLesAdherents  = $activite->adherents;
+        $adherentsDeSaison = $tousLesAdherents->where('pivot.saison', $saison);
 
         $tauxReconduction = 0;
-        $nbReconduits = 0;
+        $nbReconduits     = 0;
         $saisonPrecedente = null;
 
+        $saisons = $tousLesAdherents->pluck('pivot.saison')->unique()->sortDesc()->values();
         if ($saisons->count() >= 2) {
-            $saisonCourante = $saisons[0];
             $saisonPrecedente = $saisons[1];
-
-            $idsPrecedents = $tousLesAdherents->where('pivot.saison', $saisonPrecedente)->pluck('id')->unique();
-            $idsCourants = $tousLesAdherents->where('pivot.saison', $saisonCourante)->pluck('id')->unique();
-
-            $nbCourants = $idsCourants->count();
-            $nbReconduits = $idsCourants->intersect($idsPrecedents)->count();
+            $idsPrecedents    = $tousLesAdherents->where('pivot.saison', $saisonPrecedente)->pluck('id')->unique();
+            $idsCourants      = $adherentsDeSaison->pluck('id')->unique();
+            $nbCourants       = $idsCourants->count();
+            $nbReconduits     = $idsCourants->intersect($idsPrecedents)->count();
             $tauxReconduction = $nbCourants > 0 ? round(($nbReconduits / $nbCourants) * 100) : 0;
         }
 
-        $totalInscritsHistorique = $tousLesAdherents->count();
-        $nbAbandons = $tousLesAdherents->where('pivot.est_un_abandon', true)->count();
-        $tauxAbandon = $totalInscritsHistorique > 0 ? round(($nbAbandons / $totalInscritsHistorique) * 100) : 0;
+        $nbAbandons    = $adherentsDeSaison->where('pivot.est_un_abandon', true)->count();
+        $totalDeSaison = $adherentsDeSaison->count();
+        $tauxAbandon   = $totalDeSaison > 0 ? round(($nbAbandons / $totalDeSaison) * 100) : 0;
 
         $graphiqueSeances = $seancesEligibles->take(8)->reverse()->map(function ($seance) {
-            $nbAbsents = $seance->presences->whereIn('id_adherent', $seance->eligible_adherents)->count();
+            $nbAbsents  = $seance->presences->whereIn('id_adherent', $seance->eligible_adherents)->count();
             $nbPresents = $seance->eligible_count - $nbAbsents;
 
             return [
-                'date' => Carbon::parse($seance->date)->isoFormat('D MMM'),
-                'presents' => $nbPresents,
-                'total' => $seance->eligible_count,
-                'pourcentage' => $seance->eligible_count > 0 ? ($nbPresents / $seance->eligible_count) * 100 : 0
+                'date'        => Carbon::parse($seance->date)->isoFormat('D MMM'),
+                'presents'    => $nbPresents,
+                'total'       => $seance->eligible_count,
+                'pourcentage' => $seance->eligible_count > 0 ? ($nbPresents / $seance->eligible_count) * 100 : 0,
             ];
         });
 
@@ -249,8 +267,7 @@ class ActiviteController extends Controller
                     $nbAbsences++;
                 }
             }
-            $nbPresences = $nbSeances - $nbAbsences;
-            $adherent->taux_presence = round(($nbPresences / $nbSeances) * 100);
+            $adherent->taux_presence = round((($nbSeances - $nbAbsences) / $nbSeances) * 100);
             return $adherent;
         });
 
@@ -267,7 +284,7 @@ class ActiviteController extends Controller
             'nbAbandons',
             'tauxReconduction',
             'nbReconduits',
-            'saisonPrecedente'
+            'saisonPrecedente',
         ))->with('seances', $seancesEligibles);
     }
 

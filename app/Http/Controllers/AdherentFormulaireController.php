@@ -15,6 +15,7 @@ use App\Models\AdherentStructure;
 use App\Models\Inscription;
 use App\Models\Paiement;
 use App\Models\Tuteur;
+use App\Models\Saison;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
@@ -258,8 +259,7 @@ class AdherentFormulaireController extends Controller
                     }
                 }
 
-                $year   = now()->month >= 9 ? now()->year : now()->year - 1;
-                $saison = $year . '-' . ($year + 1);
+                $saison = Saison::current();
                 $activitesDejaInscritesIds = $adherentExistant->activites()
                     ->wherePivot('saison', $saison)
                     ->wherePivot('est_un_abandon', 0)
@@ -881,8 +881,7 @@ class AdherentFormulaireController extends Controller
         $typeActivite = $formData['type_activite'] ?? '';
         $activiteIds  = array_filter((array) ($formData['activites_selectionnees'] ?? []));
         $ressourcerieIds = array_filter((array) ($formData['ressourcerie_selectionnees'] ?? []));
-        $year   = now()->month >= 9 ? now()->year : now()->year - 1;
-        $saison = $year . '-' . ($year + 1);
+        $saison = Saison::current();
         $aPaye = Inscription::EN_ATTENTE;
 
         $idTuteurPrincipal = null;
@@ -1096,8 +1095,7 @@ class AdherentFormulaireController extends Controller
             'statut_juridique' => $formData['statut_juridique'] ?? null,
         ]);
 
-        $year   = now()->month >= 9 ? now()->year : now()->year - 1;
-        $saison = $year . '-' . ($year + 1);
+        $saison = Saison::current();
         $aPaye  = !empty($formData['_helloasso_ok']) ? Inscription::PAYE : Inscription::EN_ATTENTE;
 
         DB::table('inscriptions')->insert([

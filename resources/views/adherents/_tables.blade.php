@@ -397,8 +397,7 @@
                                 <div class="flex items-center justify-end gap-2">
                                     @if ($tab === 'attente' || $tab === 'partiel')
                                         @php
-                                            $year = now()->month >= 9 ? now()->year : now()->year - 1;
-                                            $saison = $year . '-' . ($year + 1);
+                                            $saison = \App\Models\Saison::current();
 
                                             $isReinscription = $adherent->inscriptions
                                                 ->where('saison', $saison)
