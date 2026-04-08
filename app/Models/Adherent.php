@@ -42,6 +42,8 @@ class Adherent extends Model
         'restrictions_alimentaires',
         'idee_metier',
         'decouverte_metier',
+        'latitude',
+        'longitude',
     ];
 
     protected $casts = [

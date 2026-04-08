@@ -910,10 +910,16 @@ class AdherentFormulaireController extends Controller
             }
         }
 
+        $geocoder = new \App\Services\GeocodingService();
+        $coords = $geocoder->getCoordinates(
+            $formData['adresse'] ?? null,
+            $formData['code_postal'] ?? null,
+            $formData['ville'] ?? null
+        );
+
         if ($isAdherent) {
             $adherent = Adherent::where('numero_adherent', $formData['numero_adherent'])->firstOrFail();
 
-            // Update existing adherent fields
             $updateData = [];
             $fields = ['nom', 'prenom', 'genre', 'adresse', 'code_postal', 'ville', 'tel', 'mail', 'regime_social', 'occupation', 'etablissement', 'problemes_sante', 'allergies', 'conduite_a_tenir', 'restrictions_alimentaires', 'idee_metier', 'decouverte_metier'];
             foreach ($fields as $field) {
@@ -934,6 +940,12 @@ class AdherentFormulaireController extends Controller
             if (isset($formData['actions_benevoles'])) {
                 $updateData['actions'] = json_encode($formData['actions_benevoles']);
             }
+
+            if (isset($formData['adresse']) || isset($formData['ville'])) {
+                $updateData['latitude']  = $coords ? $coords['lat'] : $adherent->latitude;
+                $updateData['longitude'] = $coords ? $coords['lng'] : $adherent->longitude;
+            }
+
             $updateData['bulletin'] = !empty($formData['bulletin'] ?? false);
             $updateData['communication'] = !empty($formData['communication'] ?? false);
             $updateData['manif'] = ($formData['participation_manif'] ?? '0') === '1';
@@ -942,12 +954,11 @@ class AdherentFormulaireController extends Controller
                 $adherent->update($updateData);
             }
 
-            // Handle tuteurs for existing
             $existingTuteurIds = $adherent->tousLesTuteurs()->pluck('tuteurs.id')->toArray();
             if (!empty($formData['tuteurs'])) {
                 foreach ($formData['tuteurs'] as $tData) {
                     $tuteur = Tuteur::updateOrCreate(
-                        ['id' => $tData['id'] ?? null], // Assume ID if editing
+                        ['id' => $tData['id'] ?? null],
                         [
                             'type'           => $tData['type'] ?? 'parent_tuteur',
                             'nom'            => $tData['nom'] ?? '',
@@ -1002,6 +1013,8 @@ class AdherentFormulaireController extends Controller
                 'signature'       => $formData['signature_adherent'] ?? null,
                 'idee_metier'       => $formData['idee_metier'] ?? null,
                 'decouverte_metier' => $formData['decouverte_metier'] ?? null,
+                'latitude'        => $coords ? $coords['lat'] : null,
+                'longitude'       => $coords ? $coords['lng'] : null,
             ]);
 
             if (!empty($autresTouteurs)) {
