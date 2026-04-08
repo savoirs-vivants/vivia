@@ -129,12 +129,22 @@ class AdherentController extends Controller
         $idActivites = $adherent->activitesActives->pluck('id');
 
         $seances = \App\Models\Seance::with('activite')
-            ->whereIn('id_activite', $idActivites)
-            ->orderByDesc('date')
+            ->join('activites_adherents', function($join) use ($adherent) {
+                $join->on('seances.id_activite', '=', 'activites_adherents.id_activite')
+                     ->where('activites_adherents.id_adherent', $adherent->id);
+            })
+            ->whereRaw('DATE(seances.date) >= activites_adherents.date_entree')
+            ->where(function($q) {
+                $q->whereNull('activites_adherents.date_sortie')
+                  ->orWhereRaw('DATE(seances.date) <= activites_adherents.date_sortie');
+            })
+            ->select('seances.*') 
+            ->orderByDesc('seances.date')
             ->get();
 
+        $seancesIds = $seances->pluck('id_seance');
         $absencesMap = Presence::where('id_adherent', $adherent->id)
-            ->whereIn('id_seance', $seances->pluck('id_seance'))
+            ->whereIn('id_seance', $seancesIds)
             ->get()
             ->keyBy('id_seance');
 

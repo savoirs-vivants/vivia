@@ -153,11 +153,11 @@ class ActiviteController extends Controller
                 ->exists();
             abort_if(!$estGestionnaire, 403);
         }
-        
+
         $activite->load(['adherentsActifs', 'gestionnaires', 'adherents']);
 
         $seances = $activite->seances()
-            ->with('presences')
+            ->with('presences.adherent')
             ->where(function($q) {
                 $q->where('date', '<=', now())
                   ->orWhere('statut', 'terminee');
@@ -174,32 +174,32 @@ class ActiviteController extends Controller
             ->orderBy('date')
             ->get();
 
-        $seancesIds = $seances->pluck('id_seance');
-        $toutesPresences = \App\Models\Presence::whereIn('id_seance', $seancesIds)->get()->groupBy('id_seance');
+        $seancesEligibles = $seances->map(function ($seance) use ($activite) {
+            $dateSeance = \Carbon\Carbon::parse($seance->date)->format('Y-m-d');
+
+            $seance->eligible_adherents = DB::table('activites_adherents')
+                ->where('id_activite', $activite->id)
+                ->where('date_entree', '<=', $dateSeance)
+                ->where(function ($q) use ($dateSeance) {
+                    $q->whereNull('date_sortie')
+                      ->orWhere('date_sortie', '>', $dateSeance);
+                })
+                ->pluck('id_adherent');
+
+            $seance->eligible_count = $seance->eligible_adherents->count();
+            return $seance;
+        });
 
         $nbSeancesPassees = $seances->count();
         $adherentsActifs = $activite->adherentsActifs;
 
-        $adherentsStats = $adherentsActifs->map(function ($adherent) use ($seances, $toutesPresences, $nbSeancesPassees) {
-            if ($nbSeancesPassees === 0) {
-                $adherent->taux_presence = 0;
-                return $adherent;
-            }
-
-            $nbAbsences = 0;
-            foreach ($seances as $seance) {
-                $presencesSeance = $toutesPresences->get($seance->id_seance, collect());
-                if ($presencesSeance->where('id_adherent', $adherent->id)->isNotEmpty()) {
-                    $nbAbsences++;
-                }
-            }
-
-            $nbPresences = $nbSeancesPassees - $nbAbsences;
-            $adherent->taux_presence = round(($nbPresences / $nbSeancesPassees) * 100);
-            return $adherent;
-        });
-
-        $tauxMoyen = $adherentsStats->count() > 0 ? round($adherentsStats->avg('taux_presence')) : 0;
+        $totalEligibleAcrossSeances = $seancesEligibles->sum('eligible_count');
+        $totalPresencesEligible = 0;
+        foreach ($seancesEligibles as $seance) {
+            $nbAbsentsEligible = $seance->presences->whereIn('id_adherent', $seance->eligible_adherents)->count();
+            $totalPresencesEligible += ($seance->eligible_count - $nbAbsentsEligible);
+        }
+        $tauxMoyen = $totalEligibleAcrossSeances > 0 ? round(($totalPresencesEligible / $totalEligibleAcrossSeances) * 100) : 0;
 
         $tousLesAdherents = $activite->adherents;
         $saisons = $tousLesAdherents->pluck('pivot.saison')->unique()->sortDesc()->values();
@@ -224,22 +224,41 @@ class ActiviteController extends Controller
         $nbAbandons = $tousLesAdherents->where('pivot.est_un_abandon', true)->count();
         $tauxAbandon = $totalInscritsHistorique > 0 ? round(($nbAbandons / $totalInscritsHistorique) * 100) : 0;
 
-        $graphiqueSeances = $seances->take(8)->reverse()->map(function ($seance) use ($adherentsActifs) {
-            $nbAbsents = $seance->presences->whereIn('id_adherent', $adherentsActifs->pluck('id'))->count();
-            $nbPresents = $adherentsActifs->count() - $nbAbsents;
+        $graphiqueSeances = $seancesEligibles->take(8)->reverse()->map(function ($seance) {
+            $nbAbsents = $seance->presences->whereIn('id_adherent', $seance->eligible_adherents)->count();
+            $nbPresents = $seance->eligible_count - $nbAbsents;
 
             return [
                 'date' => Carbon::parse($seance->date)->isoFormat('D MMM'),
                 'presents' => $nbPresents,
-                'total' => $adherentsActifs->count(),
-                'pourcentage' => $adherentsActifs->count() > 0 ? ($nbPresents / $adherentsActifs->count()) * 100 : 0
+                'total' => $seance->eligible_count,
+                'pourcentage' => $seance->eligible_count > 0 ? ($nbPresents / $seance->eligible_count) * 100 : 0
             ];
+        });
+
+        $adherentsStats = $adherentsActifs->map(function ($adherent) use ($seancesEligibles) {
+            $seancesEligibleAdherent = $seancesEligibles->filter(fn($s) => $s->eligible_adherents->contains($adherent->id));
+            $nbSeances = $seancesEligibleAdherent->count();
+            if ($nbSeances === 0) {
+                $adherent->taux_presence = 0;
+                return $adherent;
+            }
+            $nbAbsences = 0;
+            foreach ($seancesEligibleAdherent as $seance) {
+                if ($seance->presences->where('id_adherent', $adherent->id)->isNotEmpty()) {
+                    $nbAbsences++;
+                }
+            }
+            $nbPresences = $nbSeances - $nbAbsences;
+            $adherent->taux_presence = round(($nbPresences / $nbSeances) * 100);
+            return $adherent;
         });
 
         return view('activites.show', compact(
             'activite',
+            'adherentsActifs',
             'adherentsStats',
-            'seances',
+            'seancesEligibles',
             'seancesAVenir',
             'tauxMoyen',
             'nbSeancesPassees',
@@ -249,7 +268,7 @@ class ActiviteController extends Controller
             'tauxReconduction',
             'nbReconduits',
             'saisonPrecedente'
-        ));
+        ))->with('seances', $seancesEligibles);
     }
 
     public function storePresences(Request $request, Activite $activite, $seance)

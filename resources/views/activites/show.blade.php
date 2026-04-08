@@ -181,8 +181,8 @@
 
         @forelse($seances as $seance)
             @php
-                $total = $adherentsStats->count();
-                $nbAbsents = $seance->presences->count();
+                $total = $seance->eligible_count ?? 0;
+                $nbAbsents = $seance->presences->whereIn('id_adherent', $seance->eligible_adherents ?? collect())->count();
                 $nbPresents = max(0, $total - $nbAbsents);
                 $pct = $total > 0 ? round(($nbPresents / $total) * 100) : 0;
             @endphp
@@ -234,7 +234,10 @@
                         method="POST">
                         @csrf
                         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 p-4">
-                            @foreach ($adherentsStats as $adherent)
+                            @php
+                                $eligibleAdherents = $adherentsActifs->whereIn('id', $seance->eligible_adherents ?? collect());
+                            @endphp
+                            @forelse ($eligibleAdherents as $adherent)
                                 @php
                                     $presence = $seance->presences->where('id_adherent', $adherent->id)->first();
                                     $estAbsent = $presence !== null;
@@ -260,7 +263,9 @@
                                     </div>
 
                                 </div>
-                            @endforeach
+                            @empty
+                                <div class="col-span-full text-center py-8 text-sm text-gray-400">Aucun adhérent éligible pour cette séance</div>
+                            @endforelse
                         </div>
                     </form>
                 </div>
