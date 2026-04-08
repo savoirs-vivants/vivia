@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Adherent;
 use App\Models\Inscription;
+use App\Models\Saison;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -12,19 +13,23 @@ class StatistiqueController extends Controller
 {
     public function index(Request $request)
     {
-        $saisons = Inscription::select('saison')->distinct()->pluck('saison')->sortDesc()->values();
-        $saisonCourante = $request->get('saison', $saisons->first() ?? '2025-2026');
+        $saisons = Saison::allSorted();
+        $saisonCourante = $request->get('saison', $saisons->first() ?? Saison::current());
 
         $indexSaisonCourante = $saisons->search($saisonCourante);
         $saisonPrecedente = $indexSaisonCourante !== false && $saisons->has($indexSaisonCourante + 1) ? $saisons[$indexSaisonCourante + 1] : null;
 
-        $inscriptionsCourantes = Inscription::where('saison', $saisonCourante)->get();
-        $totalAdherents = $inscriptionsCourantes->count();
+        $toutesInscriptionsCourantes = Inscription::where('saison', $saisonCourante)->get();
 
-        $adherentsIdsCourants = $inscriptionsCourantes->pluck('id_adherent');
+        $adherentsIdsCourants = $toutesInscriptionsCourantes->pluck('id_adherent')->filter()->unique();
+        $totalAdherents = $adherentsIdsCourants->count();
+
         $adherents = Adherent::with('tousLesTuteurs')->whereIn('id', $adherentsIdsCourants)->get();
 
-        $idsSaisonsPassees = Inscription::where('saison', '<', $saisonCourante)->pluck('id_adherent')->unique();
+        $idsSaisonsPassees = Inscription::where('saison', '<', $saisonCourante)
+            ->whereNotNull('id_adherent')
+            ->pluck('id_adherent')
+            ->unique();
 
         $nbReinscrits = 0;
         $nbNouveaux = 0;
@@ -42,10 +47,15 @@ class StatistiqueController extends Controller
 
         if ($saisonPrecedente) {
             $inscriptionsPrecedentes = Inscription::where('saison', $saisonPrecedente)->get();
-            $totalAdherentsPrec = $inscriptionsPrecedentes->count();
+            $adherentsIdsPrec = $inscriptionsPrecedentes->pluck('id_adherent')->filter()->unique();
+            $totalAdherentsPrec = $adherentsIdsPrec->count();
 
-            $idsAvantPrec = Inscription::where('saison', '<', $saisonPrecedente)->pluck('id_adherent')->unique();
-            foreach ($inscriptionsPrecedentes->pluck('id_adherent') as $id) {
+            $idsAvantPrec = Inscription::where('saison', '<', $saisonPrecedente)
+                ->whereNotNull('id_adherent')
+                ->pluck('id_adherent')
+                ->unique();
+
+            foreach ($adherentsIdsPrec as $id) {
                 if (!$idsAvantPrec->contains($id)) {
                     $nouveauxInscritsPrec++;
                 }
@@ -53,13 +63,10 @@ class StatistiqueController extends Controller
         }
 
         $nouveauxInscrits = $nbNouveaux;
-
         $diffTotalAdherents = $totalAdherents - $totalAdherentsPrec;
-
         $diffNouveaux = $nbNouveaux - $nouveauxInscritsPrec;
 
         $tauxFidelisation = $totalAdherents > 0 ? round(($nbReinscrits / $totalAdherents) * 100) : 0;
-
 
         $ages = $adherents->map(function ($a) {
             return $a->date_naiss ? Carbon::parse($a->date_naiss)->age : null;
@@ -102,7 +109,6 @@ class StatistiqueController extends Controller
             $parent = $a->tousLesTuteurs->first(function ($t) {
                 return $t->type === 'parent_tuteur';
             });
-
             return $parent && !empty($parent->profession);
         });
 
@@ -112,7 +118,6 @@ class StatistiqueController extends Controller
             $parent = $a->tousLesTuteurs->first(function ($t) {
                 return $t->type === 'parent_tuteur';
             });
-
             return $parent->profession;
         })->map->count()->sortDesc()->take(6)->map(function ($count, $label) use ($totalAvecCsp) {
             return [
@@ -146,7 +151,7 @@ class StatistiqueController extends Controller
             'precedente' => array_fill(0, 12, 0)
         ];
 
-        foreach ($inscriptionsCourantes as $insc) {
+        foreach ($toutesInscriptionsCourantes as $insc) {
             if ($insc->date_inscription) {
                 $m = Carbon::parse($insc->date_inscription)->month;
                 $idx = $m >= 9 ? $m - 9 : $m + 3;
@@ -156,7 +161,7 @@ class StatistiqueController extends Controller
             }
         }
 
-        if ($saisonPrecedente) {
+        if ($saisonPrecedente && isset($inscriptionsPrecedentes)) {
             foreach ($inscriptionsPrecedentes as $insc) {
                 if ($insc->date_inscription) {
                     $m = Carbon::parse($insc->date_inscription)->month;
@@ -179,6 +184,7 @@ class StatistiqueController extends Controller
         }
 
         return view('statistiques.index', compact(
+            'saisons',
             'saisonCourante',
             'saisonPrecedente',
             'totalAdherents',

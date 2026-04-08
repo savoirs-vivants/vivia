@@ -8,14 +8,22 @@
 
         <div class="max-w-[1600px] mx-auto space-y-6">
 
-            <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
+            <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-8">
                 <div>
                     <p class="text-xl text-gray-500 font-medium mt-1">
-                        {{ $totalAdherents }} participants · Saison {{ $saisonCourante }}
+                        {{ $totalAdherents }} adhérents · Saison {{ $saisonCourante }}
                     </p>
                 </div>
 
-                <div class="flex flex-wrap items-center gap-3 w-full md:w-auto">
+                <div class="flex flex-wrap items-center gap-3 w-full lg:w-auto">
+                    <select id="saisonFilter"
+                        class="font-grotesk text-sm font-black bg-white border border-gray-200 rounded-xl px-4 py-2.5 shadow-sm hover:shadow-md focus:ring-2 focus:ring-[#16987C] focus:border-transparent transition-all min-w-[180px]"
+                        onchange="if(this.value) window.location.href = '{{ route('statistiques.index') }}?saison=' + this.value">
+                        @foreach ($saisons as $s)
+                            <option value="{{ $s }}" {{ $s === $saisonCourante ? 'selected' : '' }}>
+                                {{ $s }}</option>
+                        @endforeach
+                    </select>
                     <livewire:export-statistiques :saison="$saisonCourante" />
                 </div>
             </div>
