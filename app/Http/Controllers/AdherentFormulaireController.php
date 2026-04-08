@@ -562,7 +562,7 @@ class AdherentFormulaireController extends Controller
 
             $totalActiviteEuros = 0;
             if (!empty($activitesIds)) {
-                $totalActiviteEuros += \App\Models\Activite::whereIn('id', $activitesIds)->sum('tarif');
+                $totalActiviteEuros += $this->calculerMontantActivites($activitesIds);
             }
             if (!empty($ressourcerieIds)) {
                 $totalActiviteEuros += \App\Models\Ressourcerie::whereIn('id', $ressourcerieIds)->sum('prix');
@@ -714,7 +714,7 @@ class AdherentFormulaireController extends Controller
         if (!empty($formData['_adherent_id']) && empty($formData['_paiement1_cree'])) {
             $activiteIds      = array_filter((array) ($formData['activites_selectionnees'] ?? []));
             $ressourcerieIds  = array_filter((array) ($formData['ressourcerie_selectionnees'] ?? []));
-            $totalActivites   = !empty($activiteIds)     ? \App\Models\Activite::whereIn('id', $activiteIds)->sum('tarif')       : 0;
+            $totalActivites   = $this->calculerMontantActivites($activiteIds);
             $totalRessourcerie = !empty($ressourcerieIds) ? \App\Models\Ressourcerie::whereIn('id', $ressourcerieIds)->sum('prix') : 0;
             $montantActivite  = (float) ($totalActivites + $totalRessourcerie);
 
@@ -1027,7 +1027,7 @@ class AdherentFormulaireController extends Controller
             }
         }
 
-        $montantActivites    = !empty($activiteIds)    ? Activite::whereIn('id', $activiteIds)->sum('tarif')       : 0;
+        $montantActivites    = $this->calculerMontantActivites($activiteIds);
         $montantRessourcerie = !empty($ressourcerieIds) ? Ressourcerie::whereIn('id', $ressourcerieIds)->sum('prix') : 0;
         $cotisation = (!$isAdherent && $typeActivite !== 'club_maker') ? 10 : 0;
         $montantTotal = (float) ($montantActivites + $montantRessourcerie + $cotisation);
@@ -1226,5 +1226,38 @@ class AdherentFormulaireController extends Controller
 
             return response()->json(['status' => 'error'], 500);
         }
+    }
+
+    /**
+     * Calcule le prix des activités en appliquant la pondération selon le mois
+     */
+    private function calculerMontantActivites(array $activiteIds): float
+    {
+        if (empty($activiteIds)) return 0.0;
+
+        $activites = \App\Models\Activite::whereIn('id', $activiteIds)->get();
+        $total = 0.0;
+        $month = now()->month; // Récupère le mois actuel (1 à 12)
+
+        foreach ($activites as $activite) {
+            $prix = (float) $activite->tarif;
+
+            // Appliquer la pondération UNIQUEMENT pour les ateliers (type == 'activite')
+            if ($activite->type === 'activite') {
+                if ($month == 2 || $month == 3) {
+                    // Février (2) et Mars (3) : -50€
+                    $prix = max(0, $prix - 50); // max(0, ...) évite d'avoir un prix négatif
+                } elseif ($month >= 4 && $month <= 6) {
+                    // Avril (4), Mai (5), Juin (6) : Prorata
+                    // Avril = 3 mois restants (7 - 4 = 3)
+                    $moisRestants = 7 - $month;
+                    $prix = ($prix / 10) * $moisRestants;
+                }
+            }
+
+            $total += $prix;
+        }
+
+        return $total;
     }
 }

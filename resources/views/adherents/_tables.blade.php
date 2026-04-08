@@ -376,9 +376,7 @@
                                             $montantAffiche =
                                                 $isReinscription && $adherent->inscription
                                                     ? $adherent->inscription->montant
-                                                    : ($adherent->paiements->isNotEmpty()
-                                                        ? $adherent->paiements->sum('montant')
-                                                        : $adherent->inscription?->montant ?? 0);
+                                                        : $adherent->inscription?->montant ?? 0;
                                         @endphp
                                         <span class="font-black text-sm text-[#0F143A]">
                                             {{ number_format((float) $montantAffiche, 2, ',', ' ') }} €

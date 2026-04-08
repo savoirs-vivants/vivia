@@ -113,7 +113,8 @@
                             Inscription</p>
                         <div class="space-y-2.5">
                             <template x-for="activite in adherent.activites" :key="activite.nom">
-                                <div class="flex items-center justify-between" :class="adherent.isReinscription ? 'bg-amber-50/50 p-2 rounded mb-1' : ''">
+                                <div class="flex items-center justify-between"
+                                    :class="adherent.isReinscription ? 'bg-amber-50/50 p-2 rounded mb-1' : ''">
                                     <div>
                                         <p class="text-sm font-semibold text-[#0F143A]" x-text="activite.nom"></p>
                                         <p class="text-xs text-gray-400" x-text="activite.info"></p>
@@ -140,6 +141,20 @@
                                 <span class="font-grotesk text-base font-black text-[#16987C]"
                                     x-text="adherent.montant"></span>
                             </div>
+                            <template x-if="adherent.reductionFormate">
+                                <div class="flex items-center justify-between pt-2 border-t border-amber-200/60">
+                                    <span class="text-xs font-bold text-emerald-600 flex items-center gap-1.5">
+                                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor"
+                                            viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
+                                                d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
+                                        </svg>
+                                        Pondération appliquée
+                                    </span>
+                                    <span class="text-xs font-black text-emerald-600">- <span
+                                            x-text="adherent.reductionFormate"></span> €</span>
+                                </div>
+                            </template>
                             <div
                                 class="flex items-center justify-between p-3 bg-rose-50 rounded-xl border border-rose-100">
                                 <span class="text-sm font-semibold text-gray-600">Statut actuel</span>
@@ -163,6 +178,20 @@
                                 <span class="font-grotesk text-base font-black text-amber-600"
                                     x-text="adherent.montant"></span>
                             </div>
+                            <template x-if="adherent.reductionFormate">
+                                <div class="flex items-center justify-between pt-2 border-t border-amber-200/60">
+                                    <span class="text-xs font-bold text-emerald-600 flex items-center gap-1.5">
+                                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor"
+                                            viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
+                                                d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
+                                        </svg>
+                                        Pondération appliquée
+                                    </span>
+                                    <span class="text-xs font-black text-emerald-600">- <span
+                                            x-text="adherent.reductionFormate"></span> €</span>
+                                </div>
+                            </template>
                             <div
                                 class="flex items-center justify-between p-3 bg-rose-50 rounded-xl border border-rose-100">
                                 <span class="text-sm font-semibold text-gray-600">Statut actuel</span>
@@ -318,6 +347,7 @@
                 resteDuBrut: 0,
                 dejaVerseBrut: 0,
                 montantBrut: 0,
+                reductionFormate: null,
             },
             ouvrirModal(data) {
                 this.adherent = data;
@@ -330,14 +360,40 @@
                 this.sourceVersement = 'Espèces';
                 this.dateVersement = new Date().toISOString().split('T')[0];
                 this.resteApresVersement = data.resteDu ?? '—';
-                this.progressPercent = data.montantBrut > 0 ? Math.min(100, Math.round((data.dejaVerseBrut / data
-                    .montantBrut) * 100)) : 0;
+
+                // Calcul propre et entier du pourcentage
+                this.progressPercent = data.montantBrut > 0
+                    ? Math.min(100, Math.round((data.dejaVerseBrut / data.montantBrut) * 100))
+                    : 0;
+
+                // --- CALCUL DE LA PONDÉRATION (REMISE) ---
+                let reduction = 0;
+                if (data.montantBrut > 0 && data.activites) {
+                    let sumActivites = 0;
+
+                    data.activites.forEach(a => {
+                        let prixNum = parseFloat((a.tarif || '0').replace(/[^0-9,-]+/g, "").replace(',', '.')) || 0;
+                        sumActivites += prixNum;
+                    });
+
+                    let adhesion = (!data.isStructure && !data.isReinscription && !data.activites.some(
+                        a => a.nom.toLowerCase().includes('club maker'))) ? 10 : 0;
+
+                    let totalTheorique = sumActivites + adhesion;
+
+                    if (totalTheorique > data.montantBrut + 0.5) {
+                        reduction = totalTheorique - data.montantBrut;
+                    }
+                }
+
+                this.adherent.reductionFormate = reduction > 0 ? reduction.toFixed(2).replace('.', ',') : null;
+                // -----------------------------------------
+
                 this.open = true;
                 document.body.style.overflow = 'hidden';
             },
             calculerReste() {
-                const total = parseFloat(this.adherent.montant.replace(/\s/g, '').replace(',', '.').replace('€', '')) ||
-                    0;
+                const total = parseFloat(this.adherent.montant.replace(/\s/g, '').replace(',', '.').replace('€', '')) || 0;
                 const recu = parseFloat(this.montantRecu) || 0;
                 this.resteFormate = Math.max(0, total - recu).toFixed(2).replace('.', ',');
             },
@@ -345,6 +401,7 @@
                 const resteBrut = parseFloat(this.adherent.resteDuBrut) || 0;
                 const versement = parseFloat(this.montantVersement) || 0;
                 this.resteApresVersement = Math.max(0, resteBrut - versement).toFixed(2).replace('.', ',') + ' €';
+
                 if (this.adherent.montantBrut > 0) {
                     const verse = (this.adherent.dejaVerseBrut || 0) + versement;
                     this.progressPercent = Math.min(100, Math.round((verse / this.adherent.montantBrut) * 100));
