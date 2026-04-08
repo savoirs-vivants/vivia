@@ -109,13 +109,17 @@ class DashboardController extends Controller
         // ── KPIs : Adhérents ──────────────────────────────────────────────
         $totalAdherents = DB::table('inscriptions')
             ->where('saison', $saison)
-            ->count();
+            ->whereNotNull('id_adherent')
+            ->distinct('id_adherent')
+            ->count('id_adherent');
 
         $newThisMonth = DB::table('inscriptions')
             ->where('saison', $saison)
             ->whereMonth('date_inscription', now()->month)
             ->whereYear('date_inscription', now()->year)
-            ->count();
+            ->whereNotNull('id_adherent')
+            ->distinct('id_adherent')
+            ->count('id_adherent');
 
         // ── Finances ──────────────────────────────────────────────────────
         $adherentsSaison = DB::table('inscriptions')
