@@ -11,7 +11,7 @@
                             <div class="mb-5">
                                 <label class="{{ $label }}">Genre *</label>
                                 <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                                    @foreach (['Homme' => '🧔', 'Femme' => '👩', 'Autre' => '🧑'] as $val => $icon)
+                                    @foreach (['Homme' => '🧔', 'Femme' => '👩'] as $val => $icon)
                                         <label class="cursor-pointer block group">
                                             <input type="radio" name="genre" required value="{{ $val }}"
                                                 {{ ($formData['genre'] ?? '') === $val ? 'checked' : '' }}

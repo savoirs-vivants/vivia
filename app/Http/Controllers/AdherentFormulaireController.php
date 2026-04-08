@@ -200,10 +200,23 @@ class AdherentFormulaireController extends Controller
             $adherentExistant = Adherent::where('numero_adherent', $formData['numero_adherent'])->first();
             if ($adherentExistant) {
                 $champsAdherent = [
-                    'nom', 'prenom', 'genre', 'adresse', 'code_postal', 'ville',
-                    'tel', 'mail', 'occupation', 'etablissement', 'regime_social',
-                    'problemes_sante', 'allergies', 'conduite_a_tenir', 'restrictions_alimentaires',
-                    'bulletin', 'communication',
+                    'nom',
+                    'prenom',
+                    'genre',
+                    'adresse',
+                    'code_postal',
+                    'ville',
+                    'tel',
+                    'mail',
+                    'regime_social',
+                    'occupation',
+                    'etablissement',
+                    'problemes_sante',
+                    'allergies',
+                    'conduite_a_tenir',
+                    'restrictions_alimentaires',
+                    'bulletin',
+                    'communication',
                 ];
                 foreach ($champsAdherent as $champ) {
                     if (!array_key_exists($champ, $formData) && $adherentExistant->$champ !== null) {
@@ -297,6 +310,7 @@ class AdherentFormulaireController extends Controller
         $ateliers  = $activites->where('type', 'activite')->values()
             ->filter($filtre)
             ->filter(fn($a) => !in_array($a->id, $activitesDejaInscritesIds))
+            ->filter(fn($a) => !Str::contains(strtolower($a->nom), 'maker'))
             ->values();
         $stages    = $activites->where('type', 'stage')->values()
             ->filter($filtre)
@@ -365,25 +379,27 @@ class AdherentFormulaireController extends Controller
                     if ($entity) {
                         Mail::send('emails.admin_nouvelle_inscription', $dataMail, function ($message) {
                             $message->to('contact@savoirsvivants.fr')
-                                    ->subject('🎉 Nouvelle inscription - Savoirs Vivants');
+                                ->subject('🎉 Nouvelle inscription - Savoirs Vivants');
                         });
                     }
 
                     $formData['_admin_mail_sent'] = true;
                     $request->session()->put("adhesion_{$token}", $formData);
-
                 } catch (\Exception $e) {
                     Log::error("Erreur envoi mail admin direction : " . $e->getMessage());
                 }
             }
         }
 
-        $clubMakerActivites = $activites
-            ->filter(function($a) use ($activitesDejaInscritesIds) {
-            return Str::startsWith($a->nom, 'Club Maker')
-            && !in_array($a->id, $activitesDejaInscritesIds);
-        })
-        ->values();
+        $clubMakerActivites = collect();
+        if (($formData['type_activite'] ?? '') !== 'atelier') {
+            $clubMakerActivites = $activites
+                ->filter(function ($a) use ($activitesDejaInscritesIds) {
+                    return Str::contains(strtolower($a->nom), 'maker')
+                        && !in_array($a->id, $activitesDejaInscritesIds);
+                })
+                ->values();
+        }
 
         return view('adhesion.index', compact(
             'step',
@@ -897,6 +913,64 @@ class AdherentFormulaireController extends Controller
 
         if ($isAdherent) {
             $adherent = Adherent::where('numero_adherent', $formData['numero_adherent'])->firstOrFail();
+
+            // Update existing adherent fields
+            $updateData = [];
+            $fields = ['nom', 'prenom', 'genre', 'adresse', 'code_postal', 'ville', 'tel', 'mail', 'regime_social', 'occupation', 'etablissement', 'problemes_sante', 'allergies', 'conduite_a_tenir', 'restrictions_alimentaires', 'idee_metier', 'decouverte_metier'];
+            foreach ($fields as $field) {
+                if (isset($formData[$field]) && $formData[$field] !== $adherent->$field) {
+                    $updateData[$field] = $formData[$field];
+                }
+            }
+            if (isset($formData['date_naiss']) && $formData['date_naiss'] !== $adherent->date_naiss?->format('Y-m-d')) {
+                $updateData['date_naiss'] = $formData['date_naiss'];
+                $updateData['age'] = \Carbon\Carbon::parse($formData['date_naiss'])->age;
+            }
+            if (isset($formData['carnet_sante_path'])) {
+                $updateData['carnet'] = $formData['carnet_sante_path'];
+            }
+            if (isset($formData['signature_adherent'])) {
+                $updateData['signature'] = $formData['signature_adherent'];
+            }
+            if (isset($formData['actions_benevoles'])) {
+                $updateData['actions'] = json_encode($formData['actions_benevoles']);
+            }
+            $updateData['bulletin'] = !empty($formData['bulletin'] ?? false);
+            $updateData['communication'] = !empty($formData['communication'] ?? false);
+            $updateData['manif'] = ($formData['participation_manif'] ?? '0') === '1';
+
+            if (!empty($updateData)) {
+                $adherent->update($updateData);
+            }
+
+            // Handle tuteurs for existing
+            $existingTuteurIds = $adherent->tousLesTuteurs()->pluck('tuteurs.id')->toArray();
+            if (!empty($formData['tuteurs'])) {
+                foreach ($formData['tuteurs'] as $tData) {
+                    $tuteur = Tuteur::updateOrCreate(
+                        ['id' => $tData['id'] ?? null], // Assume ID if editing
+                        [
+                            'type'           => $tData['type'] ?? 'parent_tuteur',
+                            'nom'            => $tData['nom'] ?? '',
+                            'prenom'         => $tData['prenom'] ?? '',
+                            'tel'            => $tData['tel'] ?? null,
+                            'mail'           => $tData['mail'] ?? null,
+                            'profession'     => $tData['profession'] ?? null,
+                            'adhere'         => !empty($tData['adhere']),
+                            'rentre_fin'     => !empty($tData['rentre_fin']),
+                            'rentre_annul'   => !empty($tData['rentre_annul']),
+                            'date_signature' => ($tData['type'] ?? '') === 'parent_tuteur' ? ($tData['date_signature'] ?? null) : null,
+                            'signature'      => ($tData['type'] ?? '') === 'parent_tuteur' ? ($tData['signature'] ?? null) : null,
+                        ]
+                    );
+                    if (!in_array($tuteur->id, $existingTuteurIds)) {
+                        DB::table('adherent_tuteurs')->insertOrIgnore([
+                            'id_adherent' => $adherent->id,
+                            'id_tuteur'   => $tuteur->id,
+                        ]);
+                    }
+                }
+            }
         } else {
             $age = null;
             if (!empty($formData['date_naiss'])) {
@@ -1131,7 +1205,6 @@ class AdherentFormulaireController extends Controller
             ]);
 
             return response()->json(['status' => 'not_found'], 404);
-
         } catch (\Exception $e) {
             Log::error("Erreur critique Webhook HelloAsso : " . $e->getMessage());
 
