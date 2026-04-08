@@ -2,6 +2,7 @@
 
 namespace App\Providers;
 
+use App\Models\Saison;
 use App\Models\User;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;
@@ -15,6 +16,11 @@ class AppServiceProvider extends ServiceProvider
     {
         if (str_contains(config('app.url'), 'ngrok')) {
             URL::forceScheme('https');
+        }
+
+        try {
+            Saison::syncActive();
+        } catch (\Throwable) {
         }
 
         Gate::define('acces-equipe', fn(User $u) => $u->role === 'admin');
