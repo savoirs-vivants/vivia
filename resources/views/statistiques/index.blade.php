@@ -62,7 +62,8 @@
                     class="bg-white rounded-2xl p-5 border border-gray-100 shadow-[0_2px_10px_rgba(0,0,0,0.02)] relative overflow-hidden">
                     <div class="absolute top-0 left-0 w-full h-1 bg-indigo-400"></div>
                     <p class="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1">Parité F/M</p>
-                    <p class="font-grotesk text-3xl font-black text-[#0F143A]">{{ $pctFilles }} / {{ $pctGarcons }}</p>
+                    <p class="font-grotesk text-3xl font-black text-[#0F143A]">{{ $pctFilles }} / {{ $pctGarcons }}
+                    </p>
                     <p class="text-xs font-bold text-gray-400 mt-2">% Filles / Garçons</p>
                 </div>
 
@@ -263,29 +264,18 @@
                 <div class="flex items-start justify-between mb-4">
                     <div>
                         <h2 class="font-bold text-[#0F143A]">Carte d'origine des adhérents</h2>
-                        <p class="text-xs text-gray-400 font-medium">Répartition géographique</p>
+                        <p class="text-xs text-gray-400 font-medium">Lieux de résidence de la saison en cours</p>
                     </div>
                 </div>
 
-                <div class="w-full rounded-2xl overflow-hidden border border-gray-100 shadow-inner">
-                    <iframe style="width: 100%; height: 600px; border: 0;" allowfullscreen allow="geolocation"
-                        src="//umap.openstreetmap.fr/fr/map/reseau-iut-savoirs-vivants_1132770?scaleControl=false&miniMap=false&scrollWheelZoom=true&zoomControl=true&editMode=disabled&moreControl=false&searchControl=true&tilelayersControl=null&embedControl=null&datalayersControl=true&onLoadPanel=none&captionBar=false&captionMenus=false&captionControl=true&homeControl=false"></iframe>
+                <div class="w-full rounded-2xl overflow-hidden border border-gray-100 shadow-inner relative z-0">
+                    <div id="adherentsMap" style="width: 100%; height: 600px; z-index: 1;"></div>
                 </div>
-
-                <div class="text-right mt-3">
-                    <a href="//umap.openstreetmap.fr/fr/map/reseau-iut-savoirs-vivants_1132770?scaleControl=false&miniMap=false&scrollWheelZoom=true&zoomControl=true&editMode=disabled&moreControl=false&searchControl=true&tilelayersControl=null&embedControl=null&datalayersControl=true&onLoadPanel=none&captionBar=false&captionMenus=false&captionControl=true&homeControl=false"
-                        target="_blank"
-                        class="inline-flex items-center gap-1.5 text-xs font-bold text-[#16987C] hover:text-[#138a6f] hover:underline transition-colors">
-                        Ouvrir la carte en plein écran
-                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
-                                d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                        </svg>
-                    </a>
-                </div>
-
             </div>
+
         </div>
+
+        <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
         <script>
             document.addEventListener('DOMContentLoaded', function() {
@@ -453,7 +443,42 @@
                     }
                 });
 
+                const mapData = @json($mapData);
+                const mapContainer = document.getElementById('adherentsMap');
+
+                if (mapContainer) {
+                    setTimeout(function() {
+
+                        const adherentsMapInstance = L.map('adherentsMap').setView([46.603354, 1.888334], 5);
+
+                        L.tileLayer('https://api.maptiler.com/maps/base-v4/256/{z}/{x}/{y}.png?key=lpN2MwGYklm62ZAIZttO', {
+                            attribution: '&copy; <a href="https://www.maptiler.com/copyright/" target="_blank">MapTiler</a> &copy; <a href="https://www.openstreetmap.org/copyright" target="_blank">OpenStreetMap contributors</a>',
+                            maxZoom: 19,
+                            crossOrigin: true
+                        }).addTo(adherentsMapInstance);
+
+                        const bounds = [];
+
+                        mapData.forEach(point => {
+                            L.circleMarker([point.lat, point.lng], {
+                                color: '#ffffff',
+                                fillColor: 'blue',
+                                fillOpacity: 0.9,
+                                radius: 8,
+                                weight: 2
+                            }).addTo(adherentsMapInstance);
+
+                            bounds.push([point.lat, point.lng]);
+                        });
+
+                        if (bounds.length > 0) {
+                            adherentsMapInstance.fitBounds(bounds, {
+                                padding: [30, 30]
+                            });
+                        }
+
+                    }, 100); 
+                }
             });
         </script>
-
     @endsection

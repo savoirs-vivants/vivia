@@ -183,6 +183,15 @@ class StatistiqueController extends Controller
             $evolutionData['precedente'][$i] = $cumulPrecedent;
         }
 
+        $mapData = $adherents->filter(function ($a) {
+            return !is_null($a->latitude) && !is_null($a->longitude);
+        })->map(function ($a) {
+            return [
+                'lat' => (float) $a->latitude,
+                'lng' => (float) $a->longitude,
+            ];
+        })->values();
+
         return view('statistiques.index', compact(
             'saisons',
             'saisonCourante',
@@ -203,7 +212,8 @@ class StatistiqueController extends Controller
             'quartiersData',
             'statutData',
             'evolutionData',
-            'nbReinscrits'
+            'nbReinscrits',
+            'mapData'
         ));
     }
 }
