@@ -488,7 +488,7 @@
 
             <div class="px-6 py-5 sm:px-8 sm:py-6 border-b border-gray-100 flex items-center justify-between shrink-0">
                 <div>
-                    <p class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1">Récupération</p>
+                    <p class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1">Sortie</p>
                     <h2 class="font-grotesk font-black text-xl sm:text-2xl text-gray-900" id="enfant-nom-titre">—</h2>
                 </div>
                 <button onclick="closeEnfantOverlay()"
@@ -501,7 +501,6 @@
 
             <div class="px-6 py-5 sm:px-8 sm:py-6 space-y-6 overflow-y-auto flex-1">
 
-                {{-- LISTE DES TUTEURS --}}
                 <div>
                     <label class="block text-xs font-black text-gray-400 uppercase tracking-widest mb-3">
                         👥 Personnes autorisées
@@ -510,20 +509,11 @@
                         </div>
                 </div>
 
-                <div class="border-t border-gray-100 pt-6">
-                    <label class="flex items-center gap-4 cursor-pointer group bg-gray-50 p-4 sm:p-5 rounded-2xl border border-gray-200 hover:border-gray-300 transition-colors">
-                        <div class="relative shrink-0">
-                            <input type="checkbox" id="cb-recup" onchange="onEnfantFormChange()"
-                                   class="peer w-6 h-6 rounded border-2 border-gray-300 accent-[#083325] cursor-pointer">
-                        </div>
-                        <span class="text-base sm:text-lg font-semibold text-gray-700 leading-snug group-hover:text-gray-900 transition-colors">
-                            Je certifie avoir récupéré mon enfant
-                        </span>
-                    </label>
-                </div>
+                <div class="border-t border-gray-100 pt-6" id="recup-options-container">
+                    </div>
 
-                <div>
-                    <label class="block text-xs font-black text-gray-400 uppercase tracking-widest mb-3">
+                <div class="mt-6">
+                    <label id="label-signature" class="block text-xs font-black text-gray-400 uppercase tracking-widest mb-3 transition-all">
                         ✍️ Signature du responsable <span class="text-rose-500">*</span>
                     </label>
                     <div class="relative border-2 border-dashed border-gray-300 rounded-2xl p-2 bg-gray-50 overflow-hidden"
@@ -551,7 +541,7 @@
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/>
                     </svg>
-                    Valider la récupération
+                    Valider la sortie
                 </button>
             </div>
         </div>
@@ -963,10 +953,10 @@
         const enfant = PRESENTS.find(e => e.id === id);
         document.getElementById('enfant-nom-titre').textContent = `${enfant.prenom} ${enfant.nom}`;
 
-        // -- AFFICHAGE DES TUTEURS --
+        const canGoHomeAlone = enfant.tous_les_tuteurs && enfant.tous_les_tuteurs.some(t => t.rentre_fin == 1 || t.rentre_fin === true);
         const tuteursContainer = document.getElementById('enfant-tuteurs-list');
         if(enfant.tous_les_tuteurs && enfant.tous_les_tuteurs.length > 0) {
-            tuteursContainer.innerHTML = enfant.tous_les_tuteurs.map(t => {
+            let html = enfant.tous_les_tuteurs.map(t => {
                 let badge = '';
                 let bgClass = '';
                 let icon = '';
@@ -986,30 +976,100 @@
                 }
 
                 const nomComplet = t.nom_complet || `${t.prenom} ${t.nom}`;
-
                 return `
                 <div class="flex items-center justify-between p-2.5 rounded-xl border ${bgClass}">
                     <div class="flex items-center gap-3">
                         <span class="text-xl bg-white/60 w-8 h-8 rounded-lg flex items-center justify-center shadow-sm border border-black/5">${icon}</span>
-                        <div>
-                            <p class="text-sm font-bold leading-tight">${nomComplet}</p>
-                        </div>
+                        <div><p class="text-sm font-bold leading-tight">${nomComplet}</p></div>
                     </div>
                     <span class="text-[9px] font-black uppercase tracking-widest px-2 py-1 rounded border border-black/5 bg-white/60 shadow-sm">${badge}</span>
-                </div>
-                `;
+                </div>`;
             }).join('');
+
+            if (canGoHomeAlone) {
+                html += `
+                <div class="flex items-center justify-between p-2.5 rounded-xl border bg-indigo-50 border-indigo-200 text-indigo-800 mt-2">
+                    <div class="flex items-center gap-3">
+                        <span class="text-xl bg-white/60 w-8 h-8 rounded-lg flex items-center justify-center shadow-sm border border-indigo-100">🚶</span>
+                        <div><p class="text-sm font-bold leading-tight">Autorisation de sortie autonome</p></div>
+                    </div>
+                    <span class="text-[9px] font-black uppercase tracking-widest px-2 py-1 rounded border border-indigo-200 bg-white/80 shadow-sm">Autorisé(e)</span>
+                </div>`;
+            }
+            tuteursContainer.innerHTML = html;
         } else {
             tuteursContainer.innerHTML = '<div class="p-3 bg-gray-50 rounded-xl border border-gray-100 text-xs text-gray-500 font-medium text-center">Aucun responsable légal renseigné pour cet enfant.</div>';
         }
 
-        document.getElementById('cb-recup').checked = false;
+        const recupContainer = document.getElementById('recup-options-container');
+        if (canGoHomeAlone) {
+            recupContainer.innerHTML = `
+                <label class="block text-xs font-black text-gray-400 uppercase tracking-widest mb-3">Mode de sortie</label>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
+                    <label class="radio-label-sortie flex items-center gap-3 p-3 rounded-xl border-2 border-[#16A37A] bg-teal-50 cursor-pointer transition-all">
+                        <input type="radio" name="mode_sortie" value="responsable" checked class="w-4 h-4 text-[#16A37A] focus:ring-[#16A37A]" onchange="updateSortieUI()">
+                        <span class="text-sm font-bold text-gray-700">Avec un responsable</span>
+                    </label>
+                    <label class="radio-label-sortie flex items-center gap-3 p-3 rounded-xl border-2 border-gray-200 cursor-pointer transition-all">
+                        <input type="radio" name="mode_sortie" value="seul" class="w-4 h-4 text-[#16A37A] focus:ring-[#16A37A]" onchange="updateSortieUI()">
+                        <span class="text-sm font-bold text-gray-700">Rentre seul(e)</span>
+                    </label>
+                </div>
+                <label class="flex items-center gap-4 cursor-pointer group bg-gray-50 p-4 sm:p-5 rounded-2xl border border-gray-200 hover:border-gray-300 transition-colors">
+                    <div class="relative shrink-0">
+                        <input type="checkbox" id="cb-recup" onchange="onEnfantFormChange()" class="peer w-6 h-6 rounded border-2 border-gray-300 accent-[#083325] cursor-pointer">
+                    </div>
+                    <span id="cb-recup-label" class="text-base sm:text-lg font-semibold text-gray-700 leading-snug group-hover:text-gray-900 transition-colors">
+                        Je certifie avoir récupéré l'enfant
+                    </span>
+                </label>
+            `;
+        } else {
+            recupContainer.innerHTML = `
+                <label class="flex items-center gap-4 cursor-pointer group bg-gray-50 p-4 sm:p-5 rounded-2xl border border-gray-200 hover:border-gray-300 transition-colors">
+                    <div class="relative shrink-0">
+                        <input type="checkbox" id="cb-recup" onchange="onEnfantFormChange()" class="peer w-6 h-6 rounded border-2 border-gray-300 accent-[#083325] cursor-pointer">
+                    </div>
+                    <span id="cb-recup-label" class="text-base sm:text-lg font-semibold text-gray-700 leading-snug group-hover:text-gray-900 transition-colors">
+                        Je certifie avoir récupéré l'enfant
+                    </span>
+                </label>
+            `;
+        }
+
+        updateSortieUI();
         document.getElementById('sig-warning').classList.add('hidden');
         resetBtnEnfant();
-
         showOverlay('overlay-enfant');
-
         requestAnimationFrame(() => initSigPad());
+    };
+
+    window.updateSortieUI = function() {
+        const modeRadio = document.querySelector('input[name="mode_sortie"]:checked');
+        const mode = modeRadio ? modeRadio.value : 'responsable';
+
+        document.querySelectorAll('.radio-label-sortie').forEach(lbl => {
+            if(lbl.querySelector('input').checked) {
+                lbl.classList.add('border-[#16A37A]', 'bg-teal-50');
+                lbl.classList.remove('border-gray-200');
+            } else {
+                lbl.classList.remove('border-[#16A37A]', 'bg-teal-50');
+                lbl.classList.add('border-gray-200');
+            }
+        });
+
+        const cbLabel = document.getElementById('cb-recup-label');
+        const sigLabel = document.getElementById('label-signature');
+
+        if (mode === 'seul') {
+            if (cbLabel) cbLabel.textContent = "Je certifie quitter l'activité seul(e)";
+            if (sigLabel) sigLabel.innerHTML = '✍️ Signature du jeune <span class="text-rose-500">*</span>';
+        } else {
+            if (cbLabel) cbLabel.textContent = "Je certifie avoir récupéré l'enfant";
+            if (sigLabel) sigLabel.innerHTML = '✍️ Signature du responsable <span class="text-rose-500">*</span>';
+        }
+
+        onEnfantFormChange();
     };
 
     window.closeEnfantOverlay = function () {
