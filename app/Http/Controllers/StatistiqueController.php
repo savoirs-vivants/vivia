@@ -17,121 +17,103 @@ class StatistiqueController extends Controller
         $saisonCourante = $request->get('saison', $saisons->first() ?? Saison::current());
 
         $indexSaisonCourante = $saisons->search($saisonCourante);
-        $saisonPrecedente = $indexSaisonCourante !== false && $saisons->has($indexSaisonCourante + 1) ? $saisons[$indexSaisonCourante + 1] : null;
+        $saisonPrecedente = ($indexSaisonCourante !== false && $saisons->has($indexSaisonCourante + 1))
+            ? $saisons[$indexSaisonCourante + 1]
+            : null;
 
-        $toutesInscriptionsCourantes = Inscription::where('saison', $saisonCourante)->get();
+        $adherentsIdsCourants = Inscription::where('saison', $saisonCourante)
+            ->whereNotNull('id_adherent')
+            ->distinct()
+            ->pluck('id_adherent');
 
-        $adherentsIdsCourants = $toutesInscriptionsCourantes->pluck('id_adherent')->filter()->unique();
         $totalAdherents = $adherentsIdsCourants->count();
+
+        /* Calcul de fidélisation par "Intersection SQL".
+         * On demande à la BDD de nous donner le nombre d'IDs
+         * qui existent à la fois dans la saison courante ET dans les saisons précédentes.
+         */
+        $nbReinscrits = Inscription::whereIn('id_adherent', $adherentsIdsCourants)
+            ->where('saison', '<', $saisonCourante)
+            ->distinct('id_adherent')
+            ->count('id_adherent');
+
+        $nbNouveaux = $totalAdherents - $nbReinscrits;
+
+        $totalAdherentsPrec = 0;
+        $nouveauxInscritsPrec = 0;
+        if ($saisonPrecedente) {
+            $adherentsIdsPrec = Inscription::where('saison', $saisonPrecedente)->whereNotNull('id_adherent')->distinct()->pluck('id_adherent');
+            $totalAdherentsPrec = $adherentsIdsPrec->count();
+
+            $nbReinscritsPrec = Inscription::whereIn('id_adherent', $adherentsIdsPrec)
+                ->where('saison', '<', $saisonPrecedente)
+                ->distinct('id_adherent')
+                ->count('id_adherent');
+            $nouveauxInscritsPrec = $totalAdherentsPrec - $nbReinscritsPrec;
+        }
+
+        $diffTotalAdherents = $totalAdherents - $totalAdherentsPrec;
+        $diffNouveaux = $nbNouveaux - $nouveauxInscritsPrec;
+        $tauxFidelisation = $totalAdherents > 0 ? round(($nbReinscrits / $totalAdherents) * 100) : 0;
 
         $adherents = Adherent::with('tousLesTuteurs')->whereIn('id', $adherentsIdsCourants)->get();
 
-        $idsSaisonsPassees = Inscription::where('saison', '<', $saisonCourante)
-            ->whereNotNull('id_adherent')
-            ->pluck('id_adherent')
-            ->unique();
+        $ageStats = DB::table('adherents')
+            ->whereIn('id', $adherentsIdsCourants)
+            ->selectRaw('
+                AVG(TIMESTAMPDIFF(YEAR, date_naiss, CURDATE())) as average_age,
+                COUNT(CASE WHEN genre IN ("Fille", "Femme") THEN 1 END) as count_filles,
+                COUNT(CASE WHEN genre IN ("Garçon", "Homme") THEN 1 END) as count_garcons
+            ')
+            ->first();
 
-        $nbReinscrits = 0;
-        $nbNouveaux = 0;
-
-        foreach ($adherentsIdsCourants as $id) {
-            if ($idsSaisonsPassees->contains($id)) {
-                $nbReinscrits++;
-            } else {
-                $nbNouveaux++;
-            }
-        }
-
-        $nouveauxInscritsPrec = 0;
-        $totalAdherentsPrec = 0;
-
-        if ($saisonPrecedente) {
-            $inscriptionsPrecedentes = Inscription::where('saison', $saisonPrecedente)->get();
-            $adherentsIdsPrec = $inscriptionsPrecedentes->pluck('id_adherent')->filter()->unique();
-            $totalAdherentsPrec = $adherentsIdsPrec->count();
-
-            $idsAvantPrec = Inscription::where('saison', '<', $saisonPrecedente)
-                ->whereNotNull('id_adherent')
-                ->pluck('id_adherent')
-                ->unique();
-
-            foreach ($adherentsIdsPrec as $id) {
-                if (!$idsAvantPrec->contains($id)) {
-                    $nouveauxInscritsPrec++;
-                }
-            }
-        }
-
-        $nouveauxInscrits = $nbNouveaux;
-        $diffTotalAdherents = $totalAdherents - $totalAdherentsPrec;
-        $diffNouveaux = $nbNouveaux - $nouveauxInscritsPrec;
-
-        $tauxFidelisation = $totalAdherents > 0 ? round(($nbReinscrits / $totalAdherents) * 100) : 0;
-
-        $ages = $adherents->map(function ($a) {
-            return $a->date_naiss ? Carbon::parse($a->date_naiss)->age : null;
-        })->filter()->sort()->values();
-
-        $ageMoyen = $ages->count() > 0 ? round($ages->average(), 1) : 0;
-        $medianeAge = 0;
-        if ($ages->count() > 0) {
-            $mid = floor($ages->count() / 2);
-            $medianeAge = $ages->count() % 2 == 0 ? ($ages[$mid - 1] + $ages[$mid]) / 2 : $ages[$mid];
-        }
-
-        $nbFilles = $adherents->whereIn('genre', ['Fille', 'Femme'])->count();
-        $nbGarcons = $adherents->whereIn('genre', ['Garçon', 'Homme'])->count();
+        $ageMoyen = round($ageStats->average_age, 1);
+        $nbFilles = $ageStats->count_filles;
+        $nbGarcons = $ageStats->count_garcons;
         $totalGenre = $nbFilles + $nbGarcons;
         $pctFilles = $totalGenre > 0 ? round(($nbFilles / $totalGenre) * 100) : 0;
         $pctGarcons = $totalGenre > 0 ? round(($nbGarcons / $totalGenre) * 100) : 0;
 
         $tranchesAge = [
-            '< 6 ans' => [0, 5],
-            '6-8 ans' => [6, 8],
-            '9-11 ans' => [9, 11],
-            '12-14 ans' => [12, 14],
-            '15-17 ans' => [15, 17],
-            '18-25 ans' => [18, 25],
-            '26-40 ans' => [26, 40],
-            '41-60 ans' => [41, 60],
-            '> 60 ans' => [61, 200]
+            '< 6 ans' => [0, 5], '6-8 ans' => [6, 8], '9-11 ans' => [9, 11],
+            '12-14 ans' => [12, 14], '15-17 ans' => [15, 17], '18-25 ans' => [18, 25],
+            '26-40 ans' => [26, 40], '41-60 ans' => [41, 60], '> 60 ans' => [61, 200]
         ];
 
         $ageData = ['labels' => array_keys($tranchesAge), 'filles' => [], 'garcons' => []];
+        $adherentsAges = $adherents->map(fn($a) => [
+            'genre' => $a->genre,
+            'age' => $a->date_naiss ? Carbon::parse($a->date_naiss)->age : null
+        ]);
+
         foreach ($tranchesAge as $label => $range) {
-            $ageData['filles'][] = $adherents->whereIn('genre', ['Fille', 'Femme'])
-                ->filter(fn($a) => $a->date_naiss && Carbon::parse($a->date_naiss)->age >= $range[0] && Carbon::parse($a->date_naiss)->age <= $range[1])->count();
-            $ageData['garcons'][] = $adherents->whereIn('genre', ['Garçon', 'Homme'])
-                ->filter(fn($a) => $a->date_naiss && Carbon::parse($a->date_naiss)->age >= $range[0] && Carbon::parse($a->date_naiss)->age <= $range[1])->count();
+            $ageData['filles'][] = $adherentsAges->whereIn('genre', ['Fille', 'Femme'])->whereBetween('age', $range)->count();
+            $ageData['garcons'][] = $adherentsAges->whereIn('genre', ['Garçon', 'Homme'])->whereBetween('age', $range)->count();
         }
 
-        $adherentsAvecCsp = $adherents->filter(function ($a) {
-            $parent = $a->tousLesTuteurs->first(function ($t) {
-                return $t->type === 'parent_tuteur';
-            });
-            return $parent && !empty($parent->profession);
-        });
+        /* On nettoie les espaces et la casse pour éviter d'avoir "Artisan" et "artisan"
+         * en deux lignes séparées dans le graphique.
+         */
+        $cspData = DB::table('tuteurs')
+            ->join('adherent_tuteurs', 'tuteurs.id', '=', 'adherent_tuteurs.id_tuteur')
+            ->whereIn('adherent_tuteurs.id_adherent', $adherentsIdsCourants)
+            ->where('tuteurs.type', 'parent_tuteur')
+            ->whereNotNull('tuteurs.profession')
+            ->selectRaw('LOWER(TRIM(profession)) as label, COUNT(*) as count')
+            ->groupBy('label')
+            ->orderByDesc('count')
+            ->take(6)
+            ->get()
+            ->map(fn($item) => [
+                'label' => ucfirst($item->label),
+                'count' => $item->count,
+                'pct'   => $totalAdherents > 0 ? round(($item->count / $totalAdherents) * 100) : 0
+            ]);
 
-        $totalAvecCsp = $adherentsAvecCsp->count();
-
-        $cspData = $adherentsAvecCsp->groupBy(function ($a) {
-            $parent = $a->tousLesTuteurs->first(function ($t) {
-                return $t->type === 'parent_tuteur';
-            });
-            return $parent->profession;
-        })->map->count()->sortDesc()->take(6)->map(function ($count, $label) use ($totalAvecCsp) {
-            return [
-                'label' => $label,
-                'count' => $count,
-                'pct'   => $totalAvecCsp > 0 ? round(($count / $totalAvecCsp) * 100) : 0
-            ];
-        })->values();
-
-        $quartiersData = $adherents->groupBy(function ($a) {
-            return $a->ville ?: 'Non renseigné';
-        })->map->count()->sortDesc()->take(6)->map(function ($count, $label) {
-            return ['label' => $label, 'count' => $count];
-        })->values();
+        $quartiersData = $adherents->groupBy(fn($a) => $a->ville ?: 'Non renseigné')
+            ->map->count()->sortDesc()->take(6)
+            ->map(fn($count, $label) => ['label' => $label, 'count' => $count])
+            ->values();
 
         $abandons = DB::table('activites_adherents')
             ->where('saison', $saisonCourante)
@@ -141,8 +123,8 @@ class StatistiqueController extends Controller
 
         $statutData = [
             'reinscrits' => ['count' => $nbReinscrits, 'pct' => $tauxFidelisation],
-            'nouveaux'   => ['count' => $nbNouveaux, 'pct' => $totalAdherents > 0 ? round(($nbNouveaux / $totalAdherents) * 100) : 0],
-            'abandons'   => ['count' => $abandons, 'pct' => $totalAdherents > 0 ? round(($abandons / $totalAdherents) * 100) : 0],
+            'nouveaux'   => ['count' => $nbNouveaux,   'pct' => $totalAdherents > 0 ? round(($nbNouveaux / $totalAdherents) * 100) : 0],
+            'abandons'   => ['count' => $abandons,     'pct' => $totalAdherents > 0 ? round(($abandons / $totalAdherents) * 100) : 0],
         ];
 
         $evolutionData = [
@@ -151,69 +133,39 @@ class StatistiqueController extends Controller
             'precedente' => array_fill(0, 12, 0)
         ];
 
-        foreach ($toutesInscriptionsCourantes as $insc) {
+        $this->remplirEvolution($evolutionData, 'courante', Inscription::where('saison', $saisonCourante)->get());
+        if ($saisonPrecedente) {
+            $this->remplirEvolution($evolutionData, 'precedente', Inscription::where('saison', $saisonPrecedente)->get());
+        }
+
+        $mapData = $adherents->filter(fn($a) => !is_null($a->latitude))
+            ->map(fn($a) => ['lat' => (float)$a->latitude, 'lng' => (float)$a->longitude])
+            ->values();
+
+        return view('statistiques.index', compact(
+            'saisons', 'saisonCourante', 'saisonPrecedente', 'totalAdherents', 'diffTotalAdherents',
+            'ageMoyen', 'pctFilles', 'pctGarcons', 'nbFilles', 'nbGarcons', 'tauxFidelisation',
+            'nouveauxInscrits', 'diffNouveaux', 'ageData', 'cspData', 'quartiersData',
+            'statutData', 'evolutionData', 'nbReinscrits', 'mapData'
+        ));
+    }
+
+    private function remplirEvolution(array &$data, string $key, $inscriptions)
+    {
+        $cumul = 0;
+        $tempMois = array_fill(0, 12, 0);
+
+        foreach ($inscriptions as $insc) {
             if ($insc->date_inscription) {
                 $m = Carbon::parse($insc->date_inscription)->month;
                 $idx = $m >= 9 ? $m - 9 : $m + 3;
-                if ($idx >= 0 && $idx <= 11) {
-                    $evolutionData['courante'][$idx]++;
-                }
+                if ($idx >= 0 && $idx <= 11) $tempMois[$idx]++;
             }
         }
 
-        if ($saisonPrecedente && isset($inscriptionsPrecedentes)) {
-            foreach ($inscriptionsPrecedentes as $insc) {
-                if ($insc->date_inscription) {
-                    $m = Carbon::parse($insc->date_inscription)->month;
-                    $idx = $m >= 9 ? $m - 9 : $m + 3;
-                    if ($idx >= 0 && $idx <= 11) {
-                        $evolutionData['precedente'][$idx]++;
-                    }
-                }
-            }
-        }
-
-        $cumulCourant = 0;
-        $cumulPrecedent = 0;
         for ($i = 0; $i < 12; $i++) {
-            $cumulCourant += $evolutionData['courante'][$i];
-            $evolutionData['courante'][$i] = $cumulCourant;
-
-            $cumulPrecedent += $evolutionData['precedente'][$i];
-            $evolutionData['precedente'][$i] = $cumulPrecedent;
+            $cumul += $tempMois[$i];
+            $data[$key][$i] = $cumul;
         }
-
-        $mapData = $adherents->filter(function ($a) {
-            return !is_null($a->latitude) && !is_null($a->longitude);
-        })->map(function ($a) {
-            return [
-                'lat' => (float) $a->latitude,
-                'lng' => (float) $a->longitude,
-            ];
-        })->values();
-
-        return view('statistiques.index', compact(
-            'saisons',
-            'saisonCourante',
-            'saisonPrecedente',
-            'totalAdherents',
-            'diffTotalAdherents',
-            'ageMoyen',
-            'medianeAge',
-            'pctFilles',
-            'pctGarcons',
-            'nbFilles',
-            'nbGarcons',
-            'tauxFidelisation',
-            'nouveauxInscrits',
-            'diffNouveaux',
-            'ageData',
-            'cspData',
-            'quartiersData',
-            'statutData',
-            'evolutionData',
-            'nbReinscrits',
-            'mapData'
-        ));
     }
 }

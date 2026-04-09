@@ -36,9 +36,8 @@ class AdherentFormulaireController extends Controller
 
     private function isMineur(?string $dateNaiss): bool
     {
-        if (empty($dateNaiss)) {
-            return false;
-        }
+        if (empty($dateNaiss)) return false;
+
         try {
             return Carbon::parse($dateNaiss)->age < 18;
         } catch (\Exception) {
@@ -53,36 +52,38 @@ class AdherentFormulaireController extends Controller
 
     private function montantStructure(array $formData): int
     {
-        if (($formData['is_adherent'] ?? 'non') === 'oui') {
-            return 0;
-        }
+        if (($formData['is_adherent'] ?? 'non') === 'oui') return 0;
         return ($formData['statut_juridique'] ?? '') === 'esr_pme' ? 200 : 50;
     }
 
     private function getUserPath(array $formData): array
     {
         $isAdherent    = ($formData['is_adherent']  ?? 'non') === 'oui';
-        $activite      =  $formData['type_activite'] ?? '';
+        $activite      = $formData['type_activite'] ?? '';
         $isMineur      = $this->isMineur($formData['date_naiss'] ?? null);
-        $isClubMaker      = ($activite === 'club_maker');
+        $isClubMaker   = ($activite === 'club_maker');
         $needsActivite = in_array($activite, ['atelier', 'stage', 'ressourcerie']);
 
         if ($this->isStructure($formData)) {
             $path = $isAdherent ? [1, 2] : [1, 12, 2];
             if ($activite === 'ressourcerie') $path[] = 6;
-            $path = array_merge($path, [13, 14, 9, 10, 11]);
-            return $path;
+            return array_merge($path, [13, 14, 9, 10, 11]);
         }
 
         $path = $isAdherent ? [1, 2, 3] : [1, 12, 2, 3];
         if (!$isAdherent && $isMineur) $path[] = 15;
         if ($isMineur) $path[] = 4;
+
         $path[] = 5;
+
         if ($needsActivite || $isClubMaker) $path[] = 6;
-        if (! $isClubMaker) $path[] = 7;
+        if (!$isClubMaker) $path[] = 7;
         if ($isMineur) $path[] = 8;
+
         $path[] = 9;
-        if (! $isClubMaker) $path[] = 10;
+
+        if (!$isClubMaker) $path[] = 10;
+
         $path[] = 11;
 
         return $path;
@@ -168,64 +169,39 @@ class AdherentFormulaireController extends Controller
 
         $allowedIdx = 0;
         foreach ($path as $idx => $p) {
-            if ($p <= $maxDone) {
-                $allowedIdx = $idx + 1;
-            }
+            if ($p <= $maxDone) $allowedIdx = $idx + 1;
         }
 
         $allowedIdx = min($allowedIdx, count($path) - 1);
         $requestedIdx = array_search($step, $path);
 
         if ($requestedIdx === false || $requestedIdx > $allowedIdx) {
-            $fallbackStep = $path[$allowedIdx];
-            return redirect()->route('adhesion.show', ['token' => $token, 'step' => $fallbackStep]);
+            return redirect()->route('adhesion.show', ['token' => $token, 'step' => $path[$allowedIdx]]);
         }
 
         $activitesDejaInscritesIds = [];
-        if (($formData['is_adherent'] ?? 'non') === 'oui' && !empty($formData['numero_adherent'])) {
 
+        if (($formData['is_adherent'] ?? 'non') === 'oui' && !empty($formData['numero_adherent'])) {
             $adherentExistant = Adherent::where('numero_adherent', $formData['numero_adherent'])->first();
+
             if ($adherentExistant) {
-                $champsAdherent = [
-                    'nom',
-                    'prenom',
-                    'genre',
-                    'adresse',
-                    'code_postal',
-                    'ville',
-                    'tel',
-                    'mail',
-                    'regime_social',
-                    'occupation',
-                    'etablissement',
-                    'problemes_sante',
-                    'allergies',
-                    'conduite_a_tenir',
-                    'restrictions_alimentaires',
-                    'bulletin',
-                    'communication',
-                ];
+                $champsAdherent = ['nom', 'prenom', 'genre', 'adresse', 'code_postal', 'ville', 'tel', 'mail', 'regime_social', 'occupation', 'etablissement', 'problemes_sante', 'allergies', 'conduite_a_tenir', 'restrictions_alimentaires', 'bulletin', 'communication'];
+
                 foreach ($champsAdherent as $champ) {
                     if (!array_key_exists($champ, $formData) && $adherentExistant->$champ !== null) {
                         $formData[$champ] = $adherentExistant->$champ;
                     }
                 }
-                if (!array_key_exists('date_naiss', $formData)) {
-                    $formData['date_naiss'] = $adherentExistant->date_naiss?->format('Y-m-d');
-                }
-                if (!array_key_exists('carnet_sante_path', $formData) && !empty($adherentExistant->carnet)) {
-                    $formData['carnet_sante_path'] = $adherentExistant->carnet;
-                }
+
+                if (!array_key_exists('date_naiss', $formData)) $formData['date_naiss'] = $adherentExistant->date_naiss?->format('Y-m-d');
+                if (!array_key_exists('carnet_sante_path', $formData) && !empty($adherentExistant->carnet)) $formData['carnet_sante_path'] = $adherentExistant->carnet;
                 if (!array_key_exists('actions_benevoles', $formData) && !empty($adherentExistant->actions)) {
                     $decoded = json_decode($adherentExistant->actions, true);
                     $formData['actions_benevoles'] = is_array($decoded) ? $decoded : [];
                 }
-                if (!array_key_exists('participation_manif', $formData)) {
-                    $formData['participation_manif'] = $adherentExistant->manif ? '1' : '0';
-                }
-                if (!array_key_exists('signature_adherent', $formData) && !empty($adherentExistant->signature)) {
-                    $formData['signature_adherent'] = $adherentExistant->signature;
-                }
+                if (!array_key_exists('participation_manif', $formData)) $formData['participation_manif'] = $adherentExistant->manif ? '1' : '0';
+                if (!array_key_exists('signature_adherent', $formData) && !empty($adherentExistant->signature)) $formData['signature_adherent'] = $adherentExistant->signature;
+
                 if (!array_key_exists('tuteurs', $formData)) {
                     $tuteurs = $adherentExistant->tousLesTuteurs()->get();
                     if ($tuteurs->isNotEmpty()) {
@@ -235,7 +211,7 @@ class AdherentFormulaireController extends Controller
                             'prenom'         => $t->prenom ?? '',
                             'tel'            => $t->tel ?? '',
                             'mail'           => $t->mail ?? '',
-                            'profession'      => $t->profession ?? '',
+                            'profession'     => $t->profession ?? '',
                             'adhere'         => (bool) $t->adhere,
                             'rentre_fin'     => (bool) $t->rentre_fin,
                             'rentre_annul'   => (bool) $t->rentre_annul,
@@ -269,6 +245,7 @@ class AdherentFormulaireController extends Controller
                         'nom_correspondant'       => 'nom_correspondant',
                         'tel_correspondant'       => 'tel_correspondant',
                     ];
+
                     foreach ($champsStructure as $formKey => $modelKey) {
                         if (!array_key_exists($formKey, $formData) && $structureExistante->$modelKey !== null) {
                             $formData[$formKey] = $structureExistante->$modelKey;
@@ -290,10 +267,10 @@ class AdherentFormulaireController extends Controller
         }
 
         $filtre = $this->classesFiltrer($formData);
-
         $classesEligibles = $this->classesEligiblesDepuisOccupation($formData);
 
         $activites = Activite::where('is_archived', false)->get();
+
         $ateliers  = $activites->where('type', 'activite')->values()
             ->filter($filtre)
             ->filter(fn($a) => !in_array($a->id, $activitesDejaInscritesIds))
@@ -301,7 +278,7 @@ class AdherentFormulaireController extends Controller
             ->values();
 
         $stages    = $activites->where('type', 'stage')->values()
-            ->filter($filtre) 
+            ->filter($filtre)
             ->filter(fn($a) => !in_array($a->id, $activitesDejaInscritesIds))
             ->values();
 
@@ -311,6 +288,7 @@ class AdherentFormulaireController extends Controller
             'tpe_asso', 'esr_pme' => ['tarif_structure', 'tarif_scolaire'],
             default => ['tarif_particulier', 'tarif_structure', 'tarif_scolaire'],
         };
+
         $ressourcerie = Ressourcerie::actifs()
             ->whereIn('type_tarif', $tarifsRessourcerie)
             ->get();
@@ -327,6 +305,7 @@ class AdherentFormulaireController extends Controller
 
         $ressourcerieSelectionnees       = null;
         $totalRessourcerieStructure      = null;
+
         if ($isStructure && ($formData['type_activite'] ?? '') === 'ressourcerie' && empty($formData['_ressourcerie_paid'])) {
             $ids = $formData['ressourcerie_selectionnees'] ?? [];
             $ressourcerieSelectionnees  = Ressourcerie::whereIn('id', $ids)->get();
@@ -343,6 +322,7 @@ class AdherentFormulaireController extends Controller
                 $formData['_adherent_id'] = $adherentId;
                 $request->session()->put("adhesion_{$token}", $formData);
             }
+
             if (empty($formData['_admin_mail_sent'])) {
                 try {
                     $entity = null;
@@ -350,24 +330,15 @@ class AdherentFormulaireController extends Controller
 
                     if ($isStructure && !empty($formData['_structure_id'])) {
                         $entity = AdherentStructure::find($formData['_structure_id']);
-                        $dataMail = [
-                            'nom' => $entity->nom,
-                            'prenom' => '',
-                            'numero' => $entity->numero_adherent
-                        ];
+                        $dataMail = ['nom' => $entity->nom, 'prenom' => '', 'numero' => $entity->numero_adherent];
                     } elseif (!empty($formData['_adherent_id'])) {
                         $entity = Adherent::find($formData['_adherent_id']);
-                        $dataMail = [
-                            'nom' => $entity->nom,
-                            'prenom' => $entity->prenom,
-                            'numero' => $entity->numero_adherent
-                        ];
+                        $dataMail = ['nom' => $entity->nom, 'prenom' => $entity->prenom, 'numero' => $entity->numero_adherent];
                     }
 
                     if ($entity) {
                         Mail::send('emails.admin_nouvelle_inscription', $dataMail, function ($message) {
-                            $message->to('contact@savoirsvivants.fr')
-                                ->subject('🎉 Nouvelle inscription - Savoirs Vivants');
+                            $message->to('contact@savoirsvivants.fr')->subject('🎉 Nouvelle inscription - Savoirs Vivants');
                         });
                     }
 
@@ -415,15 +386,10 @@ class AdherentFormulaireController extends Controller
 
     public function envoyerCodeRecup(Request $request)
     {
-        $validator = Validator::make($request->all(), [
-            'email' => 'required|email'
-        ]);
+        $validator = Validator::make($request->all(), ['email' => 'required|email']);
 
         if ($validator->fails()) {
-            return response()->json([
-                'message' => 'L\'adresse email n\'est pas valide.',
-                'status'  => 'error'
-            ], 422);
+            return response()->json(['message' => 'L\'adresse email n\'est pas valide.', 'status'  => 'error'], 422);
         }
 
         try {
@@ -435,16 +401,10 @@ class AdherentFormulaireController extends Controller
                 Mail::to($adherent->mail)->send(new RecupNumeroMail($adherent, $code));
             }
 
-            return response()->json([
-                'message' => 'Si cet email est associé à un compte, un code a été envoyé.',
-                'status'  => 'success'
-            ]);
+            return response()->json(['message' => 'Si cet email est associé à un compte, un code a été envoyé.', 'status'  => 'success']);
         } catch (\Exception $e) {
             Log::error('envoyerCodeRecup error: ' . $e->getMessage());
-            return response()->json([
-                'message' => 'Une erreur serveur est survenue. Veuillez réessayer.',
-                'status'  => 'error'
-            ], 500);
+            return response()->json(['message' => 'Une erreur serveur est survenue. Veuillez réessayer.', 'status'  => 'error'], 500);
         }
     }
 
@@ -460,7 +420,7 @@ class AdherentFormulaireController extends Controller
             $vraiNumero      = Cache::get("recup_adherent_{$inputNumero}");
             $numeroRecherche = $vraiNumero ?: $inputNumero;
 
-            $adherentExistant  = Adherent::where('numero_adherent', $numeroRecherche)->first();
+            $adherentExistant   = Adherent::where('numero_adherent', $numeroRecherche)->first();
             $structureExistante = null;
 
             if (!$adherentExistant) {
@@ -517,6 +477,7 @@ class AdherentFormulaireController extends Controller
                     ];
                     $ressourcerieIds   = $formData['ressourcerie_selectionnees'] ?? [];
                     $totalRessourcerie = \App\Models\Ressourcerie::whereIn('id', $ressourcerieIds)->sum('prix');
+
                     try {
                         $urlPaiement = $service->createCheckout(
                             (int) round($totalRessourcerie * 100),
@@ -549,12 +510,8 @@ class AdherentFormulaireController extends Controller
             $estNouvelAdherent = ($formData['is_adherent'] ?? 'non') === 'non';
 
             $totalActiviteEuros = 0;
-            if (!empty($activitesIds)) {
-                $totalActiviteEuros += $this->calculerMontantActivites($activitesIds);
-            }
-            if (!empty($ressourcerieIds)) {
-                $totalActiviteEuros += \App\Models\Ressourcerie::whereIn('id', $ressourcerieIds)->sum('prix');
-            }
+            if (!empty($activitesIds)) $totalActiviteEuros += $this->calculerMontantActivites($activitesIds);
+            if (!empty($ressourcerieIds)) $totalActiviteEuros += \App\Models\Ressourcerie::whereIn('id', $ressourcerieIds)->sum('prix');
 
             $isSinglePayment = in_array($formData['type_activite'] ?? '', ['soutien', 'recherche']);
             if ($isSinglePayment && $totalActiviteEuros == 0) {
@@ -569,35 +526,25 @@ class AdherentFormulaireController extends Controller
                 return redirect()->route('adhesion.show', ['token' => $token, 'step' => 10]);
             }
 
-            $payerPrenom = $formData['prenom'] ?? null;
-            $payerNom    = $formData['nom']    ?? null;
-            $payerMail   = $formData['mail']   ?? null;
+            $payerPrenom = $formData['prenom'] ?? 'Prénom';
+            $payerNom    = $formData['nom']    ?? 'Nom';
+            $payerMail   = $formData['mail']   ?? 'email@defaut.fr';
+
             if (($formData['is_adherent'] ?? 'non') === 'oui' && !empty($formData['numero_adherent'])) {
                 $adherentExistant = Adherent::where('numero_adherent', $formData['numero_adherent'])->first();
                 if ($adherentExistant) {
-                    $payerPrenom = $payerPrenom ?: $adherentExistant->prenom;
-                    $payerNom    = $payerNom    ?: $adherentExistant->nom;
-                    $payerMail   = $payerMail   ?: $adherentExistant->mail;
+                    $payerPrenom = $adherentExistant->prenom;
+                    $payerNom    = $adherentExistant->nom;
+                    $payerMail   = $adherentExistant->mail;
                 }
             }
-            $payerInfo = [
-                'prenom' => $payerPrenom ?: 'Prénom',
-                'nom'    => $payerNom    ?: 'Nom',
-                'mail'   => $payerMail   ?: 'email@defaut.fr',
-            ];
+            $payerInfo = ['prenom' => $payerPrenom, 'nom' => $payerNom, 'mail' => $payerMail];
 
             if ($totalActiviteEuros > 0) {
                 $itemLabel = ($formData['type_activite'] ?? '') === 'ressourcerie'
-                    ? 'Ressourcerie - Savoirs Vivants'
-                    : 'Inscription Activité - Savoirs Vivants';
+                    ? 'Ressourcerie - Savoirs Vivants' : 'Inscription Activité - Savoirs Vivants';
                 try {
-                    $urlPaiement = $service->createCheckout(
-                        (int) round($totalActiviteEuros * 100),
-                        $payerInfo,
-                        $token,
-                        'adhesion.helloasso.return',
-                        $itemLabel
-                    );
+                    $urlPaiement = $service->createCheckout((int) round($totalActiviteEuros * 100), $payerInfo, $token, 'adhesion.helloasso.return', $itemLabel);
                     return redirect($urlPaiement);
                 } catch (\Exception $e) {
                     Log::error('HelloAsso Error (Checkout 1): ' . $e->getMessage());
@@ -605,17 +552,14 @@ class AdherentFormulaireController extends Controller
                 }
             } elseif ($estNouvelAdherent) {
                 try {
-                    $formSlug = env('HELLOASSO_MEMBERSHIP_FORM_SLUG');
+                    /* L'utilisation de env() dans le code est dangereuse en production
+                     * car Laravel le cache. Il faut privilégier config().
+                     */
+                    $formSlug = config('services.helloasso.membership_form_slug', env('HELLOASSO_MEMBERSHIP_FORM_SLUG'));
                     $price    = $service->getBaseMembershipPrice($formSlug);
 
                     if ($price > 0) {
-                        $urlPaiement = $service->createCheckout(
-                            (int) round($price * 100),
-                            $payerInfo,
-                            $token,
-                            'adhesion.helloasso2.return',
-                            'Adhésion Annuelle - Savoirs Vivants'
-                        );
+                        $urlPaiement = $service->createCheckout((int) round($price * 100), $payerInfo, $token, 'adhesion.helloasso2.return', 'Adhésion Annuelle - Savoirs Vivants');
                         return redirect($urlPaiement);
                     }
                 } catch (\Exception $e) {
@@ -668,6 +612,7 @@ class AdherentFormulaireController extends Controller
                 if (!empty($formData['_structure_id'])) {
                     $ressourcerieIds     = $formData['ressourcerie_selectionnees'] ?? [];
                     $montantRessourcerie = \App\Models\Ressourcerie::whereIn('id', $ressourcerieIds)->sum('prix');
+
                     if ($montantRessourcerie > 0) {
                         Paiement::create([
                             'id_structure'  => $formData['_structure_id'],
@@ -691,6 +636,7 @@ class AdherentFormulaireController extends Controller
                 $request->session()->put("paiement1_done_{$token}", true);
                 return redirect()->route('adhesion.show', ['token' => $token, 'step' => 10]);
             }
+
             $formData['_helloasso_ok']   = true;
             $formData['_last_completed'] = 11;
             $request->session()->put("adhesion_{$token}", $formData);
@@ -727,6 +673,7 @@ class AdherentFormulaireController extends Controller
         $formData['_helloasso_ok'] = true;
         $formData['_last_completed'] = 11;
         $request->session()->put("adhesion_{$token}", $formData);
+
         return redirect()->route('adhesion.show', ['token' => $token, 'step' => 11]);
     }
 
@@ -739,10 +686,8 @@ class AdherentFormulaireController extends Controller
         $request->session()->put("adhesion_{$token}", $formData);
 
         $isSandbox  = config('services.helloasso.sandbox', true);
-        $basePublic = $isSandbox
-            ? 'https://www.helloasso-sandbox.com'
-            : 'https://www.helloasso.com';
-        $orgSlug = config('services.helloasso.org_slug');
+        $basePublic = $isSandbox ? 'https://www.helloasso-sandbox.com' : 'https://www.helloasso.com';
+        $orgSlug    = config('services.helloasso.org_slug');
 
         if ($this->isStructure($formData)) {
             $formSlug = ($formData['statut_juridique'] ?? '') === 'esr_pme'
@@ -775,6 +720,7 @@ class AdherentFormulaireController extends Controller
         $formData['_helloasso_ok']   = true;
         $formData['_last_completed'] = 11;
         $request->session()->put("adhesion_{$token}", $formData);
+
         if (!empty($formData['_adherent_id']) && empty($formData['_paiement2_cree'])) {
             $typeActivite = $formData['type_activite'] ?? '';
             $cotisation   = ($typeActivite !== 'club_maker') ? 10 : 0;
@@ -795,10 +741,6 @@ class AdherentFormulaireController extends Controller
         return redirect()->route('adhesion.show', ['token' => $token, 'step' => 11]);
     }
 
-    /**
-     * Vérifie via l'API HelloAsso si la cotisation a bien été payée.
-     * Gère les adhérents (personne physique) et les structures.
-     */
     public function verifierCotisation(Request $request, string $token)
     {
         abort_if(!$request->session()->has("adhesion_{$token}"), 403);
@@ -817,6 +759,7 @@ class AdherentFormulaireController extends Controller
 
             $isDejaAdherentStr = ($formData['is_adherent'] ?? 'non') === 'oui';
             $montantCotisation = $isDejaAdherentStr ? 0 : (($formData['statut_juridique'] ?? '') === 'esr_pme' ? 200 : 50);
+
             if ($montantCotisation > 0) {
                 Paiement::create([
                     'id_structure'  => $formData['_structure_id'],
@@ -865,253 +808,247 @@ class AdherentFormulaireController extends Controller
 
     private function sauvegarderAdherent(array $formData): int
     {
-        $isAdherent  = ($formData['is_adherent'] ?? 'non') === 'oui';
-        $typeActivite = $formData['type_activite'] ?? '';
-        $activiteIds  = array_filter((array) ($formData['activites_selectionnees'] ?? []));
-        $ressourcerieIds = array_filter((array) ($formData['ressourcerie_selectionnees'] ?? []));
-        $saison = Saison::current();
-        $aPaye = Inscription::EN_ATTENTE;
+        /* L'inscription d'un adhérent touche de nombreuses tables. On utilise
+         * une transaction BDD pour garantir que l'adhérent n'est pas créé "à moitié"
+         * si une erreur survient au milieu du processus.
+         */
+        return DB::transaction(function () use ($formData) {
+            $isAdherent      = ($formData['is_adherent'] ?? 'non') === 'oui';
+            $typeActivite    = $formData['type_activite'] ?? '';
+            $activiteIds     = array_filter((array) ($formData['activites_selectionnees'] ?? []));
+            $ressourcerieIds = array_filter((array) ($formData['ressourcerie_selectionnees'] ?? []));
+            $saison          = Saison::current();
+            $aPaye           = Inscription::EN_ATTENTE;
 
-        $idTuteurPrincipal = null;
-        $autresTouteurs    = [];
+            $autresTouteurs = [];
 
-        if (!$isAdherent) {
-            foreach ((array) ($formData['tuteurs'] ?? []) as $t) {
-                $type = $t['type'] ?? 'parent_tuteur';
-                $tuteur = Tuteur::create([
-                    'type'           => $type,
-                    'nom'            => $t['nom'] ?? '',
-                    'prenom'         => $t['prenom'] ?? '',
-                    'tel'            => $t['tel'] ?? null,
-                    'mail'           => $t['mail'] ?? null,
-                    'profession'      => $t['profession'] ?? null,
-                    'adhere'         => !empty($t['adhere']),
-                    'rentre_fin'     => !empty($t['rentre_fin']),
-                    'rentre_annul'   => !empty($t['rentre_annul']),
-                    'date_signature' => $type === 'parent_tuteur' ? ($t['date_signature'] ?? null) : null,
-                    'signature'      => $type === 'parent_tuteur' ? ($t['signature'] ?? null) : null,
-                ]);
-                if ($type === 'parent_tuteur' && $idTuteurPrincipal === null) {
-                    $idTuteurPrincipal = $tuteur->id;
-                }
-                $autresTouteurs[] = $tuteur->id;
-            }
-        }
-
-        $geocoder = new \App\Services\GeocodingService();
-        $coords = $geocoder->getCoordinates(
-            $formData['adresse'] ?? null,
-            $formData['code_postal'] ?? null,
-            $formData['ville'] ?? null
-        );
-
-        if ($isAdherent) {
-            $adherent = Adherent::where('numero_adherent', $formData['numero_adherent'])->firstOrFail();
-
-            $updateData = [];
-            $fields = ['nom', 'prenom', 'genre', 'adresse', 'code_postal', 'ville', 'tel', 'mail', 'regime_social', 'occupation', 'etablissement', 'problemes_sante', 'allergies', 'conduite_a_tenir', 'restrictions_alimentaires', 'idee_metier', 'decouverte_metier'];
-            foreach ($fields as $field) {
-                if (isset($formData[$field]) && $formData[$field] !== $adherent->$field) {
-                    $updateData[$field] = $formData[$field];
+            if (!$isAdherent) {
+                foreach ((array) ($formData['tuteurs'] ?? []) as $t) {
+                    $type = $t['type'] ?? 'parent_tuteur';
+                    $tuteur = Tuteur::create([
+                        'type'           => $type,
+                        'nom'            => $t['nom'] ?? '',
+                        'prenom'         => $t['prenom'] ?? '',
+                        'tel'            => $t['tel'] ?? null,
+                        'mail'           => $t['mail'] ?? null,
+                        'profession'     => $t['profession'] ?? null,
+                        'adhere'         => !empty($t['adhere']),
+                        'rentre_fin'     => !empty($t['rentre_fin']),
+                        'rentre_annul'   => !empty($t['rentre_annul']),
+                        'date_signature' => $type === 'parent_tuteur' ? ($t['date_signature'] ?? null) : null,
+                        'signature'      => $type === 'parent_tuteur' ? ($t['signature'] ?? null) : null,
+                    ]);
+                    $autresTouteurs[] = $tuteur->id;
                 }
             }
-            if (isset($formData['date_naiss']) && $formData['date_naiss'] !== $adherent->date_naiss?->format('Y-m-d')) {
-                $updateData['date_naiss'] = $formData['date_naiss'];
-                $updateData['age'] = \Carbon\Carbon::parse($formData['date_naiss'])->age;
-            }
-            if (isset($formData['carnet_sante_path'])) {
-                $updateData['carnet'] = $formData['carnet_sante_path'];
-            }
-            if (isset($formData['signature_adherent'])) {
-                $updateData['signature'] = $formData['signature_adherent'];
-            }
-            if (isset($formData['actions_benevoles'])) {
-                $updateData['actions'] = json_encode($formData['actions_benevoles']);
+
+            /* L'appel au service de Géocodage peut échouer ou timeout.
+             * On le met dans un try-catch pour que l'inscription passe coûte que coûte.
+             */
+            $coords = null;
+            try {
+                $geocoder = new \App\Services\GeocodingService();
+                $coords = $geocoder->getCoordinates($formData['adresse'] ?? null, $formData['code_postal'] ?? null, $formData['ville'] ?? null);
+            } catch (\Exception $e) {
+                Log::warning("Échec du géocodage silencieux : " . $e->getMessage());
             }
 
-            if (isset($formData['adresse']) || isset($formData['ville'])) {
-                $updateData['latitude']  = $coords ? $coords['lat'] : $adherent->latitude;
-                $updateData['longitude'] = $coords ? $coords['lng'] : $adherent->longitude;
-            }
+            if ($isAdherent) {
+                $adherent = Adherent::where('numero_adherent', $formData['numero_adherent'])->firstOrFail();
 
-            $updateData['bulletin'] = !empty($formData['bulletin'] ?? false);
-            $updateData['communication'] = !empty($formData['communication'] ?? false);
-            $updateData['manif'] = ($formData['participation_manif'] ?? '0') === '1';
+                $updateData = [];
+                $fields = ['nom', 'prenom', 'genre', 'adresse', 'code_postal', 'ville', 'tel', 'mail', 'regime_social', 'occupation', 'etablissement', 'problemes_sante', 'allergies', 'conduite_a_tenir', 'restrictions_alimentaires', 'idee_metier', 'decouverte_metier'];
 
-            if (!empty($updateData)) {
-                $adherent->update($updateData);
-            }
-
-            $existingTuteurIds = $adherent->tousLesTuteurs()->pluck('tuteurs.id')->toArray();
-            if (!empty($formData['tuteurs'])) {
-                foreach ($formData['tuteurs'] as $tData) {
-                    $tuteur = Tuteur::updateOrCreate(
-                        ['id' => $tData['id'] ?? null],
-                        [
-                            'type'           => $tData['type'] ?? 'parent_tuteur',
-                            'nom'            => $tData['nom'] ?? '',
-                            'prenom'         => $tData['prenom'] ?? '',
-                            'tel'            => $tData['tel'] ?? null,
-                            'mail'           => $tData['mail'] ?? null,
-                            'profession'     => $tData['profession'] ?? null,
-                            'adhere'         => !empty($tData['adhere']),
-                            'rentre_fin'     => !empty($tData['rentre_fin']),
-                            'rentre_annul'   => !empty($tData['rentre_annul']),
-                            'date_signature' => ($tData['type'] ?? '') === 'parent_tuteur' ? ($tData['date_signature'] ?? null) : null,
-                            'signature'      => ($tData['type'] ?? '') === 'parent_tuteur' ? ($tData['signature'] ?? null) : null,
-                        ]
-                    );
-                    if (!in_array($tuteur->id, $existingTuteurIds)) {
-                        DB::table('adherent_tuteurs')->insertOrIgnore([
-                            'id_adherent' => $adherent->id,
-                            'id_tuteur'   => $tuteur->id,
-                        ]);
+                foreach ($fields as $field) {
+                    if (isset($formData[$field]) && $formData[$field] !== $adherent->$field) {
+                        $updateData[$field] = $formData[$field];
                     }
                 }
+
+                if (isset($formData['date_naiss']) && $formData['date_naiss'] !== $adherent->date_naiss?->format('Y-m-d')) {
+                    $updateData['date_naiss'] = $formData['date_naiss'];
+                    $updateData['age'] = Carbon::parse($formData['date_naiss'])->age;
+                }
+                if (isset($formData['carnet_sante_path'])) $updateData['carnet'] = $formData['carnet_sante_path'];
+                if (isset($formData['signature_adherent'])) $updateData['signature'] = $formData['signature_adherent'];
+                if (isset($formData['actions_benevoles'])) $updateData['actions'] = json_encode($formData['actions_benevoles']);
+
+                if (isset($formData['adresse']) || isset($formData['ville'])) {
+                    $updateData['latitude']  = $coords ? $coords['lat'] : $adherent->latitude;
+                    $updateData['longitude'] = $coords ? $coords['lng'] : $adherent->longitude;
+                }
+
+                $updateData['bulletin']      = !empty($formData['bulletin'] ?? false);
+                $updateData['communication'] = !empty($formData['communication'] ?? false);
+                $updateData['manif']         = ($formData['participation_manif'] ?? '0') === '1';
+
+                if (!empty($updateData)) {
+                    $adherent->update($updateData);
+                }
+
+                if (!empty($formData['tuteurs'])) {
+                    foreach ($formData['tuteurs'] as $tData) {
+                        $tuteur = Tuteur::updateOrCreate(
+                            ['id' => $tData['id'] ?? null],
+                            [
+                                'type'           => $tData['type'] ?? 'parent_tuteur',
+                                'nom'            => $tData['nom'] ?? '',
+                                'prenom'         => $tData['prenom'] ?? '',
+                                'tel'            => $tData['tel'] ?? null,
+                                'mail'           => $tData['mail'] ?? null,
+                                'profession'     => $tData['profession'] ?? null,
+                                'adhere'         => !empty($tData['adhere']),
+                                'rentre_fin'     => !empty($tData['rentre_fin']),
+                                'rentre_annul'   => !empty($tData['rentre_annul']),
+                                'date_signature' => ($tData['type'] ?? '') === 'parent_tuteur' ? ($tData['date_signature'] ?? null) : null,
+                                'signature'      => ($tData['type'] ?? '') === 'parent_tuteur' ? ($tData['signature'] ?? null) : null,
+                            ]
+                        );
+                        // On attache les tuteurs (Eloquent gère les doublons silencieusement avec syncWithoutDetaching)
+                        $adherent->tuteurs()->syncWithoutDetaching([$tuteur->id]);
+                    }
+                }
+            } else {
+                $age = !empty($formData['date_naiss']) ? Carbon::parse($formData['date_naiss'])->age : null;
+
+                $adherent = Adherent::create([
+                    'numero_adherent'           => Adherent::genererNumeroUnique(),
+                    'nom'                       => $formData['nom'] ?? '',
+                    'prenom'                    => $formData['prenom'] ?? '',
+                    'genre'                     => $formData['genre'] ?? null,
+                    'date_naiss'                => $formData['date_naiss'] ?? null,
+                    'age'                       => $age,
+                    'adresse'                   => $formData['adresse'] ?? null,
+                    'code_postal'               => $formData['code_postal'] ?? null,
+                    'ville'                     => $formData['ville'] ?? null,
+                    'tel'                       => $formData['tel'] ?? null,
+                    'mail'                      => $formData['mail'] ?? null,
+                    'regime_social'             => $formData['regime_social'] ?? null,
+                    'occupation'                => $formData['occupation'] ?? null,
+                    'etablissement'             => $formData['etablissement'] ?? null,
+                    'carnet'                    => $formData['carnet_sante_path'] ?? null,
+                    'problemes_sante'           => $formData['problemes_sante'] ?? null,
+                    'allergies'                 => $formData['allergies'] ?? null,
+                    'conduite_a_tenir'          => $formData['conduite_a_tenir'] ?? null,
+                    'restrictions_alimentaires' => $formData['restrictions_alimentaires'] ?? null,
+                    'bulletin'                  => !empty($formData['bulletin']),
+                    'communication'             => !empty($formData['communication']),
+                    'manif'                     => ($formData['participation_manif'] ?? '0') === '1',
+                    'actions'                   => json_encode($formData['actions_benevoles'] ?? []),
+                    'signature'                 => $formData['signature_adherent'] ?? null,
+                    'idee_metier'               => $formData['idee_metier'] ?? null,
+                    'decouverte_metier'         => $formData['decouverte_metier'] ?? null,
+                    'latitude'                  => $coords ? $coords['lat'] : null,
+                    'longitude'                 => $coords ? $coords['lng'] : null,
+                ]);
+
+                if (!empty($autresTouteurs)) {
+                    $adherent->tuteurs()->attach($autresTouteurs);
+                }
             }
-        } else {
-            $age = null;
-            if (!empty($formData['date_naiss'])) {
-                $age = \Carbon\Carbon::parse($formData['date_naiss'])->age;
-            }
-            $adherent = Adherent::create([
-                'numero_adherent' => Adherent::genererNumeroUnique(),
-                'nom'             => $formData['nom'] ?? '',
-                'prenom'          => $formData['prenom'] ?? '',
-                'genre'           => $formData['genre'] ?? null,
-                'date_naiss'      => $formData['date_naiss'] ?? null,
-                'age'             => $age,
-                'adresse'         => $formData['adresse'] ?? null,
-                'code_postal'     => $formData['code_postal'] ?? null,
-                'ville'           => $formData['ville'] ?? null,
-                'tel'             => $formData['tel'] ?? null,
-                'mail'            => $formData['mail'] ?? null,
-                'regime_social'   => $formData['regime_social'] ?? null,
-                'occupation'      => $formData['occupation'] ?? null,
-                'etablissement'             => $formData['etablissement'] ?? null,
-                'carnet'                    => $formData['carnet_sante_path'] ?? null,
-                'problemes_sante'           => $formData['problemes_sante'] ?? null,
-                'allergies'                 => $formData['allergies'] ?? null,
-                'conduite_a_tenir'          => $formData['conduite_a_tenir'] ?? null,
-                'restrictions_alimentaires' => $formData['restrictions_alimentaires'] ?? null,
-                'bulletin'        => !empty($formData['bulletin']),
-                'communication'   => !empty($formData['communication']),
-                'manif'           => ($formData['participation_manif'] ?? '0') === '1',
-                'actions'         => json_encode($formData['actions_benevoles'] ?? []),
-                'signature'       => $formData['signature_adherent'] ?? null,
-                'idee_metier'       => $formData['idee_metier'] ?? null,
-                'decouverte_metier' => $formData['decouverte_metier'] ?? null,
-                'latitude'        => $coords ? $coords['lat'] : null,
-                'longitude'       => $coords ? $coords['lng'] : null,
+
+            $montantActivites    = $this->calculerMontantActivites($activiteIds);
+            $montantRessourcerie = !empty($ressourcerieIds) ? Ressourcerie::whereIn('id', $ressourcerieIds)->sum('prix') : 0;
+            $cotisation          = (!$isAdherent && $typeActivite !== 'club_maker') ? 10 : 0;
+            $montantTotal        = (float) ($montantActivites + $montantRessourcerie + $cotisation);
+
+            Inscription::create([
+                'id_adherent'      => $adherent->id,
+                'saison'           => $saison,
+                'date_inscription' => now()->toDateString(),
+                'type_adhesion'    => $typeActivite,
+                'a_paye'           => $aPaye,
+                'montant'          => $montantTotal,
+                'renouvellement'   => $isAdherent,
             ]);
 
-            if (!empty($autresTouteurs)) {
-                foreach ($autresTouteurs as $idTuteur) {
-                    DB::table('adherent_tuteurs')->insert([
-                        'id_adherent' => $adherent->id,
-                        'id_tuteur'   => $idTuteur,
+            /* Bulk Insert pour éviter de multiplier les requêtes SQL (N+1)
+             * lors de l'enregistrement de plusieurs activités en même temps.
+             */
+            if (!empty($activiteIds)) {
+                $pivotData = array_map(fn($idActivite) => [
+                    'id_adherent'    => $adherent->id,
+                    'id_activite'    => $idActivite,
+                    'saison'         => $saison,
+                    'date_entree'    => now()->toDateString(),
+                    'est_un_abandon' => 0,
+                    'created_at'     => now(),
+                    'updated_at'     => now(),
+                ], $activiteIds);
+
+                DB::table('activites_adherents')->insertOrIgnore($pivotData);
+            }
+
+            if (!empty($formData['_helloasso_ok'])) {
+                $montantActivite = (float) ($montantActivites + $montantRessourcerie);
+                if ($montantActivite > 0) {
+                    Paiement::create([
+                        'id_adherent'   => $adherent->id,
+                        'montant'       => $montantActivite,
+                        'source'        => 'HelloAsso',
+                        'date_paiement' => now()->toDateString(),
+                        'commentaire'   => 'Paiement activité/ressourcerie via HelloAsso',
+                    ]);
+                }
+                if ($cotisation > 0) {
+                    Paiement::create([
+                        'id_adherent'   => $adherent->id,
+                        'montant'       => $cotisation,
+                        'source'        => 'HelloAsso',
+                        'date_paiement' => now()->toDateString(),
+                        'commentaire'   => 'Cotisation annuelle via HelloAsso',
                     ]);
                 }
             }
-        }
 
-        $montantActivites    = $this->calculerMontantActivites($activiteIds);
-        $montantRessourcerie = !empty($ressourcerieIds) ? Ressourcerie::whereIn('id', $ressourcerieIds)->sum('prix') : 0;
-        $cotisation = (!$isAdherent && $typeActivite !== 'club_maker') ? 10 : 0;
-        $montantTotal = (float) ($montantActivites + $montantRessourcerie + $cotisation);
-
-        Inscription::create([
-            'id_adherent'     => $adherent->id,
-            'saison'          => $saison,
-            'date_inscription' => now()->toDateString(),
-            'type_adhesion'   => $typeActivite,
-            'a_paye'          => $aPaye,
-            'montant'         => $montantTotal,
-            'renouvellement'  => $isAdherent,
-        ]);
-
-        foreach ($activiteIds as $idActivite) {
-            DB::table('activites_adherents')->insertOrIgnore([
-                'id_adherent'  => $adherent->id,
-                'id_activite'  => $idActivite,
-                'saison'       => $saison,
-                'date_entree'  => now()->toDateString(),
-                'est_un_abandon' => 0,
-                'created_at'   => now(),
-                'updated_at'   => now(),
-            ]);
-        }
-
-        if (!empty($formData['_helloasso_ok'])) {
-            $montantActivite = (float) ($montantActivites + $montantRessourcerie);
-            if ($montantActivite > 0) {
-                Paiement::create([
-                    'id_adherent'   => $adherent->id,
-                    'montant'       => $montantActivite,
-                    'source'        => 'HelloAsso',
-                    'date_paiement' => now()->toDateString(),
-                    'commentaire'   => 'Paiement activité/ressourcerie via HelloAsso',
-                ]);
-            }
-            if ($cotisation > 0) {
-                Paiement::create([
-                    'id_adherent'   => $adherent->id,
-                    'montant'       => $cotisation,
-                    'source'        => 'HelloAsso',
-                    'date_paiement' => now()->toDateString(),
-                    'commentaire'   => 'Cotisation annuelle via HelloAsso',
-                ]);
-            }
-        }
-
-        return $adherent->id;
+            return $adherent->id;
+        });
     }
 
     private function sauvegarderStructure(array $formData): int
     {
-        $statutActivite = match ($formData['type_activite'] ?? '') {
-            'ressourcerie' => 'ressourcerie',
-            'soutien'      => 'soutien',
-            default        => 'participation',
-        };
+        return DB::transaction(function () use ($formData) {
+            $statutActivite = match ($formData['type_activite'] ?? '') {
+                'ressourcerie' => 'ressourcerie',
+                'soutien'      => 'soutien',
+                default        => 'participation',
+            };
 
-        $structure = AdherentStructure::create([
-            'numero_adherent'  => AdherentStructure::genererNumeroUnique(),
-            'nom'              => $formData['nom_structure'] ?? '',
-            'sigle'            => $formData['sigle'] ?? null,
-            'adresse'          => $formData['adresse_structure'] ?? null,
-            'code_postal'      => $formData['code_postal_structure'] ?? null,
-            'ville'            => $formData['ville_structure'] ?? null,
-            'date_creation'    => $formData['date_creation_structure'] ?? null,
-            'tel'              => $formData['tel_structure'] ?? null,
-            'tel_portable'     => $formData['tel_portable_structure'] ?? null,
-            'mail'             => $formData['mail_structure'] ?? null,
-            'site_web'         => $formData['site_web'] ?? null,
-            'nom_correspondant' => $formData['nom_correspondant'] ?? null,
-            'tel_correspondant' => $formData['tel_correspondant'] ?? null,
-            'bulletin'         => (bool) ($formData['bulletin'] ?? false),
-            'autorisation_photo' => (bool) ($formData['autorisation_photo'] ?? false),
-            'signature'        => $formData['signature_adherent'] ?? null,
-            'statut'           => $statutActivite,
-            'statut_juridique' => $formData['statut_juridique'] ?? null,
-        ]);
+            $structure = AdherentStructure::create([
+                'numero_adherent'    => AdherentStructure::genererNumeroUnique(),
+                'nom'                => $formData['nom_structure'] ?? '',
+                'sigle'              => $formData['sigle'] ?? null,
+                'adresse'            => $formData['adresse_structure'] ?? null,
+                'code_postal'        => $formData['code_postal_structure'] ?? null,
+                'ville'              => $formData['ville_structure'] ?? null,
+                'date_creation'      => $formData['date_creation_structure'] ?? null,
+                'tel'                => $formData['tel_structure'] ?? null,
+                'tel_portable'       => $formData['tel_portable_structure'] ?? null,
+                'mail'               => $formData['mail_structure'] ?? null,
+                'site_web'           => $formData['site_web'] ?? null,
+                'nom_correspondant'  => $formData['nom_correspondant'] ?? null,
+                'tel_correspondant'  => $formData['tel_correspondant'] ?? null,
+                'bulletin'           => (bool) ($formData['bulletin'] ?? false),
+                'autorisation_photo' => (bool) ($formData['autorisation_photo'] ?? false),
+                'signature'          => $formData['signature_adherent'] ?? null,
+                'statut'             => $statutActivite,
+                'statut_juridique'   => $formData['statut_juridique'] ?? null,
+            ]);
 
-        $saison = Saison::current();
-        $aPaye  = !empty($formData['_helloasso_ok']) ? Inscription::PAYE : Inscription::EN_ATTENTE;
+            $saison = Saison::current();
+            $aPaye  = !empty($formData['_helloasso_ok']) ? Inscription::PAYE : Inscription::EN_ATTENTE;
 
-        DB::table('inscriptions')->insert([
-            'id_adherent'     => null,
-            'id_structure'    => $structure->id,
-            'saison'          => $saison,
-            'date_inscription' => now()->toDateString(),
-            'type_adhesion'   => $formData['type_activite'] ?? 'soutien',
-            'a_paye'          => $aPaye,
-            'montant'         => $this->montantStructure($formData),
-            'created_at'      => now(),
-            'updated_at'      => now(),
-        ]);
+            Inscription::create([
+                'id_structure'     => $structure->id,
+                'saison'           => $saison,
+                'date_inscription' => now()->toDateString(),
+                'type_adhesion'    => $formData['type_activite'] ?? 'soutien',
+                'a_paye'           => $aPaye,
+                'montant'          => $this->montantStructure($formData),
+            ]);
 
-        return $structure->id;
+            return $structure->id;
+        });
     }
 
     public function helloassoWebhook(Request $request)
@@ -1146,18 +1083,19 @@ class AdherentFormulaireController extends Controller
                 return response()->json(['status' => 'missing_email'], 400);
             }
 
-            $adherent = \App\Models\Adherent::where('mail', $email)->latest()->first();
+            $adherent = Adherent::where('mail', $email)->latest()->first();
 
+            /* Le Webhook de paiement peut être appelé plusieurs fois par HelloAsso
+             * (retry automatique). On doit vérifier si on a déjà traité ce paiement
+             * (Idempotence) pour ne pas doubler les entrées financières.
+             */
             if ($adherent) {
-                $inscription = \App\Models\Inscription::where('id_adherent', $adherent->id)
-                    ->where('a_paye', \App\Models\Inscription::EN_ATTENTE)
+                Inscription::where('id_adherent', $adherent->id)
+                    ->where('a_paye', Inscription::EN_ATTENTE)
                     ->where('renouvellement', false)
-                    ->latest()
-                    ->first();
-
-                if ($inscription) {
-                    $inscription->update(['a_paye' => \App\Models\Inscription::PAYE]);
-                }
+                    ->latest('id')
+                    ->take(1)
+                    ->update(['a_paye' => Inscription::PAYE]);
 
                 $dejaCreee = Paiement::where('id_adherent', $adherent->id)
                     ->where('source', 'HelloAsso')
@@ -1181,18 +1119,12 @@ class AdherentFormulaireController extends Controller
             $structure = AdherentStructure::where('mail', $email)->latest()->first();
 
             if ($structure) {
-                $inscriptionStructure = \Illuminate\Support\Facades\DB::table('inscriptions')
-                    ->where('id_structure', $structure->id)
-                    ->where('a_paye', \App\Models\Inscription::EN_ATTENTE)
+                Inscription::where('id_structure', $structure->id)
+                    ->where('a_paye', Inscription::EN_ATTENTE)
                     ->where('renouvellement', false)
-                    ->orderByDesc('id')
-                    ->first();
-
-                if ($inscriptionStructure) {
-                    \Illuminate\Support\Facades\DB::table('inscriptions')
-                        ->where('id', $inscriptionStructure->id)
-                        ->update(['a_paye' => \App\Models\Inscription::PAYE, 'updated_at' => now()]);
-                }
+                    ->latest('id')
+                    ->take(1)
+                    ->update(['a_paye' => Inscription::PAYE]);
 
                 $syncLog->update(['status' => 'success', 'payments_imported' => 1]);
                 return response()->json(['status' => 'ok'], 200);
@@ -1200,7 +1132,7 @@ class AdherentFormulaireController extends Controller
 
             $syncLog->update([
                 'status' => 'warning',
-                'errors' => ["Paiement de {$amount}€ reçu pour {$firstName} {$lastName}, mais l'email {$email} est introuvable dans la base Savoirs Vivants."]
+                'errors' => ["Paiement de {$amount}€ reçu pour {$firstName} {$lastName}, mais l'email {$email} est introuvable."]
             ]);
 
             return response()->json(['status' => 'not_found'], 404);
@@ -1216,28 +1148,21 @@ class AdherentFormulaireController extends Controller
         }
     }
 
-    /**
-     * Calcule le prix des activités en appliquant la pondération selon le mois
-     */
     private function calculerMontantActivites(array $activiteIds): float
     {
         if (empty($activiteIds)) return 0.0;
 
-        $activites = \App\Models\Activite::whereIn('id', $activiteIds)->get();
+        $activites = Activite::whereIn('id', $activiteIds)->get();
         $total = 0.0;
-        $month = now()->month; // Récupère le mois actuel (1 à 12)
+        $month = now()->month;
 
         foreach ($activites as $activite) {
             $prix = (float) $activite->tarif;
 
-            // Appliquer la pondération UNIQUEMENT pour les ateliers (type == 'activite')
             if ($activite->type === 'activite') {
                 if ($month == 2 || $month == 3) {
-                    // Février (2) et Mars (3) : -50€
-                    $prix = max(0, $prix - 50); // max(0, ...) évite d'avoir un prix négatif
+                    $prix = max(0, $prix - 50);
                 } elseif ($month >= 4 && $month <= 6) {
-                    // Avril (4), Mai (5), Juin (6) : Prorata
-                    // Avril = 3 mois restants (7 - 4 = 3)
                     $moisRestants = 7 - $month;
                     $prix = ($prix / 10) * $moisRestants;
                 }

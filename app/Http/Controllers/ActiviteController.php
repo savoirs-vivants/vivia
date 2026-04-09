@@ -25,14 +25,11 @@ class ActiviteController extends Controller
         $ville  = $request->get('ville');
         $user   = Auth::user();
 
-        $mesActivitesIds = null;
-        if ($user->role === 'animateur') {
-            $mesActivitesIds = DB::table('activites_gestionnaire')
-                ->where('id_users', $user->id)
-                ->pluck('id_activite');
-        }
+        $mesActivitesIds = $user->role === 'animateur'
+            ? DB::table('activites_gestionnaire')->where('id_users', $user->id)->pluck('id_activite')
+            : null;
 
-        $toutesActivites = Activite::withCount(['adherentsActifs as nb_inscrits'])
+        $toutesActivites = Activite::withCount('adherentsActifs as nb_inscrits')
             ->with('dossier')
             ->when($mesActivitesIds, fn($q) => $q->whereIn('id', $mesActivitesIds))
             ->when($search, fn($q) => $q->where('nom', 'like', "%{$search}%"))
@@ -45,153 +42,96 @@ class ActiviteController extends Controller
             ->get();
 
         $activites = $toutesActivites->where('is_archived', false);
-        $archives = $toutesActivites->where('is_archived', true);
+        $archives  = $toutesActivites->where('is_archived', true);
 
         $lieux = Activite::select('ville')->distinct()->whereNotNull('ville')->pluck('ville');
-
-        $dossiers = DossierActivite::withCount(['activitesActives as nb_activites'])->orderBy('nom')->get();
+        $dossiers = DossierActivite::withCount('activitesActives as nb_activites')->orderBy('nom')->get();
 
         return view('activites.index', compact('activites', 'archives', 'search', 'type', 'ville', 'lieux', 'dossiers'));
     }
 
     public function toggleArchive(Activite $activite)
     {
-        $activite->update([
-            'is_archived' => !$activite->is_archived
-        ]);
-
-        $message = $activite->is_archived ? "L'activité a été archivée." : "L'activité a été restaurée.";
-
-        return redirect()->back()->with('success', $message);
+        $activite->update(['is_archived' => !$activite->is_archived]);
+        return back()->with('success', $activite->is_archived ? "L'activité a été archivée." : "L'activité a été restaurée.");
     }
 
     public function create()
     {
         $users = User::orderBy('name')->get();
         $dossiers = DossierActivite::orderBy('nom')->get();
+
         return view('activites.create', compact('users', 'dossiers'));
     }
 
     public function store(StoreActiviteRequest $request)
     {
-        $validated = $request->validated();
+        $data = $this->preparerDonneesActivite($request);
+        $activite = Activite::create($data);
 
-        $horaires = [];
-
-        if ($validated['type'] === 'stage') {
-            $horaires['stage'] = [
-                'date_debut'  => $request->input('date_debut_stage'),
-                'date_fin'    => $request->input('date_fin_stage'),
-                'heure_debut' => $request->input('heure_debut_stage'),
-                'heure_fin'   => $request->input('heure_fin_stage'),
-            ];
-        } else {
-            $jours = $request->input('jours', []);
-            $debuts = $request->input('debuts', []);
-            $fins = $request->input('fins', []);
-
-            foreach ($jours as $index => $jour) {
-                if (!empty($jour) && !empty($debuts[$index]) && !empty($fins[$index])) {
-                    $plage = $debuts[$index] . '-' . $fins[$index];
-                    if (isset($horaires[$jour])) {
-                        $horaires[$jour] .= ', ' . $plage;
-                    } else {
-                        $horaires[$jour] = $plage;
-                    }
-                }
-            }
+        if ($request->filled('gestionnaires')) {
+            $activite->gestionnaires()->sync($request->validated('gestionnaires'));
         }
 
-        $idDossier = null;
-        $dossierAction = $request->input('dossier_action', 'none');
-
-        if ($dossierAction === 'existing') {
-            $idDossier = $request->input('id_dossier');
-        } elseif ($dossierAction === 'new' && !empty($request->input('nouveau_dossier'))) {
-            $dossier = DossierActivite::create(['nom' => $request->input('nouveau_dossier')]);
-            $idDossier = $dossier->id;
-        }
-
-        $activite = Activite::create([
-            'type'       => $validated['type'],
-            'nom'        => $validated['nom'],
-            'tarif'      => $validated['tarif'],
-            'adresse'    => $validated['adresse'],
-            'ville'      => $validated['ville'],
-            'horaires'   => empty($horaires) ? null : $horaires,
-            'classes'    => $request->input('classes') ?: null,
-            'id_dossier' => $idDossier,
-        ]);
-
-        if (!empty($validated['gestionnaires'])) {
-            $activite->gestionnaires()->sync($validated['gestionnaires']);
-        }
         $this->genererSeancesAuto($activite);
 
-        return redirect()->route('activites.index')
-            ->with('success', 'L\'événement a été créé avec succès.');
+        return redirect()->route('activites.index')->with('success', 'L\'événement a été créé avec succès.');
+    }
+
+    public function edit(Activite $activite)
+    {
+        $users = User::orderBy('name')->get();
+        $dossiers = DossierActivite::orderBy('nom')->get();
+        $activite->load('gestionnaires');
+
+        return view('activites.edit', compact('activite', 'users', 'dossiers'));
+    }
+
+    public function update(UpdateActiviteRequest $request, Activite $activite)
+    {
+        $data = $this->preparerDonneesActivite($request);
+        $activite->update($data);
+
+        $activite->gestionnaires()->sync($request->validated('gestionnaires', []));
+        $this->genererSeancesAuto($activite);
+
+        return redirect()->route('activites.show', $activite)->with('success', 'L\'événement a été modifié avec succès.');
     }
 
     public function show(Activite $activite)
     {
         if (Auth::user()->role === 'animateur') {
-            $estGestionnaire = DB::table('activites_gestionnaire')
-                ->where('id_users', Auth::id())
-                ->where('id_activite', $activite->id)
-                ->exists();
-            abort_if(!$estGestionnaire, 403);
+            abort_if(!$activite->gestionnaires()->where('users.id', Auth::id())->exists(), 403);
         }
 
-        $saison      = Saison::current();
+        $saison = Saison::current();
         $saisonModel = Saison::where('nom', $saison)->first();
 
-        if ($saisonModel) {
-            $dateDebutSaison = $saisonModel->date_debut;
-            $dateFinSaison   = $saisonModel->date_fin;
-        } else {
-            $parts = explode('-', $saison);
-            $dateDebutSaison = Carbon::create((int)$parts[0], 9, 1);
-            $dateFinSaison   = Carbon::create((int)$parts[1], 6, 30);
-        }
+        $dateDebutSaison = $saisonModel ? $saisonModel->date_debut : Carbon::create((int)explode('-', $saison)[0], 9, 1);
+        $dateFinSaison   = $saisonModel ? $saisonModel->date_fin   : Carbon::create((int)explode('-', $saison)[1], 6, 30);
 
-        $activite->load(['gestionnaires', 'adherents']);
-
-        $adherentsActifs = $activite->adherents()
-            ->wherePivot('saison', $saison)
-            ->wherePivot('est_un_abandon', false)
-            ->wherePivotNull('date_sortie')
-            ->get();
+        $activite->load(['gestionnaires', 'adherentsActifs']);
+        $adherentsActifs = $activite->adherentsActifs()->wherePivot('saison', $saison)->get();
 
         $seances = $activite->seances()
             ->with('presences.adherent')
-            ->where('date', '>=', $dateDebutSaison)
-            ->where(function ($q) use ($dateFinSaison) {
-                $q->where('date', '<=', now())
-                  ->orWhere('statut', 'terminee');
-            })
-            ->where('date', '<=', $dateFinSaison)
+            ->whereBetween('date', [$dateDebutSaison, $dateFinSaison])
+            ->where(fn($q) => $q->where('date', '<=', now())->orWhere('statut', 'terminee'))
             ->orderByDesc('date')
             ->get();
 
         $seancesAVenir = $activite->seances()
             ->where('date', '>', now())
-            ->where(function ($q) {
-                $q->where('statut', '!=', 'terminee')
-                  ->orWhereNull('statut');
-            })
+            ->where(fn($q) => $q->where('statut', '!=', 'terminee')->orWhereNull('statut'))
             ->orderBy('date')
             ->get();
 
-        $seancesEligibles = $seances->map(function ($seance) use ($activite) {
-            $dateSeance = \Carbon\Carbon::parse($seance->date)->format('Y-m-d');
+        $historiqueInscriptions = DB::table('activites_adherents')->where('id_activite', $activite->id)->get();
 
-            $seance->eligible_adherents = DB::table('activites_adherents')
-                ->where('id_activite', $activite->id)
-                ->where('date_entree', '<=', $dateSeance)
-                ->where(function ($q) use ($dateSeance) {
-                    $q->whereNull('date_sortie')
-                      ->orWhere('date_sortie', '>', $dateSeance);
-                })
+        $seancesEligibles = $seances->map(function ($seance) use ($historiqueInscriptions) {
+            $dateSeance = Carbon::parse($seance->date)->format('Y-m-d');
+            $seance->eligible_adherents = $historiqueInscriptions
+                ->filter(fn($pivot) => $pivot->date_entree <= $dateSeance && (is_null($pivot->date_sortie) || $pivot->date_sortie > $dateSeance))
                 ->pluck('id_adherent');
 
             $seance->eligible_count = $seance->eligible_adherents->count();
@@ -199,40 +139,47 @@ class ActiviteController extends Controller
         });
 
         $nbSeancesPassees = $seances->count();
-
         $totalEligibleAcrossSeances = $seancesEligibles->sum('eligible_count');
-        $totalPresencesEligible = 0;
-        foreach ($seancesEligibles as $seance) {
-            $nbAbsentsEligible = $seance->presences->whereIn('id_adherent', $seance->eligible_adherents)->count();
-            $totalPresencesEligible += ($seance->eligible_count - $nbAbsentsEligible);
-        }
+        $totalPresencesEligible = $seancesEligibles->sum(fn($s) => $s->eligible_count - $s->presences->whereIn('id_adherent', $s->eligible_adherents)->count());
         $tauxMoyen = $totalEligibleAcrossSeances > 0 ? round(($totalPresencesEligible / $totalEligibleAcrossSeances) * 100) : 0;
 
-        $tousLesAdherents  = $activite->adherents;
-        $adherentsDeSaison = $tousLesAdherents->where('pivot.saison', $saison);
+        /* Au lieu de charger tous les modèles Adhérents en mémoire pour calculer la fidélisation,
+         * on demande uniquement les identifiants et les saisons à MySQL. C'est infiniment plus rapide
+         * et cela protège le serveur de la saturation mémoire au fil des années.
+         */
+        $saisonsHistoriques = DB::table('activites_adherents')
+            ->where('id_activite', $activite->id)
+            ->pluck('saison')
+            ->unique()
+            ->sortDesc()
+            ->values();
 
         $tauxReconduction = 0;
         $nbReconduits     = 0;
-        $saisonPrecedente = null;
+        $saisonPrecedente = $saisonsHistoriques->count() >= 2 ? $saisonsHistoriques[1] : null;
 
-        $saisons = $tousLesAdherents->pluck('pivot.saison')->unique()->sortDesc()->values();
-        if ($saisons->count() >= 2) {
-            $saisonPrecedente = $saisons[1];
-            $idsPrecedents    = $tousLesAdherents->where('pivot.saison', $saisonPrecedente)->pluck('id')->unique();
-            $idsCourants      = $adherentsDeSaison->pluck('id')->unique();
-            $nbCourants       = $idsCourants->count();
-            $nbReconduits     = $idsCourants->intersect($idsPrecedents)->count();
+        if ($saisonPrecedente) {
+            $idsPrecedents = DB::table('activites_adherents')->where('id_activite', $activite->id)->where('saison', $saisonPrecedente)->pluck('id_adherent');
+            $idsCourants   = DB::table('activites_adherents')->where('id_activite', $activite->id)->where('saison', $saison)->pluck('id_adherent');
+            $nbCourants    = $idsCourants->count();
+
+            $nbReconduits  = $idsCourants->intersect($idsPrecedents)->count();
             $tauxReconduction = $nbCourants > 0 ? round(($nbReconduits / $nbCourants) * 100) : 0;
         }
 
-        $nbAbandons    = $adherentsDeSaison->where('pivot.est_un_abandon', true)->count();
-        $totalDeSaison = $adherentsDeSaison->count();
+        $statistiquesAbandon = DB::table('activites_adherents')
+            ->selectRaw('count(*) as total, sum(est_un_abandon) as abandons')
+            ->where('id_activite', $activite->id)
+            ->where('saison', $saison)
+            ->first();
+
+        $nbAbandons    = $statistiquesAbandon->abandons ?? 0;
+        $totalDeSaison = $statistiquesAbandon->total ?? 0;
         $tauxAbandon   = $totalDeSaison > 0 ? round(($nbAbandons / $totalDeSaison) * 100) : 0;
 
         $graphiqueSeances = $seancesEligibles->take(8)->reverse()->map(function ($seance) {
             $nbAbsents  = $seance->presences->whereIn('id_adherent', $seance->eligible_adherents)->count();
             $nbPresents = $seance->eligible_count - $nbAbsents;
-
             return [
                 'date'        => Carbon::parse($seance->date)->isoFormat('D MMM'),
                 'presents'    => $nbPresents,
@@ -244,17 +191,15 @@ class ActiviteController extends Controller
         $adherentsStats = $adherentsActifs->map(function ($adherent) use ($seancesEligibles) {
             $seancesEligibleAdherent = $seancesEligibles->filter(fn($s) => $s->eligible_adherents->contains($adherent->id));
             $nbSeances = $seancesEligibleAdherent->count();
+
             if ($nbSeances === 0) {
                 $adherent->taux_presence = 0;
                 return $adherent;
             }
-            $nbAbsences = 0;
-            foreach ($seancesEligibleAdherent as $seance) {
-                if ($seance->presences->where('id_adherent', $adherent->id)->isNotEmpty()) {
-                    $nbAbsences++;
-                }
-            }
+
+            $nbAbsences = $seancesEligibleAdherent->filter(fn($s) => $s->presences->where('id_adherent', $adherent->id)->isNotEmpty())->count();
             $adherent->taux_presence = round((($nbSeances - $nbAbsences) / $nbSeances) * 100);
+
             return $adherent;
         });
 
@@ -271,7 +216,7 @@ class ActiviteController extends Controller
             'nbAbandons',
             'tauxReconduction',
             'nbReconduits',
-            'saisonPrecedente',
+            'saisonPrecedente'
         ))->with('seances', $seancesEligibles);
     }
 
@@ -280,44 +225,79 @@ class ActiviteController extends Controller
         $presences = $request->input('presences', []);
         $adherents = $activite->adherentsActifs->pluck('id');
 
+        /* Architecture de "Présomption de présence". Pour économiser de l'espace BDD,
+         * l'état par défaut (pas de ligne en base) = Présent. On insère une ligne uniquement
+         * pour tracer les absences. Si on marque qqn présent, on supprime l'enregistrement d'absence.
+         */
         foreach ($adherents as $idAdherent) {
             $data = $presences[$idAdherent] ?? [];
-            $estPresent = isset($data['statut']) && $data['statut'] === 'present';
 
-            if ($estPresent) {
-                \App\Models\Presence::where('id_seance', $seance)
-                    ->where('id_adherent', $idAdherent)
-                    ->delete();
+            if (isset($data['statut']) && $data['statut'] === 'present') {
+                \App\Models\Presence::where('id_seance', $seance)->where('id_adherent', $idAdherent)->delete();
             } else {
                 \App\Models\Presence::updateOrCreate(
-                    [
-                        'id_seance'   => $seance,
-                        'id_adherent' => $idAdherent,
-                    ],
-                    [
-                        'statut' => 'Absent',
-                        'raison' => $data['raison'] ?? null,
-                    ]
+                    ['id_seance' => $seance, 'id_adherent' => $idAdherent],
+                    ['statut' => 'Absent', 'raison' => $data['raison'] ?? null]
                 );
             }
         }
 
-        return redirect()->back()->with('success', 'Les présences ont bien été enregistrées.');
+        return back()->with('success', 'Les présences ont bien été enregistrées.');
     }
 
-    public function edit(Activite $activite)
+    public function abandonner(AbandonnerAdherentRequest $request, Activite $activite, \App\Models\Adherent $adherent)
     {
-        $users = User::orderBy('name')->get();
-        $dossiers = DossierActivite::orderBy('nom')->get();
-        $activite->load('gestionnaires');
+        $activite->adherents()->updateExistingPivot($adherent->id, [
+            'date_sortie' => now()->toDateString(),
+            'motif_sortie' => $request->motif_sortie,
+            'est_un_abandon' => true,
+        ]);
 
-        return view('activites.edit', compact('activite', 'users', 'dossiers'));
+        return back()->with('success', "L'adhérent {$adherent->prenom} a été marqué comme ayant abandonné.");
     }
 
-    public function update(UpdateActiviteRequest $request, Activite $activite)
+    public function searchUsers(Request $request)
+    {
+        $search = $request->get('q');
+        return response()->json(
+            User::where('name', 'like', "%{$search}%")
+                ->orWhere('firstname', 'like', "%{$search}%")
+                ->limit(10)
+                ->get(['id', 'firstname', 'name'])
+        );
+    }
+
+    public function annulerSeance(Activite $activite, $idSeance)
+    {
+        $seance = DB::table('seances')->where('id_activite', $activite->id)->where('id_seance', $idSeance)->first();
+
+        if ($seance) {
+            $dateFormatee = Carbon::parse($seance->date)->isoFormat('dddd D MMMM YYYY à HH:mm');
+
+            // Extraction propre des emails via les relations Laravel
+            $emails = $activite->adherentsActifs()->with('tousLesTuteurs')->get()
+                ->map(fn($a) => $a->tousLesTuteurs->first()?->mail)
+                ->filter()
+                ->unique()
+                ->toArray();
+
+            if (!empty($emails)) {
+                Mail::to('contact@savoirsvivants.fr')->bcc($emails)->send(new CoursAnnule($activite->nom, $dateFormatee));
+            }
+
+            DB::table('seances')->where('id_seance', $idSeance)->delete();
+        }
+
+        return back()->with('success', 'La séance a été annulée, et les tuteurs ont été prévenus par email.');
+    }
+
+    /* ==============================================================================
+     * MÉTHODES PRIVÉES
+     * ============================================================================== */
+
+    private function preparerDonneesActivite(Request $request): array
     {
         $validated = $request->validated();
-
         $horaires = [];
 
         if ($validated['type'] === 'stage') {
@@ -335,26 +315,19 @@ class ActiviteController extends Controller
             foreach ($jours as $index => $jour) {
                 if (!empty($jour) && !empty($debuts[$index]) && !empty($fins[$index])) {
                     $plage = $debuts[$index] . '-' . $fins[$index];
-                    if (isset($horaires[$jour])) {
-                        $horaires[$jour] .= ', ' . $plage;
-                    } else {
-                        $horaires[$jour] = $plage;
-                    }
+                    $horaires[$jour] = isset($horaires[$jour]) ? $horaires[$jour] . ', ' . $plage : $plage;
                 }
             }
         }
 
         $idDossier = null;
-        $dossierAction = $request->input('dossier_action', 'none');
-
-        if ($dossierAction === 'existing') {
+        if ($request->input('dossier_action') === 'existing') {
             $idDossier = $request->input('id_dossier');
-        } elseif ($dossierAction === 'new' && !empty($request->input('nouveau_dossier'))) {
-            $dossier = DossierActivite::create(['nom' => $request->input('nouveau_dossier')]);
-            $idDossier = $dossier->id;
+        } elseif ($request->input('dossier_action') === 'new' && $request->filled('nouveau_dossier')) {
+            $idDossier = DossierActivite::create(['nom' => $request->input('nouveau_dossier')])->id;
         }
 
-        $activite->update([
+        return [
             'type'       => $validated['type'],
             'nom'        => $validated['nom'],
             'tarif'      => $validated['tarif'],
@@ -363,45 +336,15 @@ class ActiviteController extends Controller
             'horaires'   => empty($horaires) ? null : $horaires,
             'classes'    => $request->input('classes') ?: null,
             'id_dossier' => $idDossier,
-        ]);
-
-        $activite->gestionnaires()->sync($validated['gestionnaires'] ?? []);
-        $this->genererSeancesAuto($activite);
-
-        return redirect()->route('activites.show', $activite)
-            ->with('success', 'L\'événement a été modifié avec succès.');
-    }
-
-    public function abandonner(AbandonnerAdherentRequest $request, Activite $activite, \App\Models\Adherent $adherent)
-    {
-
-        $activite->adherents()->updateExistingPivot($adherent->id, [
-            'date_sortie' => now()->toDateString(),
-            'motif_sortie' => $request->motif_sortie,
-            'est_un_abandon' => true,
-        ]);
-
-        return redirect()->back()->with('success', "L'adhérent {$adherent->prenom} a été marqué comme ayant abandonné.");
-    }
-
-    public function searchUsers(Request $request)
-    {
-        $search = $request->get('q');
-
-        $users = User::where(function ($q) use ($search) {
-            $q->where('name', 'like', "%{$search}%")
-                ->orWhere('firstname', 'like', "%{$search}%");
-        })
-            ->limit(10)
-            ->get(['id', 'firstname', 'name']);
-
-        return response()->json($users);
+        ];
     }
 
     private function genererSeancesAuto(Activite $activite)
     {
         $horaires = is_string($activite->horaires) ? json_decode($activite->horaires, true) : $activite->horaires;
         if (empty($horaires) || !is_array($horaires)) return;
+
+        $nouvellesSeances = [];
 
         if ($activite->type === 'stage' && isset($horaires['stage'])) {
             $debutStage = $horaires['stage']['date_debut'] ?? null;
@@ -410,96 +353,61 @@ class ActiviteController extends Controller
 
             if (!$debutStage || !$finStage) return;
 
-            $dateDebut = \Carbon\Carbon::parse($debutStage);
-            $dateFin   = \Carbon\Carbon::parse($finStage);
+            $dateCourante = Carbon::parse($debutStage);
+            $dateFin      = Carbon::parse($finStage);
 
-            for ($dateCourante = clone $dateDebut; $dateCourante->lte($dateFin); $dateCourante->addDay()) {
-                $dateAvecHeure = $dateCourante->format('Y-m-d') . ' ' . $heureDebut . ':00';
-
-                $existe = DB::table('seances')
-                    ->where('id_activite', $activite->id)
-                    ->where('date', $dateAvecHeure)
-                    ->exists();
-
-                if (!$existe) {
-                    DB::table('seances')->insert([
-                        'id_activite' => $activite->id,
-                        'date'        => $dateAvecHeure,
-                    ]);
-                }
+            while ($dateCourante->lte($dateFin)) {
+                $nouvellesSeances[] = [
+                    'id_activite' => $activite->id,
+                    'date'        => $dateCourante->format('Y-m-d') . ' ' . $heureDebut . ':00',
+                ];
+                $dateCourante->addDay();
             }
+        } else {
+            $joursMap = [
+                'Lundi' => Carbon::MONDAY,
+                'Mardi' => Carbon::TUESDAY,
+                'Mercredi' => Carbon::WEDNESDAY,
+                'Jeudi' => Carbon::THURSDAY,
+                'Vendredi' => Carbon::FRIDAY,
+                'Samedi' => Carbon::SATURDAY,
+                'Dimanche' => Carbon::SUNDAY,
+            ];
 
-            return;
-        }
+            /* On utilise les bornes de la saison active (ou à défaut une projection sur 1 an)
+             * pour éviter le bug où une activité créée en Juin pour la rentrée ne générerait
+             * aucune séance si on se basait uniquement sur now()->month.
+             */
+            $saisonActive = Saison::where('nom', Saison::current())->first();
+            $finGeneration = $saisonActive
+                ? Carbon::parse($saisonActive->date_fin)
+                : Carbon::create(now()->month >= 6 ? now()->year + 1 : now()->year, 7, 31);
 
-        $joursMap = [
-            'Lundi' => \Carbon\Carbon::MONDAY, 'Mardi' => \Carbon\Carbon::TUESDAY, 'Mercredi' => \Carbon\Carbon::WEDNESDAY,
-            'Jeudi' => \Carbon\Carbon::THURSDAY, 'Vendredi' => \Carbon\Carbon::FRIDAY, 'Samedi' => \Carbon\Carbon::SATURDAY, 'Dimanche' => \Carbon\Carbon::SUNDAY,
-        ];
+            foreach ($horaires as $jour => $plagesStr) {
+                if (!isset($joursMap[$jour])) continue;
 
-        $finAnneeScolaire = now()->month >= 9 ? \Carbon\Carbon::create(now()->year + 1, 6, 30) : \Carbon\Carbon::create(now()->year, 6, 30);
+                $plages = explode(',', $plagesStr);
+                $dateCourante = now()->next($joursMap[$jour]);
 
-        foreach ($horaires as $jour => $plagesStr) {
-            if (!isset($joursMap[$jour])) continue;
-
-            $plages = explode(',', $plagesStr);
-            $dateCourante = now()->next($joursMap[$jour]);
-
-            while ($dateCourante->lte($finAnneeScolaire)) {
-                foreach ($plages as $plage) {
-                    $parts = explode('-', trim($plage));
-                    $heureDebut = trim($parts[0]);
-                    $dateAvecHeure = $dateCourante->format('Y-m-d') . ' ' . $heureDebut . ':00';
-
-                    $existe = DB::table('seances')
-                        ->where('id_activite', $activite->id)
-                        ->where('date', $dateAvecHeure)
-                        ->exists();
-
-                    if (!$existe) {
-                        DB::table('seances')->insert([
+                while ($dateCourante->lte($finGeneration)) {
+                    foreach ($plages as $plage) {
+                        $heureDebut = trim(explode('-', $plage)[0]);
+                        $nouvellesSeances[] = [
                             'id_activite' => $activite->id,
-                            'date'        => $dateAvecHeure,
-                        ]);
+                            'date'        => $dateCourante->format('Y-m-d') . ' ' . $heureDebut . ':00',
+                        ];
                     }
+                    $dateCourante->addWeek();
                 }
-                $dateCourante->addWeek();
-            }
-        }
-    }
-
-    public function annulerSeance(Activite $activite, $idSeance)
-    {
-        $seance = DB::table('seances')
-            ->where('id_activite', $activite->id)
-            ->where('id_seance', $idSeance)
-            ->first();
-
-        if ($seance) {
-            $dateFormatee = \Carbon\Carbon::parse($seance->date)->isoFormat('dddd D MMMM YYYY à HH:mm');
-
-            $adherents = $activite->adherentsActifs()->with('tousLesTuteurs')->get();
-            $emails = [];
-
-            foreach ($adherents as $adherent) {
-                $tuteur = $adherent->tousLesTuteurs->first();
-                if ($tuteur && $tuteur->mail) {
-                    $emails[] = $tuteur->mail;
-                }
-            }
-
-            $emails = array_unique($emails);
-
-            if (!empty($emails)) {
-                Mail::to('contact@savoirsvivants.fr')->bcc($emails)->send(new CoursAnnule($activite->nom, $dateFormatee));
             }
         }
 
-        DB::table('seances')
-            ->where('id_activite', $activite->id)
-            ->where('id_seance', $idSeance)
-            ->delete();
-
-        return redirect()->back()->with('success', 'La séance a été annulée, et les tuteurs ont été prévenus par email.');
+        /* Bulk Insert. Au lieu de faire 40 requêtes `insert()` dans une boucle (très lent),
+         * on insère tout le tableau en une seule requête SQL. `insertOrIgnore` permet de
+         * ne pas écraser ni doubler les séances qui existent déjà si l'activité est mise à jour.
+         */
+        if (!empty($nouvellesSeances)) {
+            DB::table('seances')->insertOrIgnore($nouvellesSeances);
+        }
     }
 }

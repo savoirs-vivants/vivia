@@ -15,83 +15,32 @@ class DashboardController extends Controller
 {
     public function index()
     {
-        $saison = $this->currentSaison();
+        $saison = Saison::current();
         $user   = Auth::user();
 
         $mesActivitesIds = DB::table('activites_gestionnaire')
             ->where('id_users', Auth::id())
-            ->pluck('id_activite');
+            ->pluck('id_activite')
+            ->toArray();
 
-        $isGestionnaire  = $mesActivitesIds->isNotEmpty();
+        $isGestionnaire  = !empty($mesActivitesIds);
         $isRoleRestreint = in_array($user->role, ['coordinateur', 'animateur']);
 
         if ($isRoleRestreint && !$isGestionnaire) {
             return redirect()->route('activites.index');
         }
 
+        $seanceData = $isGestionnaire
+            ? $this->getProchaineSeanceData($mesActivitesIds, $saison)
+            : ['seance' => null, 'adherents' => collect(), 'absentsIds' => []];
+
         if ($isRoleRestreint) {
-            $prochaineSeance  = null;
-            $adherentsSeance  = collect();
-            $absentsSeanceIds = [];
-
-            $prochaineSeance = DB::table('seances')
-                ->join('activites', 'seances.id_activite', '=', 'activites.id')
-                ->whereIn('activites.id', $mesActivitesIds)
-                ->where(function ($q) {
-                    $q->where('seances.statut', 'appel_fait')
-                      ->orWhere(function ($q2) {
-                          $q2->where('seances.date', '>', now())
-                             ->where(function ($q3) {
-                                 $q3->whereNull('seances.statut')
-                                    ->orWhere('seances.statut', '!=', 'terminee');
-                             });
-                      });
-                })
-                ->select(
-                    'seances.id_seance',
-                    'seances.id_activite',
-                    'seances.date',
-                    'seances.statut',
-                    'activites.nom as activite_nom',
-                    'activites.adresse',
-                    'activites.ville',
-                    DB::raw('(SELECT COUNT(*) FROM activites_adherents WHERE activites_adherents.id_activite = seances.id_activite AND activites_adherents.saison = "' . $saison . '" AND activites_adherents.est_un_abandon = 0) as nb_inscrits')
-                )
-                ->orderByRaw("CASE WHEN seances.statut = 'appel_fait' THEN 0 ELSE 1 END")
-                ->orderBy('seances.date')
-                ->first();
-
-            if ($prochaineSeance) {
-                $adherentsIds = DB::table('activites_adherents')
-                    ->join('inscriptions', function ($join) use ($saison) {
-                        $join->on('activites_adherents.id_adherent', '=', 'inscriptions.id_adherent')
-                             ->where('inscriptions.saison', '=', $saison);
-                    })
-                    ->where('activites_adherents.id_activite', $prochaineSeance->id_activite)
-                    ->where('activites_adherents.est_un_abandon', 0)
-                    ->whereNull('activites_adherents.date_sortie')
-                    ->where('inscriptions.a_paye', '!=', 'En attente')
-                    ->pluck('activites_adherents.id_adherent');
-
-                $adherentsSeance = \App\Models\Adherent::with('tousLesTuteurs')
-                    ->whereIn('id', $adherentsIds)
-                    ->orderBy('nom')
-                    ->orderBy('prenom')
-                    ->get();
-
-                $absentsSeanceIds = DB::table('presence')
-                    ->where('id_seance', $prochaineSeance->id_seance)
-                    ->where('statut', 'Absent')
-                    ->pluck('id_adherent')
-                    ->toArray();
-            }
-
             return view('dashboard', [
                 'isGestionnaire'   => $isGestionnaire,
                 'isRoleRestreint'  => true,
-                'prochaineSeance'  => $prochaineSeance,
-                'adherentsSeance'  => $adherentsSeance,
-                'absentsSeanceIds' => $absentsSeanceIds,
+                'prochaineSeance'  => $seanceData['seance'],
+                'adherentsSeance'  => $seanceData['adherents'],
+                'absentsSeanceIds' => $seanceData['absentsIds'],
                 'saison'           => $saison,
                 'totalAdherents'   => 0,
                 'newThisMonth'     => 0,
@@ -106,7 +55,6 @@ class DashboardController extends Controller
             ]);
         }
 
-        // ── KPIs : Adhérents ──────────────────────────────────────────────
         $totalAdherents = DB::table('inscriptions')
             ->where('saison', $saison)
             ->whereNotNull('id_adherent')
@@ -121,11 +69,6 @@ class DashboardController extends Controller
             ->distinct('id_adherent')
             ->count('id_adherent');
 
-        // ── Finances ──────────────────────────────────────────────────────
-        $adherentsSaison = DB::table('inscriptions')
-            ->where('saison', $saison)
-            ->pluck('id_adherent');
-
         $totalCotisations = DB::table('inscriptions')
             ->where('saison', $saison)
             ->whereIn('a_paye', ['oui', 'Payé'])
@@ -136,8 +79,6 @@ class DashboardController extends Controller
             ->whereIn('a_paye', ['en attente', 'En attente', 'partiel', 'Partiel', 'non', 'Non'])
             ->sum('montant');
 
-
-        // ── Statuts d'adhésion ────────────────────────────────────────────
         $statuts = DB::table('inscriptions')
             ->where('saison', $saison)
             ->select('a_paye', DB::raw('COUNT(*) as nb'))
@@ -148,79 +89,13 @@ class DashboardController extends Controller
         $statutAttente = $statuts->get('en attente', 0) + $statuts->get('En attente', 0) + $statuts->get('non', 0) + $statuts->get('Non', 0);
         $statutPartiel = $statuts->get('partiel', 0) + $statuts->get('Partiel', 0);
 
-        // ── Prochaine séance (gestionnaire) ───────────────────────────────
-        $prochaineSeance  = null;
-        $adherentsSeance  = collect();
-        $absentsSeanceIds = [];
-
-        if ($isGestionnaire) {
-            $prochaineSeance = DB::table('seances')
-                ->join('activites', 'seances.id_activite', '=', 'activites.id')
-                ->whereIn('activites.id', $mesActivitesIds)
-                ->where(function ($q) {
-                    $q->where('seances.statut', 'appel_fait')
-                      ->orWhere(function ($q2) {
-                          $q2->where('seances.date', '>', now())
-                             ->where(function ($q3) {
-                                 $q3->whereNull('seances.statut')
-                                    ->orWhere('seances.statut', '!=', 'terminee');
-                             });
-                      });
-                })
-                ->select(
-                    'seances.id_seance',
-                    'seances.id_activite',
-                    'seances.date',
-                    'seances.statut',
-                    'activites.nom as activite_nom',
-                    'activites.adresse',
-                    'activites.ville',
-                    DB::raw('(SELECT COUNT(*) FROM activites_adherents WHERE activites_adherents.id_activite = seances.id_activite AND activites_adherents.saison = "' . $saison . '" AND activites_adherents.est_un_abandon = 0) as nb_inscrits')
-                )
-                ->orderByRaw("CASE WHEN seances.statut = 'appel_fait' THEN 0 ELSE 1 END")
-                ->orderBy('seances.date')
-                ->first();
-
-            if ($prochaineSeance) {
-                $adherentsIds = DB::table('activites_adherents')
-                    ->join('inscriptions', function ($join) use ($saison) {
-                        $join->on('activites_adherents.id_adherent', '=', 'inscriptions.id_adherent')
-                             ->where('inscriptions.saison', '=', $saison);
-                    })
-                    ->where('activites_adherents.id_activite', $prochaineSeance->id_activite)
-                    ->where('activites_adherents.est_un_abandon', 0)
-                    ->whereNull('activites_adherents.date_sortie')
-                    ->where('inscriptions.a_paye', '!=', 'En attente')
-                    ->pluck('activites_adherents.id_adherent');
-
-                $adherentsSeance = Adherent::with('tousLesTuteurs')
-                    ->whereIn('id', $adherentsIds)
-                    ->orderBy('nom')
-                    ->orderBy('prenom')
-                    ->get();
-
-                $absentsSeanceIds = DB::table('presence')
-                    ->where('id_seance', $prochaineSeance->id_seance)
-                    ->where('statut', 'Absent')
-                    ->pluck('id_adherent')
-                    ->toArray();
-            }
-        }
-
-        // ── TOP 3 ACTIVITÉS ───────────────────────────────────────────────
         $activitesStats = DB::table('activites')
             ->leftJoin('activites_adherents', function ($join) use ($saison) {
                 $join->on('activites.id', '=', 'activites_adherents.id_activite')
                     ->where('activites_adherents.saison', '=', $saison)
                     ->where('activites_adherents.est_un_abandon', '=', 0);
             })
-            ->select(
-                'activites.id',
-                'activites.nom',
-                'activites.type',
-                'activites.horaires',
-                DB::raw('COUNT(activites_adherents.id) as total_inscrits')
-            )
+            ->select('activites.id', 'activites.nom', 'activites.type', 'activites.horaires', DB::raw('COUNT(activites_adherents.id) as total_inscrits'))
             ->groupBy('activites.id', 'activites.nom', 'activites.type', 'activites.horaires')
             ->orderByDesc('total_inscrits')
             ->take(3)
@@ -234,29 +109,26 @@ class DashboardController extends Controller
             ->groupBy('type_adhesion')
             ->get();
 
-        return view('dashboard', compact(
-            'repartitionTypes',
-            'saison',
-            'totalAdherents',
-            'newThisMonth',
-            'activitesStats',
-            'maxInscrits',
-            'totalCotisations',
-            'totalEnAttente',
-            'statutPaye',
-            'statutAttente',
-            'statutPartiel',
-            'prochaineSeance',
-            'adherentsSeance',
-            'absentsSeanceIds',
-            'isGestionnaire',
-            'isRoleRestreint'
-        ));
+        return view('dashboard', [
+            'repartitionTypes' => $repartitionTypes,
+            'saison'           => $saison,
+            'totalAdherents'   => $totalAdherents,
+            'newThisMonth'     => $newThisMonth,
+            'activitesStats'   => $activitesStats,
+            'maxInscrits'      => $maxInscrits,
+            'totalCotisations' => $totalCotisations,
+            'totalEnAttente'   => $totalEnAttente,
+            'statutPaye'       => $statutPaye,
+            'statutAttente'    => $statutAttente,
+            'statutPartiel'    => $statutPartiel,
+            'prochaineSeance'  => $seanceData['seance'],
+            'adherentsSeance'  => $seanceData['adherents'],
+            'absentsSeanceIds' => $seanceData['absentsIds'],
+            'isGestionnaire'   => $isGestionnaire,
+            'isRoleRestreint'  => $isRoleRestreint
+        ]);
     }
 
-    /**
-     * Enregistrer l'appel (absents) et passer la séance en statut "appel_fait".
-     */
     public function enregistrerAppel(Request $request, int $seance)
     {
         $seanceData = DB::table('seances')
@@ -267,72 +139,78 @@ class DashboardController extends Controller
 
         abort_if(!$seanceData, 404);
 
-        $mesActivitesIds = DB::table('activites_gestionnaire')
-            ->where('id_users', Auth::id())
-            ->pluck('id_activite')
-            ->toArray();
-
+        $mesActivitesIds = DB::table('activites_gestionnaire')->where('id_users', Auth::id())->pluck('id_activite')->toArray();
         abort_if(!in_array($seanceData->id_activite, $mesActivitesIds), 403);
 
         $absents = $request->input('absents', []);
 
-        DB::table('presence')->where('id_seance', $seance)->delete();
+        /* Faire l'appel implique 3 opérations BDD (Suppression, Insertion, Mise à jour).
+         * On utilise une Transaction. Si un mail échoue ou que la BDD plante, aucune donnée n'est
+         * corrompue ou enregistrée à moitié.
+         */
+        DB::transaction(function () use ($seance, $seanceData, $absents) {
+            DB::table('presence')->where('id_seance', $seance)->delete();
 
-        Carbon::setLocale('fr');
-        $dateFormatee = Carbon::parse($seanceData->date)->isoFormat('dddd D MMMM YYYY à HH:mm');
+            if (!empty($absents)) {
+                $presencesToInsert = [];
+                $absentsIds = [];
 
-        foreach ($absents as $absent) {
-            $idAdherent = (int) ($absent['id_adherent'] ?? 0);
-            if (!$idAdherent) continue;
+                foreach ($absents as $absent) {
+                    $idAdherent = (int) ($absent['id_adherent'] ?? 0);
+                    if (!$idAdherent) continue;
 
-            DB::table('presence')->insert([
-                'id_adherent' => $idAdherent,
-                'id_seance'   => $seance,
-                'statut'      => 'Absent',
-                'raison'      => $absent['motif'] ?? null,
-                'created_at'  => now(),
-                'updated_at'  => now(),
-            ]);
+                    $absentsIds[] = $idAdherent;
+                    $presencesToInsert[] = [
+                        'id_adherent' => $idAdherent,
+                        'id_seance'   => $seance,
+                        'statut'      => 'Absent',
+                        'raison'      => $absent['motif'] ?? null,
+                        'created_at'  => now(),
+                        'updated_at'  => now(),
+                    ];
+                }
 
-            $adherent = Adherent::with('tousLesTuteurs')->find($idAdherent);
+                if (!empty($presencesToInsert)) {
+                    DB::table('presence')->insert($presencesToInsert);
+                }
 
-            if ($adherent && in_array($adherent->tranche_age, ['Enfant', 'Adolescent'])) {
-                $premierTuteur = $adherent->tousLesTuteurs->first();
+                Carbon::setLocale('fr');
+                $dateFormatee = Carbon::parse($seanceData->date)->isoFormat('dddd D MMMM YYYY à HH:mm');
 
-                if ($premierTuteur && $premierTuteur->mail) {
-                    Mail::to($premierTuteur->mail)
-                        ->send(new EnfantAbsent(
-                            $adherent->prenom,
-                            $seanceData->activite_nom,
-                            $dateFormatee
-                        ));
+                // On récupère TOUS les adhérents absents en 1 seule requête (au lieu de N requêtes dans la boucle)
+                $adherentsAbsents = Adherent::with('tousLesTuteurs')->whereIn('id', $absentsIds)->get();
+
+                foreach ($adherentsAbsents as $adherent) {
+                    if (in_array($adherent->tranche_age, ['Enfant', 'Adolescent'])) {
+                        $premierTuteur = $adherent->tousLesTuteurs->first();
+
+                        if ($premierTuteur && $premierTuteur->mail) {
+                            Mail::to($premierTuteur->mail)->send(new EnfantAbsent(
+                                $adherent->prenom,
+                                $seanceData->activite_nom,
+                                $dateFormatee
+                            ));
+                        }
+                    }
                 }
             }
-            // -----------------------------------------
-        }
 
-        DB::table('seances')->where('id_seance', $seance)->update([
-            'statut'     => 'appel_fait',
-            'updated_at' => now(),
-        ]);
+            DB::table('seances')->where('id_seance', $seance)->update([
+                'statut'     => 'appel_fait',
+                'updated_at' => now(),
+            ]);
+        });
 
         return response()->json(['success' => true]);
     }
 
-    /**
-     * Clôturer la séance (fin de l'activité).
-     */
     public function terminerSeance(int $seance)
     {
         $seanceData = DB::table('seances')->where('id_seance', $seance)->first();
         abort_if(!$seanceData, 404);
         abort_if($seanceData->statut === 'terminee', 422, 'Séance déjà terminée.');
 
-        $mesActivitesIds = DB::table('activites_gestionnaire')
-            ->where('id_users', Auth::id())
-            ->pluck('id_activite')
-            ->toArray();
-
+        $mesActivitesIds = DB::table('activites_gestionnaire')->where('id_users', Auth::id())->pluck('id_activite')->toArray();
         abort_if(!in_array($seanceData->id_activite, $mesActivitesIds), 403);
 
         DB::table('seances')->where('id_seance', $seance)->update([
@@ -343,8 +221,73 @@ class DashboardController extends Controller
         return response()->json(['success' => true]);
     }
 
-    private function currentSaison(): string
+    /* ==============================================================================
+     * MÉTHODES PRIVÉES
+     * ============================================================================== */
+
+    /**
+     * Extrait la logique complexe de récupération de la prochaine séance pour un animateur.
+     */
+    private function getProchaineSeanceData(array $mesActivitesIds, string $saison): array
     {
-        return Saison::current();
+        if (empty($mesActivitesIds)) {
+            return ['seance' => null, 'adherents' => collect(), 'absentsIds' => []];
+        }
+
+        $seance = DB::table('seances')
+            ->join('activites', 'seances.id_activite', '=', 'activites.id')
+            ->whereIn('activites.id', $mesActivitesIds)
+            ->where(function ($q) {
+                $q->where('seances.statut', 'appel_fait')
+                    ->orWhere(function ($q2) {
+                        $q2->where('seances.date', '>', now())
+                            ->where(function ($q3) {
+                                $q3->whereNull('seances.statut')
+                                    ->orWhere('seances.statut', '!=', 'terminee');
+                            });
+                    });
+            })
+            ->select(
+                'seances.id_seance',
+                'seances.id_activite',
+                'seances.date',
+                'seances.statut',
+                'activites.nom as activite_nom',
+                'activites.adresse',
+                'activites.ville',
+                DB::raw('(SELECT COUNT(*) FROM activites_adherents WHERE activites_adherents.id_activite = seances.id_activite AND activites_adherents.saison = "' . $saison . '" AND activites_adherents.est_un_abandon = 0) as nb_inscrits')
+            )
+            ->orderByRaw("CASE WHEN seances.statut = 'appel_fait' THEN 0 ELSE 1 END")
+            ->orderBy('seances.date')
+            ->first();
+
+        if (!$seance) {
+            return ['seance' => null, 'adherents' => collect(), 'absentsIds' => []];
+        }
+
+        $adherentsIds = DB::table('activites_adherents')
+            ->join('inscriptions', function ($join) use ($saison) {
+                $join->on('activites_adherents.id_adherent', '=', 'inscriptions.id_adherent')
+                    ->where('inscriptions.saison', '=', $saison);
+            })
+            ->where('activites_adherents.id_activite', $seance->id_activite)
+            ->where('activites_adherents.est_un_abandon', 0)
+            ->whereNull('activites_adherents.date_sortie')
+            ->whereNotIn('inscriptions.a_paye', ['En attente', 'en attente', 'non', 'Non'])
+            ->pluck('activites_adherents.id_adherent');
+
+        $adherents = Adherent::with('tousLesTuteurs')
+            ->whereIn('id', $adherentsIds)
+            ->orderBy('nom')
+            ->orderBy('prenom')
+            ->get();
+
+        $absentsIds = DB::table('presence')
+            ->where('id_seance', $seance->id_seance)
+            ->where('statut', 'Absent')
+            ->pluck('id_adherent')
+            ->toArray();
+
+        return ['seance' => $seance, 'adherents' => $adherents, 'absentsIds' => $absentsIds];
     }
 }
