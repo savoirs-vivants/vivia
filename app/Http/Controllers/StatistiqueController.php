@@ -68,6 +68,20 @@ class StatistiqueController extends Controller
             ->first();
 
         $ageMoyen = round($ageStats->average_age, 1);
+
+        $allAges = $adherents->map(fn($a) => $a->date_naiss ? Carbon::parse($a->date_naiss)->age : null)
+            ->filter()
+            ->sort()
+            ->values();
+
+        $medianeAge = 0;
+        if ($allAges->count() > 0) {
+            $mid = floor($allAges->count() / 2);
+            $medianeAge = ($allAges->count() % 2 == 0)
+                ? ($allAges[$mid - 1] + $allAges[$mid]) / 2
+                : $allAges[$mid];
+        }
+
         $nbFilles = $ageStats->count_filles;
         $nbGarcons = $ageStats->count_garcons;
         $totalGenre = $nbFilles + $nbGarcons;
@@ -94,11 +108,11 @@ class StatistiqueController extends Controller
         /* On nettoie les espaces et la casse pour éviter d'avoir "Artisan" et "artisan"
          * en deux lignes séparées dans le graphique.
          */
-        $cspData = DB::table('tuteurs')
-            ->join('adherent_tuteurs', 'tuteurs.id', '=', 'adherent_tuteurs.id_tuteur')
+        $cspData = DB::table('tuteur')
+            ->join('adherent_tuteurs', 'tuteur.id', '=', 'adherent_tuteurs.id_tuteur')
             ->whereIn('adherent_tuteurs.id_adherent', $adherentsIdsCourants)
-            ->where('tuteurs.type', 'parent_tuteur')
-            ->whereNotNull('tuteurs.profession')
+            ->where('tuteur.type', 'parent_tuteur')
+            ->whereNotNull('tuteur.profession')
             ->selectRaw('LOWER(TRIM(profession)) as label, COUNT(*) as count')
             ->groupBy('label')
             ->orderByDesc('count')
@@ -144,10 +158,11 @@ class StatistiqueController extends Controller
 
         return view('statistiques.index', compact(
             'saisons', 'saisonCourante', 'saisonPrecedente', 'totalAdherents', 'diffTotalAdherents',
-            'ageMoyen', 'pctFilles', 'pctGarcons', 'nbFilles', 'nbGarcons', 'tauxFidelisation',
-            'nouveauxInscrits', 'diffNouveaux', 'ageData', 'cspData', 'quartiersData',
-            'statutData', 'evolutionData', 'nbReinscrits', 'mapData'
-        ));
+            'ageMoyen', 'medianeAge',
+            'pctFilles', 'pctGarcons', 'nbFilles', 'nbGarcons', 'tauxFidelisation',
+            'nbReinscrits', 'mapData', 'ageData', 'cspData', 'quartiersData',
+            'statutData', 'evolutionData'
+        ) + ['nouveauxInscrits' => $nbNouveaux, 'diffNouveaux' => $diffNouveaux]);
     }
 
     private function remplirEvolution(array &$data, string $key, $inscriptions)
