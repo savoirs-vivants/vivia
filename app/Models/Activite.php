@@ -177,6 +177,41 @@ class Activite extends Model
     }
 
     /**
+     * On centralise la logique de formatage des horaires ici.
+     * Cela permet de supprimer les blocs @php massifs dans les vues Edit et Show.
+     */
+    public function getHorairesPlatsAttribute(): array
+    {
+        $plats = [];
+        if (is_array($this->horaires) && $this->type !== 'stage') {
+            foreach ($this->horaires as $jour => $plagesStr) {
+                if ($jour === 'stage') continue;
+                foreach (explode(', ', $plagesStr) as $p) {
+                    $parts = explode('-', $p);
+                    if (count($parts) === 2) {
+                        $plats[] = ['jour' => $jour, 'debut' => trim($parts[0]), 'fin' => trim($parts[1])];
+                    }
+                }
+            }
+        }
+        return $plats;
+    }
+    public function getFormattedHorairesAttribute()
+{
+    if ($this->type === 'stage' && isset($this->horaires['stage'])) {
+        return $this->horaires['stage'];
+    }
+
+    $list = [];
+    if (is_array($this->horaires)) {
+        foreach ($this->horaires as $jour => $plage) {
+            $list[] = "$jour ($plage)";
+        }
+    }
+    return $list;
+}
+
+    /**
      * Classes sous forme lisible, triées selon l'ordre canonique.
      * Ex. : ["CP", "CE1", "CM1"]
      *

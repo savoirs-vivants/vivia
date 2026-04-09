@@ -96,11 +96,26 @@ class AdherentController extends Controller
         }
         $countPayes += $structuresPayees->count();
 
+
+        $filterType    = $request->get('type', 'tous');
+        $structuresList = match ($tab) {
+            'payes'   => $structuresPayees,
+            'attente' => $structuresEnAttente,
+            default   => collect(),
+        };
+        $items = match ($tab) {
+            'payes'   => $adherentsPayes,
+            'partiel' => $adherentsPartiel,
+            default   => $adherentsEnAttente,
+        };
+
         return view('adherents.index', compact(
             'tab',
             'search',
             'filterSource',
-            'filterStatut',
+            'filterType',
+            'items',
+            'structuresList',
             'adherentsPayes',
             'adherentsEnAttente',
             'adherentsPartiel',
@@ -380,4 +395,5 @@ class AdherentController extends Controller
 
         return $adherent->mail;
     }
+
 }
