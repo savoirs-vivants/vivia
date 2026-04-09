@@ -4,36 +4,6 @@
 
 @section('content')
 
-    @php
-        $horairesPlats = [];
-        $stageData = [];
-
-        if (is_array($activite->horaires)) {
-            if ($activite->type === 'stage' && isset($activite->horaires['stage'])) {
-                $stageData = $activite->horaires['stage'];
-            } else {
-                foreach ($activite->horaires as $jour => $plagesStr) {
-                    if ($jour === 'stage') {
-                        continue;
-                    }
-                    $plages = explode(', ', $plagesStr);
-                    foreach ($plages as $p) {
-                        $parts = explode('-', $p);
-                        if (count($parts) === 2) {
-                            $horairesPlats[] = ['jour' => $jour, 'debut' => trim($parts[0]), 'fin' => trim($parts[1])];
-                        }
-                    }
-                }
-            }
-        }
-
-        $selectedUsers = old('gestionnaires')
-            ? \App\Models\User::whereIn('id', old('gestionnaires'))->get(['id', 'firstname', 'name'])
-            : $activite->gestionnaires->map(function ($u) {
-                return ['id' => $u->id, 'firstname' => $u->firstname, 'name' => $u->name];
-            });
-    @endphp
-
     <div class="max-w-3xl mx-auto" x-data="{ typeActivite: '{{ old('type', $activite->type) }}' }">
         <div class="flex items-center gap-2 text-xs text-gray-400 mb-6 pl-1">
             <a href="{{ route('activites.index') }}" class="hover:text-[#222A60] transition-colors font-medium">Activités</a>
@@ -118,7 +88,7 @@
                             @enderror
                         </div>
 
-                        <div class="md:col-span-2" x-data="gestionnaireSearch()">
+                        <div class="md:col-span-2" x-data="gestionnaireSearch({{ json_encode($selectedUsers) }})">
                             <label
                                 class="block text-xs font-black text-gray-400 uppercase tracking-widest mb-2">Gestionnaire(s)
                                 associé(s) <span class="text-rose-500">*</span></label>
@@ -154,7 +124,6 @@
                                 <input type="text" x-model="query" @input.debounce.300ms="search()"
                                     @keydown.escape="results = []" placeholder="Ajouter un gestionnaire (tapez un nom...)"
                                     class="w-full pl-11 pr-4 py-3 bg-gray-50 border border-gray-100 rounded-xl text-sm text-gray-700 placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-[#16987C]/30 focus:border-[#16987C]/40 transition-all">
-
                                 <div x-show="results.length > 0" @click.away="results = []"
                                     class="absolute z-50 w-full mt-2 bg-white border border-gray-100 rounded-xl shadow-xl overflow-hidden">
                                     <template x-for="user in results" :key="user.id">
@@ -198,12 +167,11 @@
                                 class="w-full px-4 py-3 bg-gray-50 border border-gray-100 rounded-xl text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-[#16987C]/30 focus:border-[#16987C]/40">
                         </div>
 
-                        <div x-show="typeActivite === 'activite'"
-                            class="md:col-span-2 p-5 bg-gray-50/50 rounded-xl border border-gray-100"
-                            style="display: none;">
+                        <div x-show="typeActivite === 'activite'" x-cloak
+                            class="md:col-span-2 p-5 bg-gray-50/50 rounded-xl border border-gray-100">
                             <h3 class="text-sm font-bold text-[#0F143A] mb-4">Créneaux horaires</h3>
                             <div id="horaires-container" class="space-y-3">
-                                @forelse($horairesPlats as $index => $horaire)
+                                @forelse($activite->horaires_plats as $index => $horaire)
                                     <div
                                         class="horaire-row flex flex-wrap sm:flex-nowrap items-center gap-3 bg-white p-3 rounded-lg border border-gray-200">
                                         <div class="w-full sm:w-1/3">
@@ -253,15 +221,30 @@
                                             <span class="text-xs font-bold text-gray-400">à</span>
                                             <input type="time" name="fins[]"
                                                 class="flex-1 px-3 py-2 bg-gray-50 border border-gray-100 rounded-lg text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-[#16987C]/30">
+                                            <button type="button"
+                                                class="btn-remove-horaire invisible p-2 text-gray-300 hover:text-rose-500 hover:bg-rose-50 rounded-lg transition-colors">
+                                                <svg class="w-4 h-4" fill="none" stroke="currentColor"
+                                                    viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                        d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                                </svg>
+                                            </button>
                                         </div>
                                     </div>
                                 @endforelse
                             </div>
+                            <button type="button" id="btn-add-horaire"
+                                class="mt-3 inline-flex items-center gap-1.5 text-xs font-bold text-[#16987C] hover:text-[#0d7a63] transition-colors">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
+                                        d="M12 4v16m8-8H4" />
+                                </svg>
+                                Ajouter un créneau
+                            </button>
                         </div>
 
-                        <div x-show="typeActivite === 'stage'"
-                            class="md:col-span-2 p-5 bg-amber-50/30 rounded-xl border border-amber-100"
-                            style="display: none;">
+                        <div x-show="typeActivite === 'stage'" x-cloak
+                            class="md:col-span-2 p-5 bg-amber-50/30 rounded-xl border border-amber-100">
                             <h3 class="text-sm font-bold text-[#0F143A] mb-4">Dates du stage</h3>
                             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                 <div>
@@ -269,7 +252,7 @@
                                         class="block text-xs font-black text-amber-700 uppercase tracking-widest mb-1">Du
                                         (Date de début)</label>
                                     <input type="date" name="date_debut_stage"
-                                        value="{{ old('date_debut_stage', $stageData['date_debut'] ?? '') }}"
+                                        value="{{ old('date_debut_stage', ($activite->horaires['stage'] ?? [])['date_debut'] ?? '') }}"
                                         class="w-full px-3 py-2 bg-white border border-amber-200 rounded-lg text-sm text-gray-700 focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400">
                                 </div>
                                 <div>
@@ -277,7 +260,7 @@
                                         class="block text-xs font-black text-amber-700 uppercase tracking-widest mb-1">Au
                                         (Date de fin)</label>
                                     <input type="date" name="date_fin_stage"
-                                        value="{{ old('date_fin_stage', $stageData['date_fin'] ?? '') }}"
+                                        value="{{ old('date_fin_stage', ($activite->horaires['stage'] ?? [])['date_fin'] ?? '') }}"
                                         class="w-full px-3 py-2 bg-white border border-amber-200 rounded-lg text-sm text-gray-700 focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400">
                                 </div>
                                 <div>
@@ -285,7 +268,7 @@
                                         class="block text-xs font-black text-amber-700 uppercase tracking-widest mb-1">Heure
                                         de début</label>
                                     <input type="time" name="heure_debut_stage"
-                                        value="{{ old('heure_debut_stage', $stageData['heure_debut'] ?? '') }}"
+                                        value="{{ old('heure_debut_stage', ($activite->horaires['stage'] ?? [])['heure_debut'] ?? '') }}"
                                         class="w-full px-3 py-2 bg-white border border-amber-200 rounded-lg text-sm text-gray-700">
                                 </div>
                                 <div>
@@ -293,7 +276,7 @@
                                         class="block text-xs font-black text-amber-700 uppercase tracking-widest mb-1">Heure
                                         de fin</label>
                                     <input type="time" name="heure_fin_stage"
-                                        value="{{ old('heure_fin_stage', $stageData['heure_fin'] ?? '') }}"
+                                        value="{{ old('heure_fin_stage', ($activite->horaires['stage'] ?? [])['heure_fin'] ?? '') }}"
                                         class="w-full px-3 py-2 bg-white border border-amber-200 rounded-lg text-sm text-gray-700">
                                 </div>
                             </div>
@@ -304,8 +287,7 @@
                         'selectedClasses' => old('classes', $activite->classes ?? []),
                     ])
 
-                    @php $currentDossierAction = old('dossier_action', $activite->id_dossier ? 'existing' : 'none'); @endphp
-                    <div x-data="{ dossierAction: '{{ $currentDossierAction }}' }">
+                    <div x-data="{ dossierAction: '{{ old('dossier_action', $activite->id_dossier ? 'existing' : 'none') }}' }">
                         <span class="block text-xs font-black text-gray-400 uppercase tracking-widest mb-3">Dossier</span>
                         <div class="space-y-2 p-4 bg-gray-50/50 rounded-xl border border-gray-100">
 
@@ -329,7 +311,7 @@
                                     </div>
                                     <div class="flex-1">
                                         <span class="text-sm text-gray-600 font-medium">Dossier existant</span>
-                                        <div x-show="dossierAction === 'existing'" class="mt-2" style="display: none;">
+                                        <div x-show="dossierAction === 'existing'" x-cloak class="mt-2">
                                             <select name="id_dossier"
                                                 class="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-[#16987C]/30 focus:border-[#16987C]/40">
                                                 <option value="">Choisir un dossier...</option>
@@ -353,7 +335,7 @@
                                 </div>
                                 <div class="flex-1">
                                     <span class="text-sm text-gray-600 font-medium">Créer un nouveau dossier</span>
-                                    <div x-show="dossierAction === 'new'" class="mt-2" style="display: none;">
+                                    <div x-show="dossierAction === 'new'" x-cloak class="mt-2">
                                         <input type="text" name="nouveau_dossier"
                                             value="{{ old('nouveau_dossier') }}" placeholder="Nom du dossier..."
                                             class="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm text-gray-700 placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-[#16987C]/30 focus:border-[#16987C]/40">
@@ -381,35 +363,4 @@
         </div>
     </div>
 
-    <script>
-        function gestionnaireSearch() {
-            return {
-                query: '',
-                results: [],
-                selectedUsers: @json($selectedUsers),
-
-                search() {
-                    if (this.query.length < 2) {
-                        this.results = [];
-                        return;
-                    }
-                    fetch(`{{ route('users.search') }}?q=${this.query}`)
-                        .then(response => response.json())
-                        .then(data => {
-                            this.results = data.filter(user => !this.selectedUsers.find(s => s.id === user.id));
-                        });
-                },
-
-                addUser(user) {
-                    this.selectedUsers.push(user);
-                    this.query = '';
-                    this.results = [];
-                },
-
-                removeUser(id) {
-                    this.selectedUsers = this.selectedUsers.filter(user => user.id !== id);
-                }
-            }
-        }
-    </script>
 @endsection

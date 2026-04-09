@@ -20,9 +20,9 @@ class ActiviteController extends Controller
 {
     public function index(Request $request)
     {
-        $search = $request->get('q');
-        $type   = $request->get('type');
-        $ville  = $request->get('ville');
+        $search = $request->query('q');
+        $type   = $request->query('type');
+        $ville  = $request->query('ville');
         $user   = Auth::user();
 
         $mesActivitesIds = $user->role === 'animateur'
@@ -47,7 +47,22 @@ class ActiviteController extends Controller
         $lieux = Activite::select('ville')->distinct()->whereNotNull('ville')->pluck('ville');
         $dossiers = DossierActivite::withCount('activitesActives as nb_activites')->orderBy('nom')->get();
 
-        return view('activites.index', compact('activites', 'archives', 'search', 'type', 'ville', 'lieux', 'dossiers'));
+        $activitesParDossier   = $activites->groupBy(fn($a) => $a->id_dossier ?? 0);
+        $activitesSansDossier  = $activitesParDossier->get(0) ?? collect();
+        $dossiersAvecActivites = $dossiers->filter(fn($d) => $activitesParDossier->has($d->id));
+
+        return view('activites.index', compact(
+            'activites',
+            'archives',
+            'search',
+            'type',
+            'ville',
+            'lieux',
+            'dossiers',
+            'activitesParDossier',
+            'activitesSansDossier',
+            'dossiersAvecActivites',
+        ));
     }
 
     public function toggleArchive(Activite $activite)
@@ -80,20 +95,36 @@ class ActiviteController extends Controller
 
     public function edit(Activite $activite)
     {
-        $users = User::orderBy('name')->get();
-        $dossiers = DossierActivite::orderBy('nom')->get();
-        $activite->load('gestionnaires');
+        $selectedUsers = old('gestionnaires')
+            ? User::whereIn('id', old('gestionnaires'))->get(['id', 'firstname', 'name'])
+            : $activite->gestionnaires->map(fn($u) => [
+                'id'        => $u->id,
+                'firstname' => $u->firstname,
+                'name'      => $u->name,
+            ]);
 
-        return view('activites.edit', compact('activite', 'users', 'dossiers'));
+        return view('activites.edit', [
+            'activite'      => $activite,
+            'selectedUsers' => $selectedUsers,
+            'dossiers'      => DossierActivite::orderBy('nom')->get(),
+        ]);
     }
 
     public function update(UpdateActiviteRequest $request, Activite $activite)
     {
         $data = $this->preparerDonneesActivite($request);
-        $activite->update($data);
 
+        $anciensHoraires = is_array($activite->horaires) ? json_encode($activite->horaires) : $activite->horaires;
+        $nouveauxHoraires = json_encode($data['horaires']);
+
+        $horairesOntChange = ($anciensHoraires !== $nouveauxHoraires) || ($data['type'] !== $activite->type);
+
+        $activite->update($data);
         $activite->gestionnaires()->sync($request->validated('gestionnaires', []));
-        $this->genererSeancesAuto($activite);
+
+        if ($horairesOntChange) {
+            $this->regenererFuturesSeances($activite);
+        }
 
         return redirect()->route('activites.show', $activite)->with('success', 'L\'événement a été modifié avec succès.');
     }
@@ -258,7 +289,7 @@ class ActiviteController extends Controller
 
     public function searchUsers(Request $request)
     {
-        $search = $request->get('q');
+        $search = $request->query('q');
         return response()->json(
             User::where('name', 'like', "%{$search}%")
                 ->orWhere('firstname', 'like', "%{$search}%")
@@ -339,7 +370,28 @@ class ActiviteController extends Controller
         ];
     }
 
-    private function genererSeancesAuto(Activite $activite)
+    private function regenererFuturesSeances(Activite $activite)
+    {
+        $futuresSeances = DB::table('seances')
+            ->where('id_activite', $activite->id)
+            ->where('date', '>=', now()->startOfDay())
+            ->pluck('id_seance');
+
+        if ($futuresSeances->isNotEmpty()) {
+            $seancesAvecAppel = DB::table('presence')
+                ->whereIn('id_seance', $futuresSeances)
+                ->pluck('id_seance')
+                ->unique();
+
+            $seancesASupprimer = $futuresSeances->diff($seancesAvecAppel);
+
+            DB::table('seances')->whereIn('id_seance', $seancesASupprimer)->delete();
+        }
+
+        $this->genererSeancesAuto($activite, true);
+    }
+
+    private function genererSeancesAuto(Activite $activite, $depuisAujourdhui = false)
     {
         $horaires = is_string($activite->horaires) ? json_decode($activite->horaires, true) : $activite->horaires;
         if (empty($horaires) || !is_array($horaires)) return;
@@ -356,6 +408,10 @@ class ActiviteController extends Controller
             $dateCourante = Carbon::parse($debutStage);
             $dateFin      = Carbon::parse($finStage);
 
+            if ($depuisAujourdhui && $dateCourante->isPast()) {
+                $dateCourante = now()->startOfDay();
+            }
+
             while ($dateCourante->lte($dateFin)) {
                 $nouvellesSeances[] = [
                     'id_activite' => $activite->id,
@@ -365,29 +421,26 @@ class ActiviteController extends Controller
             }
         } else {
             $joursMap = [
-                'Lundi' => Carbon::MONDAY,
-                'Mardi' => Carbon::TUESDAY,
-                'Mercredi' => Carbon::WEDNESDAY,
-                'Jeudi' => Carbon::THURSDAY,
-                'Vendredi' => Carbon::FRIDAY,
-                'Samedi' => Carbon::SATURDAY,
-                'Dimanche' => Carbon::SUNDAY,
+                'Lundi' => Carbon::MONDAY, 'Mardi' => Carbon::TUESDAY, 'Mercredi' => Carbon::WEDNESDAY,
+                'Jeudi' => Carbon::THURSDAY, 'Vendredi' => Carbon::FRIDAY, 'Samedi' => Carbon::SATURDAY, 'Dimanche' => Carbon::SUNDAY,
             ];
 
-            /* On utilise les bornes de la saison active (ou à défaut une projection sur 1 an)
-             * pour éviter le bug où une activité créée en Juin pour la rentrée ne générerait
-             * aucune séance si on se basait uniquement sur now()->month.
-             */
             $saisonActive = Saison::where('nom', Saison::current())->first();
             $finGeneration = $saisonActive
                 ? Carbon::parse($saisonActive->date_fin)
                 : Carbon::create(now()->month >= 6 ? now()->year + 1 : now()->year, 7, 31);
 
+            $baseDate = $depuisAujourdhui ? now()->startOfDay() : ($saisonActive ? Carbon::parse($saisonActive->date_debut)->startOfDay() : now()->startOfDay());
+
             foreach ($horaires as $jour => $plagesStr) {
                 if (!isset($joursMap[$jour])) continue;
 
                 $plages = explode(',', $plagesStr);
-                $dateCourante = now()->next($joursMap[$jour]);
+                $dateCourante = clone $baseDate;
+
+                if ($dateCourante->dayOfWeekIso !== $joursMap[$jour]) {
+                    $dateCourante->next($joursMap[$jour]);
+                }
 
                 while ($dateCourante->lte($finGeneration)) {
                     foreach ($plages as $plage) {
@@ -407,7 +460,15 @@ class ActiviteController extends Controller
          * ne pas écraser ni doubler les séances qui existent déjà si l'activité est mise à jour.
          */
         if (!empty($nouvellesSeances)) {
-            DB::table('seances')->insertOrIgnore($nouvellesSeances);
+            $datesExistantes = DB::table('seances')->where('id_activite', $activite->id)->pluck('date')->toArray();
+
+            $aInserer = array_filter($nouvellesSeances, function ($seance) use ($datesExistantes) {
+                return !in_array($seance['date'], $datesExistantes);
+            });
+
+            if (!empty($aInserer)) {
+                DB::table('seances')->insert($aInserer);
+            }
         }
     }
 }

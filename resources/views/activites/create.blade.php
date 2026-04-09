@@ -34,9 +34,11 @@
                             <label class="relative cursor-pointer group">
                                 <input type="radio" name="type" value="activite" class="peer sr-only"
                                     x-model="typeActivite">
-                                <div class="p-4 rounded-xl border-2 border-gray-100 bg-white transition-all peer-checked:border-[#222A60] peer-checked:bg-[#222A60]/5 hover:border-gray-200">
+                                <div
+                                    class="p-4 rounded-xl border-2 border-gray-100 bg-white transition-all peer-checked:border-[#222A60] peer-checked:bg-[#222A60]/5 hover:border-gray-200">
                                     <div class="flex items-center gap-3">
-                                        <div class="w-10 h-10 rounded-lg flex items-center justify-center transition-colors bg-[#222A60]/10 text-[#222A60]">
+                                        <div
+                                            class="w-10 h-10 rounded-lg flex items-center justify-center transition-colors bg-[#222A60]/10 text-[#222A60]">
                                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                                     d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
@@ -85,7 +87,7 @@
                             @enderror
                         </div>
 
-                        <div class="md:col-span-2" x-data="gestionnaireSearch()">
+                        <div class="md:col-span-2" x-data="gestionnaireSearch([])">
                             <label
                                 class="block text-xs font-black text-gray-400 uppercase tracking-widest mb-2">Gestionnaire(s)
                                 associé(s) <span class="text-rose-500">*</span></label>
@@ -146,9 +148,6 @@
                             <input type="number" step="0.01" min="0" name="tarif"
                                 value="{{ old('tarif') }}" placeholder="Ex: 150.00"
                                 class="w-full px-4 py-3 bg-gray-50 border border-gray-100 rounded-xl text-sm text-gray-700 placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-[#16987C]/30 focus:border-[#16987C]/40 transition-all">
-                            @error('tarif')
-                                <span class="text-xs text-rose-500 mt-1">{{ $message }}</span>
-                            @enderror
                         </div>
 
                         <div>
@@ -157,9 +156,6 @@
                             <input type="text" name="ville" value="{{ old('ville') }}"
                                 placeholder="Ex: Strasbourg"
                                 class="w-full px-4 py-3 bg-gray-50 border border-gray-100 rounded-xl text-sm text-gray-700 placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-[#16987C]/30 focus:border-[#16987C]/40 transition-all">
-                            @error('ville')
-                                <span class="text-xs text-rose-500 mt-1">{{ $message }}</span>
-                            @enderror
                         </div>
 
                         <div class="md:col-span-2">
@@ -168,14 +164,10 @@
                             <input type="text" name="adresse" value="{{ old('adresse') }}"
                                 placeholder="Ex: 12 Rue des Arts"
                                 class="w-full px-4 py-3 bg-gray-50 border border-gray-100 rounded-xl text-sm text-gray-700 placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-[#16987C]/30 focus:border-[#16987C]/40 transition-all">
-                            @error('adresse')
-                                <span class="text-xs text-rose-500 mt-1">{{ $message }}</span>
-                            @enderror
                         </div>
 
-                        <div x-show="typeActivite === 'activite'"
-                            class="md:col-span-2 p-5 bg-gray-50/50 rounded-xl border border-gray-100"
-                            style="display: none;">
+                        <div x-show="typeActivite === 'activite'" x-cloak
+                            class="md:col-span-2 p-5 bg-gray-50/50 rounded-xl border border-gray-100">
                             <h3 class="text-sm font-bold text-[#0F143A] mb-4">Créneaux horaires hebdomadaires</h3>
                             <div id="horaires-container" class="space-y-3">
                                 <div
@@ -196,13 +188,29 @@
                                         <span class="text-xs font-bold text-gray-400">à</span>
                                         <input type="time" name="fins[]"
                                             class="flex-1 px-3 py-2 bg-gray-50 border border-gray-100 rounded-lg text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-[#16987C]/30 focus:border-[#16987C]/40">
+                                        <button type="button"
+                                            class="btn-remove-horaire invisible p-2 text-gray-300 hover:text-rose-500 hover:bg-rose-50 rounded-lg transition-colors">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor"
+                                                viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                    d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                            </svg>
+                                        </button>
                                     </div>
                                 </div>
                             </div>
+                            <button type="button" id="btn-add-horaire"
+                                class="mt-3 inline-flex items-center gap-1.5 text-xs font-bold text-[#16987C] hover:text-[#0d7a63] transition-colors">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
+                                        d="M12 4v16m8-8H4" />
+                                </svg>
+                                Ajouter un créneau
+                            </button>
                         </div>
-                        <div x-show="typeActivite === 'stage'"
-                            class="md:col-span-2 p-5 bg-amber-50/30 rounded-xl border border-amber-100"
-                            style="display: none;">
+
+                        <div x-show="typeActivite === 'stage'" x-cloak
+                            class="md:col-span-2 p-5 bg-amber-50/30 rounded-xl border border-amber-100">
                             <h3 class="text-sm font-bold text-[#0F143A] mb-4">Dates du stage</h3>
                             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                 <div>
@@ -225,14 +233,14 @@
                                         de début</label>
                                     <input type="time" name="heure_debut_stage"
                                         value="{{ old('heure_debut_stage') }}"
-                                        class="w-full px-3 py-2 bg-white border border-amber-200 rounded-lg text-sm text-gray-700 focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400">
+                                        class="w-full px-3 py-2 bg-white border border-amber-200 rounded-lg text-sm text-gray-700">
                                 </div>
                                 <div>
                                     <label
                                         class="block text-xs font-black text-amber-700 uppercase tracking-widest mb-1">Heure
                                         de fin</label>
                                     <input type="time" name="heure_fin_stage" value="{{ old('heure_fin_stage') }}"
-                                        class="w-full px-3 py-2 bg-white border border-amber-200 rounded-lg text-sm text-gray-700 focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400">
+                                        class="w-full px-3 py-2 bg-white border border-amber-200 rounded-lg text-sm text-gray-700">
                                 </div>
                             </div>
                         </div>
@@ -263,7 +271,7 @@
                                     </div>
                                     <div class="flex-1">
                                         <span class="text-sm text-gray-600 font-medium">Dossier existant</span>
-                                        <div x-show="dossierAction === 'existing'" class="mt-2" style="display: none;">
+                                        <div x-show="dossierAction === 'existing'" x-cloak class="mt-2">
                                             <select name="id_dossier"
                                                 class="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-[#16987C]/30 focus:border-[#16987C]/40">
                                                 <option value="">Choisir un dossier...</option>
@@ -287,7 +295,7 @@
                                 </div>
                                 <div class="flex-1">
                                     <span class="text-sm text-gray-600 font-medium">Créer un nouveau dossier</span>
-                                    <div x-show="dossierAction === 'new'" class="mt-2" style="display: none;">
+                                    <div x-show="dossierAction === 'new'" x-cloak class="mt-2">
                                         <input type="text" name="nouveau_dossier"
                                             value="{{ old('nouveau_dossier') }}" placeholder="Nom du dossier..."
                                             class="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm text-gray-700 placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-[#16987C]/30 focus:border-[#16987C]/40">
@@ -315,35 +323,4 @@
         </div>
     </div>
 
-    <script>
-        function gestionnaireSearch() {
-            return {
-                query: '',
-                results: [],
-                selectedUsers: @json(old('gestionnaires_full', [])),
-
-                search() {
-                    if (this.query.length < 2) {
-                        this.results = [];
-                        return;
-                    }
-                    fetch(`{{ route('users.search') }}?q=${this.query}`)
-                        .then(response => response.json())
-                        .then(data => {
-                            this.results = data.filter(user => !this.selectedUsers.find(s => s.id === user.id));
-                        });
-                },
-
-                addUser(user) {
-                    this.selectedUsers.push(user);
-                    this.query = '';
-                    this.results = [];
-                },
-
-                removeUser(id) {
-                    this.selectedUsers = this.selectedUsers.filter(user => user.id !== id);
-                }
-            }
-        }
-    </script>
 @endsection
