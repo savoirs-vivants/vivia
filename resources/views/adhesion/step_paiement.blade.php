@@ -247,7 +247,7 @@
                             <input type="hidden" name="current_step" value="10">
 
                             <div x-data="{ modePaiement: '{{ $formData['mode_paiement'] ?? 'helloasso' }}' }">
-                                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
 
                                     <label class="cursor-pointer block group">
                                         <input type="radio" name="mode_paiement" value="helloasso"
@@ -274,21 +274,6 @@
                                             <div class="text-4xl mb-3">🤝</div>
                                             <h3 class="text-lg font-bold text-slate-900">Paiement en personne</h3>
                                             <p class="text-gray-500 text-sm mt-2">Chèque, espèces ou virement</p>
-                                        </div>
-                                    </label>
-
-                                    <label class="cursor-pointer block group opacity-70">
-                                        <input type="radio" name="mode_paiement" value="pass_culture"
-                                            x-model="modePaiement" class="sr-only" disabled>
-                                        <div :class="modePaiement === 'pass_culture' ?
-                                            'border-purple-600 bg-purple-50 ring-2 ring-purple-600/20' :
-                                            'border-gray-200 group-hover:border-gray-300 cursor-not-allowed'"
-                                            class="{{ $card }} items-center text-center relative">
-                                            <div class="text-4xl mb-3">🎭</div>
-                                            <h3 class="text-lg font-bold text-slate-900">Pass Culture</h3>
-                                            <p class="text-gray-500 text-sm mt-2">Utiliser votre Pass Culture</p>
-                                            <span
-                                                class="inline-block mt-4 text-xs font-bold bg-purple-100 text-purple-700 px-3 py-1.5 rounded-full uppercase tracking-wider">Fonctionnalité à venir</span>
                                         </div>
                                     </label>
                                 </div>
