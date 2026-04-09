@@ -12,6 +12,9 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
+use App\Http\Requests\CommentaireAdherentRequest;
+use App\Http\Requests\AjouterVersementRequest;
+use App\Http\Requests\UpdateFicheAdherentRequest;
 
 class AdherentController extends Controller
 {
@@ -180,9 +183,8 @@ class AdherentController extends Controller
         ));
     }
 
-    public function commentaire(Request $request, Adherent $adherent)
+    public function commentaire(CommentaireAdherentRequest $request, Adherent $adherent)
     {
-        $request->validate(['commentaire' => ['required', 'string', 'max:2000']]);
         $adherent->update(['commentaire' => $request->commentaire]);
 
         return redirect()->route('adherents.show', $adherent)->with('success', 'Note enregistrée.');
@@ -280,13 +282,8 @@ class AdherentController extends Controller
         return view('adherents.show_structure', compact('structure', 'saisons', 'totalPaye'));
     }
 
-    public function ajouterVersement(Request $request, Adherent $adherent)
-{
-    $request->validate([
-        'montant_versement' => ['required', 'numeric', 'min:0.01'],
-        'source'            => ['nullable', 'string', 'max:100'],
-        'date_paiement'     => ['nullable', 'date'],
-    ]);
+    public function ajouterVersement(AjouterVersementRequest $request, Adherent $adherent)
+    {
 
     $saison = Saison::current();
 
@@ -392,31 +389,9 @@ class AdherentController extends Controller
         return $pdf->download($fileName);
     }
 
-    public function updateFiche(Request $request, Adherent $adherent)
+    public function updateFiche(UpdateFicheAdherentRequest $request, Adherent $adherent)
     {
-        $validated = $request->validate([
-            'prenom' => 'required|string|max:255',
-            'nom' => 'required|string|max:255',
-            'communication' => 'boolean',
-            'bulletin' => 'boolean',
-            'manif' => 'boolean',
-            'date_naiss' => 'nullable|date',
-            'genre' => 'nullable|string|max:255',
-            'adresse' => 'nullable|string|max:255',
-            'code_postal' => 'nullable|string|max:20',
-            'ville' => 'nullable|string|max:255',
-            'tel' => 'nullable|string|max:50',
-            'mail' => 'nullable|email|max:255',
-            'occupation' => 'nullable|string|max:255',
-            'etablissement' => 'nullable|string|max:255',
-            'regime_social' => 'nullable|string|max:255',
-            'idee_metier' => 'nullable|string|max:1000',
-            'decouverte_metier' => 'nullable|string|max:1000',
-            'problemes_sante' => 'nullable|string|max:1000',
-            'allergies' => 'nullable|string|max:1000',
-            'conduite_a_tenir' => 'nullable|string|max:1000',
-            'restrictions_alimentaires' => 'nullable|string|max:1000',
-        ]);
+        $validated = $request->validated();
 
         $validated['communication'] = $request->boolean('communication');
         $validated['bulletin'] = $request->boolean('bulletin');

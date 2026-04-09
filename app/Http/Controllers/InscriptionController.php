@@ -26,7 +26,7 @@ class InscriptionController extends Controller
         return view('auth.inscription', compact('user', 'token'));
     }
 
-    public function complete(Request $request, string $token)
+    public function complete(CompleteInscriptionRequest $request, string $token)
     {
         $user = $this->getUserByToken($token);
 

@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\Auth;
 use App\Models\User;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rule;
+use App\Http\Requests\UpdateProfileRequest;
 
 class ProfileController extends Controller
 {
@@ -17,17 +18,12 @@ class ProfileController extends Controller
         return view('profile.edit', compact('user'));
     }
 
-    public function update(Request $request)
+    public function update(UpdateProfileRequest $request)
     {
         /** @var User $user */
         $user = $request->user();
 
-        $validated = $request->validate([
-            'firstname' => ['required', 'string', 'max:255'],
-            'name'      => ['required', 'string', 'max:255'],
-            'email'     => ['required', 'string', 'email', 'max:255', Rule::unique('users')->ignore($user->id)],
-            'password'  => ['nullable', 'string', 'min:8', 'confirmed'],
-        ]);
+        $validated = $request->validated();
 
         $user->firstname = $validated['firstname'];
         $user->name = $validated['name'];

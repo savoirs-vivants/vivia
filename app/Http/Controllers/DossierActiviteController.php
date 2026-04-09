@@ -4,14 +4,12 @@ namespace App\Http\Controllers;
 
 use App\Models\DossierActivite;
 use Illuminate\Http\Request;
+use App\Http\Requests\StoreDossierRequest;
 
 class DossierActiviteController extends Controller
 {
-    public function store(Request $request)
+    public function store(StoreDossierRequest $request)
     {
-        $request->validate([
-            'nom' => 'required|string|max:255',
-        ]);
 
         DossierActivite::create(['nom' => $request->nom]);
 

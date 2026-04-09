@@ -12,6 +12,9 @@ use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Mail;
+use App\Http\Requests\StoreActiviteRequest;
+use App\Http\Requests\UpdateActiviteRequest;
+use App\Http\Requests\AbandonnerAdherentRequest;
 
 class ActiviteController extends Controller
 {
@@ -69,25 +72,9 @@ class ActiviteController extends Controller
         return view('activites.create', compact('users', 'dossiers'));
     }
 
-    public function store(Request $request)
+    public function store(StoreActiviteRequest $request)
     {
-        $validated = $request->validate([
-            'type'              => 'required|in:activite,stage',
-            'nom'               => 'required|string|max:255',
-            'tarif'             => 'nullable|numeric|min:0',
-            'adresse'           => 'nullable|string|max:255',
-            'ville'             => 'nullable|string|max:255',
-            'jours.*'           => 'nullable|string',
-            'debuts.*'          => 'nullable|date_format:H:i',
-            'fins.*'            => 'nullable|date_format:H:i',
-            'gestionnaires'     => 'nullable|array',
-            'gestionnaires.*'   => 'exists:users,id',
-            'classes'           => 'nullable|array',
-            'classes.*'         => 'nullable|string',
-            'dossier_action'    => 'nullable|in:none,existing,new',
-            'id_dossier'        => 'nullable|exists:dossiers_activite,id',
-            'nouveau_dossier'   => 'nullable|string|max:255',
-        ]);
+        $validated = $request->validated();
 
         $horaires = [];
 
@@ -327,25 +314,9 @@ class ActiviteController extends Controller
         return view('activites.edit', compact('activite', 'users', 'dossiers'));
     }
 
-    public function update(Request $request, Activite $activite)
+    public function update(UpdateActiviteRequest $request, Activite $activite)
     {
-        $validated = $request->validate([
-            'type'              => 'required|in:activite,stage',
-            'nom'               => 'required|string|max:255',
-            'tarif'             => 'nullable|numeric|min:0',
-            'adresse'           => 'nullable|string|max:255',
-            'ville'             => 'nullable|string|max:255',
-            'jours.*'           => 'nullable|string',
-            'debuts.*'          => 'nullable|date_format:H:i',
-            'fins.*'            => 'nullable|date_format:H:i',
-            'gestionnaires'     => 'nullable|array',
-            'gestionnaires.*'   => 'exists:users,id',
-            'classes'           => 'nullable|array',
-            'classes.*'         => 'nullable|string',
-            'dossier_action'    => 'nullable|in:none,existing,new',
-            'id_dossier'        => 'nullable|exists:dossiers_activite,id',
-            'nouveau_dossier'   => 'nullable|string|max:255',
-        ]);
+        $validated = $request->validated();
 
         $horaires = [];
 
@@ -401,11 +372,8 @@ class ActiviteController extends Controller
             ->with('success', 'L\'événement a été modifié avec succès.');
     }
 
-    public function abandonner(Request $request, Activite $activite, \App\Models\Adherent $adherent)
+    public function abandonner(AbandonnerAdherentRequest $request, Activite $activite, \App\Models\Adherent $adherent)
     {
-        $request->validate([
-            'motif_sortie' => 'required|string|max:255',
-        ]);
 
         $activite->adherents()->updateExistingPivot($adherent->id, [
             'date_sortie' => now()->toDateString(),

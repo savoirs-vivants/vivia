@@ -1,6 +1,8 @@
 @extends('layouts.app')
 
-@section('title', $activite->nom)
+@section('title')
+    Détail de l'activité
+@endsection
 
 @section('content')
 

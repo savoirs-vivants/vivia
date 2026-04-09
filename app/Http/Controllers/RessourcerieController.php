@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Models\Ressourcerie;
 use Illuminate\Http\Request;
+use App\Http\Requests\StoreRessourcerieRequest;
+use App\Http\Requests\UpdateRessourcerieRequest;
 
 class RessourcerieController extends Controller
 {
@@ -31,15 +33,9 @@ class RessourcerieController extends Controller
         return view('ressourcerie.create', compact('typesTarif'));
     }
 
-    public function store(Request $request)
+    public function store(StoreRessourcerieRequest $request)
     {
-        $validated = $request->validate([
-            'nom'               => 'required|string|max:255',
-            'description'       => 'nullable|string',
-            'condition_location' => 'nullable|string',
-            'prix'              => 'nullable|numeric|min:0',
-            'type_tarif'        => 'required|in:' . implode(',', array_keys(Ressourcerie::TYPES_TARIF)),
-        ]);
+        $validated = $request->validated();
 
         $validated['prix']        = $validated['prix'] ?? 0;
         $validated['is_archived'] = false;
@@ -56,15 +52,9 @@ class RessourcerieController extends Controller
         return view('ressourcerie.edit', compact('ressourcerie', 'typesTarif'));
     }
 
-    public function update(Request $request, Ressourcerie $ressourcerie)
+    public function update(UpdateRessourcerieRequest $request, Ressourcerie $ressourcerie)
     {
-        $validated = $request->validate([
-            'nom'               => 'required|string|max:255',
-            'description'       => 'nullable|string',
-            'condition_location' => 'nullable|string',
-            'prix'              => 'nullable|numeric|min:0',
-            'type_tarif'        => 'required|in:' . implode(',', array_keys(Ressourcerie::TYPES_TARIF)),
-        ]);
+        $validated = $request->validated();
 
         $validated['prix'] = $validated['prix'] ?? 0;
 
