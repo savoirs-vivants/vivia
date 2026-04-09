@@ -102,43 +102,29 @@ class AdherentFormulaireController extends Controller
         return ($idx > 0) ? $path[$idx - 1] : 1;
     }
 
-    private function classeDepuisAge(array $formData): ?string
+    private function classesEligiblesDepuisOccupation(array $formData): ?array
     {
-        $dateNaiss = $formData['date_naiss'] ?? null;
-        if (empty($dateNaiss)) return null;
+        $occupation = strtolower($formData['occupation'] ?? '');
 
-        $anneeNaissance = (int) Carbon::parse($dateNaiss)->format('Y');
-        $now = now();
-        $anneeScolaire = $now->month >= 9 ? $now->year : $now->year - 1;
-        $ageScolaire   = $anneeScolaire - $anneeNaissance;
+        if (empty($occupation)) return null;
 
         return match (true) {
-            $ageScolaire === 3  => 'PS',
-            $ageScolaire === 4  => 'MS',
-            $ageScolaire === 5  => 'GS',
-            $ageScolaire === 6  => 'CP',
-            $ageScolaire === 7  => 'CE1',
-            $ageScolaire === 8  => 'CE2',
-            $ageScolaire === 9  => 'CM1',
-            $ageScolaire === 10 => 'CM2',
-            $ageScolaire === 11 => '6ème',
-            $ageScolaire === 12 => '5ème',
-            $ageScolaire === 13 => '4ème',
-            $ageScolaire === 14 => '3ème',
-            $ageScolaire === 15 => 'Seconde',
-            $ageScolaire === 16 => 'Première',
-            $ageScolaire === 17 => 'Terminale',
-            $ageScolaire >= 18  => 'Adulte',
-            default             => null,
+            str_contains($occupation, 'maison') => null,
+            str_contains($occupation, 'maternelle') => ['PS', 'MS', 'GS'],
+            str_contains($occupation, 'primaire') || str_contains($occupation, 'élémentaire') => ['CP', 'CE1', 'CE2', 'CM1', 'CM2'],
+            str_contains($occupation, 'collège') || str_contains($occupation, 'college') => ['6ème', '5ème', '4ème', '3ème'],
+            str_contains($occupation, 'lycée') || str_contains($occupation, 'lycee') => ['Seconde', 'Première', 'Terminale'],
+            str_contains($occupation, 'étudiant') || str_contains($occupation, 'etudiant') || str_contains($occupation, 'actif') || str_contains($occupation, 'salarié') || str_contains($occupation, 'retraité') || str_contains($occupation, 'adulte') => ['Adulte', 'Senior'],
+            default => null,
         };
     }
 
     private function classesFiltrer(array $formData): \Closure
     {
-        $classe = $this->classeDepuisAge($formData);
-        if ($classe === null) return fn() => true;
+        $classesEligibles = $this->classesEligiblesDepuisOccupation($formData);
 
-        $classesEligibles = $classe === 'Adulte' ? ['Adulte', 'Senior'] : [$classe];
+        if ($classesEligibles === null) return fn() => true;
+
         return function ($activite) use ($classesEligibles) {
             if (empty($activite->classes)) return true;
             return count(array_intersect($activite->classes, $classesEligibles)) > 0;
@@ -303,8 +289,9 @@ class AdherentFormulaireController extends Controller
             }
         }
 
-        $classeAdherent = $this->classeDepuisAge($formData);
-        $filtre         = $this->classesFiltrer($formData);
+        $filtre = $this->classesFiltrer($formData);
+
+        $classesEligibles = $this->classesEligiblesDepuisOccupation($formData);
 
         $activites = Activite::where('is_archived', false)->get();
         $ateliers  = $activites->where('type', 'activite')->values()
@@ -312,8 +299,9 @@ class AdherentFormulaireController extends Controller
             ->filter(fn($a) => !in_array($a->id, $activitesDejaInscritesIds))
             ->filter(fn($a) => !Str::contains(strtolower($a->nom), 'maker'))
             ->values();
+
         $stages    = $activites->where('type', 'stage')->values()
-            ->filter($filtre)
+            ->filter($filtre) 
             ->filter(fn($a) => !in_array($a->id, $activitesDejaInscritesIds))
             ->values();
 
@@ -415,7 +403,7 @@ class AdherentFormulaireController extends Controller
             'totalSteps',
             'prevStep',
             'hasPrev',
-            'classeAdherent',
+            'classesEligibles',
             'paiement1Done',
             'isStructure',
             'montantStructure',

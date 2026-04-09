@@ -12,8 +12,8 @@
                                 <div x-data="{ occupation: '{{ $formData['occupation'] ?? '' }}' }">
                                     <p class="text-sm font-bold text-slate-700 mb-3">📚 Niveau scolaire</p>
                                     <div class="grid grid-cols-2 gap-3 mb-5">
-                                        @foreach ([['val' => 'Maternelle', 'desc' => '3 à 5 ans'], ['val' => 'Primaire', 'desc' => '6 à 10 ans'], ['val' => 'Collège', 'desc' => '11 à 14 ans'], ['val' => 'Lycée', 'desc' => '15 à 17 ans'], ['val' => 'École à la maison', 'desc' => 'Tout âge']] as $o)
-                                            <label class="cursor-pointer block group">
+                                        @foreach ([['val' => 'Maternelle'], ['val' => 'Primaire'], ['val' => 'Collège'], ['val' => 'Lycée'], ['val' => 'École à la maison']] as $o)
+                                            <label class="cursor-pointer">
                                                 <input type="radio" name="occupation" value="{{ $o['val'] }}"
                                                     required x-model="occupation" class="sr-only">
                                                 <div :class="occupation === '{{ $o['val'] }}' ?
@@ -22,8 +22,6 @@
                                                     class="border-2 rounded-xl p-3 text-center transition-all">
                                                     <div class="font-bold text-sm text-slate-900">{{ $o['val'] }}
                                                     </div>
-                                                    <div class="text-xs text-gray-500 font-medium mt-1">
-                                                        {{ $o['desc'] }}</div>
                                                 </div>
                                             </label>
                                         @endforeach
