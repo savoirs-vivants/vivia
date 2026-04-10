@@ -4,6 +4,7 @@ namespace App\Livewire;
 
 use Livewire\Component;
 use App\Models\Adherent;
+use App\Models\AdherentStructure;
 use App\Models\Inscription;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -24,12 +25,15 @@ class ExportStatistiques extends Component
     private function getAggregatedData(): array
     {
         $inscriptions = Inscription::where('saison', $this->saisonCourante)->get();
-        $totalAdherents = $inscriptions->count();
 
-        $adherentsIds = $inscriptions->pluck('id_adherent');
+        // --- Adhérents Physiques ---
+        $inscriptionsPhysiques = $inscriptions->whereNotNull('id_adherent');
+        $totalAdherents = $inscriptionsPhysiques->count();
+
+        $adherentsIds = $inscriptionsPhysiques->pluck('id_adherent');
         $adherents = Adherent::with('tousLesTuteurs')->whereIn('id', $adherentsIds)->get();
 
-        $idsPayes = $inscriptions->where('a_paye', 'Payé')->pluck('id_adherent');
+        $idsPayes = $inscriptionsPhysiques->where('a_paye', 'Payé')->pluck('id_adherent');
         $adherentsPayes = $adherents->whereIn('id', $idsPayes);
 
         $nbFilles = $adherents->whereIn('genre', ['Fille', 'Femme'])->count();
@@ -39,9 +43,11 @@ class ExportStatistiques extends Component
             'Garçons / Hommes' => $nbGarcons,
         ];
 
-        $cspMap = $adherents->filter(fn($a) => $a->tuteur && !empty($a->tuteur->profession))
-                            ->groupBy(fn($a) => $a->tuteur->profession)
-                            ->map->count()->sortDesc()->toArray();
+        // CORRECTION TUTEURS (CSP) : On prend uniquement ceux de type "parent_tuteur"
+        $cspMap = $adherents->map(function ($a) {
+            $parent = $a->tousLesTuteurs->where('type', 'parent_tuteur')->first();
+            return $parent && !empty($parent->profession) ? $parent->profession : null;
+        })->filter()->countBy()->sortDesc()->toArray();
 
         $villeMap = $adherents->groupBy(fn($a) => $a->ville ?: 'Non renseigné')
                               ->map->count()->sortDesc()->toArray();
@@ -58,7 +64,7 @@ class ExportStatistiques extends Component
 
         $evolutionMap = array_fill_keys(['Sep', 'Oct', 'Nov', 'Déc', 'Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Juin', 'Jul', 'Aoû'], 0);
         $moisLabels = array_keys($evolutionMap);
-        foreach ($inscriptions as $insc) {
+        foreach ($inscriptions as $insc) { // On prend toutes les inscriptions (y compris structures) pour l'évolution
             if ($insc->date_inscription) {
                 $m = Carbon::parse($insc->date_inscription)->month;
                 $idx = $m >= 9 ? $m - 9 : $m + 3;
@@ -80,6 +86,7 @@ class ExportStatistiques extends Component
             if ($idsSaisonsPassees->contains($id)) $nbReinscrits++;
             else $nbNouveaux++;
         }
+
         $abandons = DB::table('activites_adherents')
             ->where('saison', $this->saisonCourante)
             ->where('est_un_abandon', 1)
@@ -92,7 +99,11 @@ class ExportStatistiques extends Component
             'Abandons en cours' => $abandons
         ];
 
-        return compact('totalAdherents', 'genreMap', 'cspMap', 'villeMap', 'ageMap', 'evolutionMap', 'statutMap', 'adherentsPayes');
+        // --- Structures ---
+        $structuresIdsPayes = $inscriptions->whereNotNull('id_structure')->where('a_paye', 'Payé')->pluck('id_structure');
+        $structuresPayees = AdherentStructure::whereIn('id', $structuresIdsPayes)->get();
+
+        return compact('totalAdherents', 'genreMap', 'cspMap', 'villeMap', 'ageMap', 'evolutionMap', 'statutMap', 'adherentsPayes', 'structuresPayees');
     }
 
     private function createSimpleSheet($spreadsheet, $sheetIndex, $title, $headerA, $headerB, $data, $headerStyle)
@@ -116,7 +127,7 @@ class ExportStatistiques extends Component
     public function exportExcel()
     {
         $d = $this->getAggregatedData();
-        $filename = 'statistiques_' . str_replace('-', '_', $this->saisonCourante) . '_' . now()->format('Ymd_Hi') . '.xlsx';
+        $filename = 'statistiques_vivia_' . str_replace('-', '_', $this->saisonCourante) . '_' . now()->format('Ymd_Hi') . '.xlsx';
 
         $spreadsheet = new Spreadsheet();
         $spreadsheet->getProperties()->setTitle('Statistiques ' . $this->saisonCourante);
@@ -133,7 +144,7 @@ class ExportStatistiques extends Component
 
         $s->setCellValue('A3', 'Nom du fichier :')->setCellValue('B3', $filename);
         $s->setCellValue('A4', 'Saison étudiée :')->setCellValue('B4', $this->saisonCourante);
-        $s->setCellValue('A5', 'Sujets testés (Adhérents) :')->setCellValue('B5', $d['totalAdherents']);
+        $s->setCellValue('A5', 'Sujets testés (Adhérents Physiques) :')->setCellValue('B5', $d['totalAdherents']);
 
         $s->getStyle('A3:A5')->getFont()->setBold(true);
         $s->getColumnDimension('A')->setAutoSize(true);
@@ -146,13 +157,17 @@ class ExportStatistiques extends Component
         $this->createSimpleSheet($spreadsheet, 5, 'Ville d\'origine', 'Ville / Quartier', 'Nombre', $d['villeMap'], $headerStyle);
         $this->createSimpleSheet($spreadsheet, 6, 'Statut des adhérents', 'Statut', 'Nombre', $d['statutMap'], $headerStyle);
 
+        // ==========================================
+        // ONGLET 7 : ADHÉRENTS PHYSIQUES
+        // ==========================================
         $sd = $spreadsheet->createSheet(7)->setTitle('Adhérents Payés');
 
         $headers = [
-            'ID', 'Nom', 'Prénom', 'Carnet', 'Date de Naiss.', 'Âge',
-            'Genre', 'Adresse', 'Ville', 'Code Postal', 'Tél', 'Mail', 'Statut',
-            'Occupation', 'Établissement', 'Régime Social', 'Actions', 'Critères',
-            'Commentaire', 'Manifestation', 'Communication', 'Bulletin'
+            'ID', 'Numéro', 'Nom', 'Prénom', 'Carnet', 'Date de Naiss.', 'Âge',
+            'Genre', 'Adresse', 'Ville', 'Code Postal', 'Tél', 'Mail',
+            'Occupation', 'Établissement', 'Régime Social',
+            'Idée Métier', 'Découverte Métier', 'Problèmes Santé', 'Allergies', 'Conduite à tenir', 'Restrictions Alim.',
+            'Actions Bénévoles', 'Commentaire', 'Manifestation', 'Communication', 'Bulletin'
         ];
 
         foreach ($headers as $col => $header) {
@@ -163,12 +178,11 @@ class ExportStatistiques extends Component
 
         $row = 2;
         foreach ($d['adherentsPayes'] as $a) {
-            $criteres = is_string($a->criteres) ? json_decode($a->criteres, true) : $a->criteres;
-            $criteresStr = is_array($criteres) ? implode(', ', $criteres) : '';
             $ageCalc = $a->age ?? ($a->date_naiss ? Carbon::parse($a->date_naiss)->age : 'N/C');
 
             $rowData = [
                 $a->id,
+                $a->numero_adherent,
                 $a->nom,
                 $a->prenom,
                 $a->carnet ?? '',
@@ -180,12 +194,16 @@ class ExportStatistiques extends Component
                 $a->code_postal,
                 $a->tel,
                 $a->mail,
-                $a->statut,
                 $a->occupation,
                 $a->etablissement,
                 $a->regime_social,
+                $a->idee_metier,
+                $a->decouverte_metier,
+                $a->problemes_sante,
+                $a->allergies,
+                $a->conduite_a_tenir,
+                $a->restrictions_alimentaires,
                 $a->actions,
-                $criteresStr,
                 $a->commentaire,
                 $a->manif ? 'Oui' : 'Non',
                 $a->communication ? 'Oui' : 'Non',
@@ -206,6 +224,62 @@ class ExportStatistiques extends Component
             $sd->getColumnDimensionByColumn($col)->setAutoSize(true);
         }
 
+        // ==========================================
+        // ONGLET 8 : STRUCTURES
+        // ==========================================
+        $ss = $spreadsheet->createSheet(8)->setTitle('Structures Payées');
+
+        $headersStruct = [
+            'ID', 'Numéro', 'Nom', 'Sigle', 'Statut Juridique', 'Statut Activité',
+            'Adresse', 'Code Postal', 'Ville', 'Date Création',
+            'Tél', 'Tél Portable', 'Mail', 'Site Web',
+            'Correspondant', 'Tél Correspondant',
+            'Bulletin', 'Autorisation Photo'
+        ];
+
+        foreach ($headersStruct as $col => $header) {
+            $ss->setCellValue([$col + 1, 1], $header);
+        }
+        $lastColStruct = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex(count($headersStruct));
+        $ss->getStyle("A1:{$lastColStruct}1")->applyFromArray($headerStyle);
+
+        $rowStruct = 2;
+        foreach ($d['structuresPayees'] as $st) {
+            $rowDataStruct = [
+                $st->id,
+                $st->numero_adherent,
+                $st->nom,
+                $st->sigle,
+                $st->statut_juridique,
+                $st->statut,
+                $st->adresse,
+                $st->code_postal,
+                $st->ville,
+                $st->date_creation ? Carbon::parse($st->date_creation)->format('d/m/Y') : '',
+                $st->tel,
+                $st->tel_portable,
+                $st->mail,
+                $st->site_web,
+                $st->nom_correspondant,
+                $st->tel_correspondant,
+                $st->bulletin ? 'Oui' : 'Non',
+                $st->autorisation_photo ? 'Oui' : 'Non'
+            ];
+
+            foreach ($rowDataStruct as $col => $value) {
+                $ss->setCellValue([$col + 1, $rowStruct], $value);
+            }
+
+            if ($rowStruct % 2 === 0) {
+                $ss->getStyle("A{$rowStruct}:{$lastColStruct}{$rowStruct}")->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setRGB('F9FAFB');
+            }
+            $rowStruct++;
+        }
+
+        for ($col = 1; $col <= count($headersStruct); $col++) {
+            $ss->getColumnDimensionByColumn($col)->setAutoSize(true);
+        }
+
         $spreadsheet->setActiveSheetIndex(0);
 
         return response()->streamDownload(function () use ($spreadsheet) {
@@ -219,11 +293,11 @@ class ExportStatistiques extends Component
     public function exportCsv()
     {
         $d = $this->getAggregatedData();
-        $filename = 'statistiques_' . str_replace('-', '_', $this->saisonCourante) . '_' . now()->format('Ymd_Hi') . '.csv';
+        $filename = 'statistiques_vivia_' . str_replace('-', '_', $this->saisonCourante) . '_' . now()->format('Ymd_Hi') . '.csv';
 
         return response()->streamDownload(function () use ($d, $filename) {
             $f = fopen('php://output', 'w');
-            fprintf($f, chr(0xEF) . chr(0xBB) . chr(0xBF));
+            fprintf($f, chr(0xEF) . chr(0xBB) . chr(0xBF)); // BOM pour Excel
 
             $printStats = function($title, $headerA, $headerB, $data) use ($f) {
                 fputcsv($f, ["--- $title ---"], ';');
@@ -237,7 +311,7 @@ class ExportStatistiques extends Component
             fputcsv($f, ['EXPORT STATISTIQUES'], ';');
             fputcsv($f, ['Nom du fichier :', $filename], ';');
             fputcsv($f, ['Saison étudiée :', $this->saisonCourante], ';');
-            fputcsv($f, ['Sujets testés (Adhérents) :', $d['totalAdherents']], ';');
+            fputcsv($f, ['Sujets testés (Adhérents Physiques) :', $d['totalAdherents']], ';');
             fputcsv($f, [], ';');
 
             $printStats('RÉPARTITION PAR ÂGES', "Tranche d'âge", 'Nombre', $d['ageMap']);
@@ -247,23 +321,24 @@ class ExportStatistiques extends Component
             $printStats('VILLE D\'ORIGINE', 'Ville / Quartier', 'Nombre', $d['villeMap']);
             $printStats('STATUT DES ADHÉRENTS', 'Statut', 'Nombre', $d['statutMap']);
 
-            fputcsv($f, ['--- DÉTAIL DES ADHÉRENTS (PAYÉS UNIQUEMENT) ---'], ';');
+            // --- ADHERENTS PHYSIQUES ---
+            fputcsv($f, ['--- DÉTAIL DES ADHÉRENTS PHYSIQUES (PAYÉS UNIQUEMENT) ---'], ';');
 
             $headers = [
-                'ID', 'Nom', 'Prénom', 'Carnet', 'Date de Naiss.', 'Âge',
-                'Genre', 'Adresse', 'Ville', 'Code Postal', 'Tél', 'Mail', 'Statut',
-                'Occupation', 'Établissement', 'Régime Social', 'Actions', 'Critères',
-                'Commentaire', 'Manifestation', 'Communication', 'Bulletin'
+                'ID', 'Numéro', 'Nom', 'Prénom', 'Carnet', 'Date de Naiss.', 'Âge',
+                'Genre', 'Adresse', 'Ville', 'Code Postal', 'Tél', 'Mail',
+                'Occupation', 'Établissement', 'Régime Social',
+                'Idée Métier', 'Découverte Métier', 'Problèmes Santé', 'Allergies', 'Conduite à tenir', 'Restrictions Alim.',
+                'Actions Bénévoles', 'Commentaire', 'Manifestation', 'Communication', 'Bulletin'
             ];
             fputcsv($f, $headers, ';');
 
             foreach ($d['adherentsPayes'] as $a) {
-                $criteres = is_string($a->criteres) ? json_decode($a->criteres, true) : $a->criteres;
-                $criteresStr = is_array($criteres) ? implode(', ', $criteres) : '';
                 $ageCalc = $a->age ?? ($a->date_naiss ? Carbon::parse($a->date_naiss)->age : 'N/C');
 
                 fputcsv($f, [
                     $a->id,
+                    $a->numero_adherent,
                     $a->nom,
                     $a->prenom,
                     $a->carnet ?? '',
@@ -275,16 +350,57 @@ class ExportStatistiques extends Component
                     $a->code_postal,
                     $a->tel,
                     $a->mail,
-                    $a->statut,
                     $a->occupation,
                     $a->etablissement,
                     $a->regime_social,
+                    $a->idee_metier,
+                    $a->decouverte_metier,
+                    $a->problemes_sante,
+                    $a->allergies,
+                    $a->conduite_a_tenir,
+                    $a->restrictions_alimentaires,
                     $a->actions,
-                    $criteresStr,
                     $a->commentaire,
                     $a->manif ? 'Oui' : 'Non',
                     $a->communication ? 'Oui' : 'Non',
                     $a->bulletin ? 'Oui' : 'Non'
+                ], ';');
+            }
+
+            fputcsv($f, [], ';');
+
+            // --- STRUCTURES ---
+            fputcsv($f, ['--- DÉTAIL DES STRUCTURES (PAYÉES UNIQUEMENT) ---'], ';');
+
+            $headersStruct = [
+                'ID', 'Numéro', 'Nom', 'Sigle', 'Statut Juridique', 'Statut Activité',
+                'Adresse', 'Code Postal', 'Ville', 'Date Création',
+                'Tél', 'Tél Portable', 'Mail', 'Site Web',
+                'Correspondant', 'Tél Correspondant',
+                'Bulletin', 'Autorisation Photo'
+            ];
+            fputcsv($f, $headersStruct, ';');
+
+            foreach ($d['structuresPayees'] as $st) {
+                fputcsv($f, [
+                    $st->id,
+                    $st->numero_adherent,
+                    $st->nom,
+                    $st->sigle,
+                    $st->statut_juridique,
+                    $st->statut,
+                    $st->adresse,
+                    $st->code_postal,
+                    $st->ville,
+                    $st->date_creation ? Carbon::parse($st->date_creation)->format('d/m/Y') : '',
+                    $st->tel,
+                    $st->tel_portable,
+                    $st->mail,
+                    $st->site_web,
+                    $st->nom_correspondant,
+                    $st->tel_correspondant,
+                    $st->bulletin ? 'Oui' : 'Non',
+                    $st->autorisation_photo ? 'Oui' : 'Non'
                 ], ';');
             }
 

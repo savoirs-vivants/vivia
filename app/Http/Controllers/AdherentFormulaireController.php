@@ -364,7 +364,7 @@ class AdherentFormulaireController extends Controller
 
                     if ($entity) {
                         Mail::send('emails.admin_nouvelle_inscription', $dataMail, function ($message) {
-                            $message->to('contact@savoirsvivants.fr')->subject('🎉 Nouvelle inscription - Savoirs Vivants');
+                            $message->to('direction@savoirsvivants.fr')->subject('🎉 Nouvelle inscription - Savoirs Vivants');
                         });
                     }
 
