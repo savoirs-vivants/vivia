@@ -728,12 +728,14 @@ class AdherentFormulaireController extends Controller
             $montantActivite  = (float) ($totalActivites + $totalRessourcerie);
 
             if ($montantActivite > 0) {
+                $commentaireDynamique = $this->genererCommentairePaiement($activiteIds, $ressourcerieIds);
+
                 Paiement::create([
                     'id_adherent'   => $formData['_adherent_id'],
                     'montant'       => $montantActivite,
                     'source'        => 'HelloAsso',
                     'date_paiement' => now()->toDateString(),
-                    'commentaire'   => 'Paiement activité/ressourcerie via HelloAsso',
+                    'commentaire'   => $commentaireDynamique, 
                 ]);
                 $formData['_paiement1_cree'] = true;
                 $request->session()->put("adhesion_{$token}", $formData);
@@ -1003,7 +1005,7 @@ class AdherentFormulaireController extends Controller
                             ]
                         );
                         // On attache les tuteurs (Eloquent gère les doublons silencieusement avec syncWithoutDetaching)
-                        $adherent->tuteurs()->syncWithoutDetaching([$tuteur->id]);
+                        $adherent->tousLesTuteurs()->syncWithoutDetaching([$tuteur->id]);
                     }
                 }
             } else {
@@ -1041,7 +1043,7 @@ class AdherentFormulaireController extends Controller
                 ]);
 
                 if (!empty($autresTouteurs)) {
-                    $adherent->tuteurs()->attach($autresTouteurs);
+                    $adherent->tousLesTuteurs()->attach($autresTouteurs);
                 }
             }
 
@@ -1080,12 +1082,13 @@ class AdherentFormulaireController extends Controller
             if (!empty($formData['_helloasso_ok'])) {
                 $montantActivite = (float) ($montantActivites + $montantRessourcerie);
                 if ($montantActivite > 0) {
+                    $commentaireDynamique = $this->genererCommentairePaiement($activiteIds, $ressourcerieIds);
                     Paiement::create([
                         'id_adherent'   => $adherent->id,
                         'montant'       => $montantActivite,
                         'source'        => 'HelloAsso',
                         'date_paiement' => now()->toDateString(),
-                        'commentaire'   => 'Paiement activité/ressourcerie via HelloAsso',
+                        'commentaire'   => $commentaireDynamique,
                     ]);
                 }
                 if ($cotisation > 0) {
@@ -1101,6 +1104,32 @@ class AdherentFormulaireController extends Controller
 
             return $adherent->id;
         });
+    }
+
+    private function genererCommentairePaiement(array $activiteIds, array $ressourcerieIds): string
+    {
+        $types = [];
+
+        if (!empty($activiteIds)) {
+            $activites = \App\Models\Activite::whereIn('id', $activiteIds)->get();
+
+            if ($activites->where('type', 'activite')->isNotEmpty()) {
+                $types[] = 'activité';
+            }
+            if ($activites->where('type', 'stage')->isNotEmpty()) {
+                $types[] = 'stage';
+            }
+        }
+
+        if (!empty($ressourcerieIds)) {
+            $types[] = 'ressourcerie';
+        }
+
+        if (empty($types)) {
+            return "Paiement via HelloAsso";
+        }
+
+        return 'Paiement ' . implode(' et ', $types) . ' via HelloAsso';
     }
 
     private function sauvegarderStructure(array $formData): int

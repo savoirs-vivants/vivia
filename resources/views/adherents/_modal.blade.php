@@ -132,10 +132,19 @@
                         <div class="px-4 py-3 bg-indigo-50 border border-indigo-100 rounded-xl flex items-start gap-2.5">
                             <span style="font-size:16px">🔄</span>
                             <div>
-                                <p class="text-xs font-bold text-indigo-800">Ré-inscription</p>
-                                <p class="text-xs text-indigo-600 mt-0.5 leading-relaxed">
-                                    Cet adhérent est déjà inscrit cette saison. Le montant correspond uniquement aux nouvelles activités.
-                                    Une fois validé, les deux inscriptions seront fusionnées.
+                                <p class="text-xs font-bold text-indigo-800">Ajout en cours d'année</p>
+                                <p class="text-xs text-indigo-600 mt-1 leading-relaxed">
+                                    Cet adhérent s'est réinscrit pour ajouter de nouveaux éléments : <br>
+                                    <span class="inline-block mt-1 mb-1 font-bold text-indigo-900 px-2 py-0.5 bg-indigo-100 rounded-md"
+                                    x-text="adherent.activites && adherent.activites.length > 0
+                                    ? adherent.activites.map(a => a.nom).join(' • ')
+                                    : {
+                                    'ressourcerie': 'Ressourcerie',
+                                    'recherche': 'Recherche participative',
+                                    'soutien': 'Adhésion de soutien',
+                                    'stage': 'Stage'
+                                    }[adherent.type_adhesion_attente] || 'Atelier / Club'">
+                                </span>
                                 </p>
                             </div>
                         </div>
@@ -229,6 +238,7 @@
                                 </p>
                             </div>
                         </div>
+
                     </div>
                 </div>
             </template>

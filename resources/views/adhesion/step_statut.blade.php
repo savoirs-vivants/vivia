@@ -61,9 +61,7 @@
                                     class="mb-5 p-4 bg-teal-50 rounded-xl border border-teal-100">
 
                                     <div class="flex justify-between items-end mb-2">
-                                        <label class="{{ $label }} !mb-0">🔢 Numéro d'adhérent <span
-                                                class="font-normal text-xs text-gray-500">(ou code
-                                                temporaire)</span></label>
+                                        <label class="{{ $label }} !mb-0">🔢 Numéro d'adhérent</label>
                                     </div>
 
                                     <input type="text" name="numero_adherent"

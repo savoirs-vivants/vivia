@@ -47,6 +47,7 @@ trait AdherentPresenter
                 'tarif' => number_format((float) $a->tarif, 2, ',', ' ') . ' €',
             ])->toArray(),
             'montantAdhesion' => $isDrusenheim ? '17,00 €' : '10,00 €',
+            'type_adhesion_attente' => $this->inscriptions()->where('a_paye', 'En attente')->latest()->value('type_adhesion') ?? '',
         ];
     }
 
