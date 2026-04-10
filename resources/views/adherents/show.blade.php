@@ -614,40 +614,47 @@
                     </div>
                 @endif
 
-                @if ($adherent->paiements->count())
-                    <div
-                        class="bg-white rounded-2xl border border-gray-100 shadow-[0_2px_12px_rgba(0,0,0,0.03)] overflow-hidden">
+                @if ($adherent->paiements->count() > 0)
+                    <div class="bg-white rounded-2xl border border-gray-100 shadow-[0_2px_12px_rgba(0,0,0,0.03)] overflow-hidden">
                         <div class="px-6 py-4 border-b border-gray-50 flex items-center gap-2">
                             <svg class="w-4 h-4 text-[#222A60]/40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                     d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
                             </svg>
-                            <h2 class="text-xs font-black text-gray-400 uppercase tracking-widest">Paiement
-                                {{ $paiementPrincipal?->source ?? '' }}</h2>
+                            <h2 class="text-xs font-black text-gray-400 uppercase tracking-widest">Détail des Encaissements</h2>
                         </div>
 
-                        @if ($paiementPrincipal)
-                            <div class="px-5 mt-3 space-y-1">
-                                @foreach ($adherent->activitesActives as $activite)
-                                    <div class="flex items-center justify-between py-1.5">
-                                        <span class="text-sm text-gray-500">{{ $activite->nom }}</span>
-                                        <span
-                                            class="text-sm font-semibold text-[#0F143A]">{{ $activite->tarif_format }}</span>
+                        <div class="divide-y divide-gray-50">
+                            @foreach ($adherent->paiements->sortByDesc('date_paiement') as $paiement)
+                                <div class="px-5 py-3">
+                                    <div class="flex items-start justify-between">
+                                        <div>
+                                            <p class="text-sm font-semibold text-[#0F143A]">
+                                                {{ number_format($paiement->montant, 2, ',', ' ') }} €
+                                                <span class="inline-flex ml-2 px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider
+                                                    {{ strtolower($paiement->source) === 'helloasso' ? 'bg-[#16987C]/10 text-[#16987C]' : 'bg-amber-100 text-amber-700' }}">
+                                                    {{ $paiement->source }}
+                                                </span>
+                                            </p>
+                                            <p class="text-xs text-gray-500 mt-1">
+                                                {{ $paiement->commentaire ?? 'Versement' }}
+                                            </p>
+                                        </div>
+                                        <div class="text-right">
+                                            <p class="text-xs font-medium text-gray-400">
+                                                {{ \Carbon\Carbon::parse($paiement->date_paiement)->isoFormat('D MMM YYYY') }}
+                                            </p>
+                                        </div>
                                     </div>
-                                @endforeach
-                                <div class="flex items-center justify-between py-1.5">
-                                    <span class="text-sm text-gray-500">Adhésion annuelle</span>
-                                    <span class="text-sm font-semibold text-[#0F143A]">10,00 €</span>
                                 </div>
-                            </div>
-                        @endif
+                            @endforeach
+                        </div>
 
-                        <div
-                            class="mx-5 my-4 p-4 bg-[#16987C]/8 rounded-xl border border-[#16987C]/15 flex items-center justify-between">
+                        <div class="mx-5 my-4 p-4 bg-[#16987C]/8 rounded-xl border border-[#16987C]/15 flex items-center justify-between">
                             <span class="text-sm font-bold text-[#16987C]">Total encaissé</span>
-                            <span
-                                class="font-grotesk text-lg font-black text-[#16987C]">{{ number_format($adherent->montant_total, 2, ',', ' ') }}
-                                €</span>
+                            <span class="font-grotesk text-lg font-black text-[#16987C]">
+                                {{ number_format($adherent->paiements->sum('montant'), 2, ',', ' ') }} €
+                            </span>
                         </div>
                     </div>
                 @endif
