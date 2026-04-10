@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Traits\ActivitePresenter;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
@@ -9,6 +10,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Activite extends Model
 {
+    use ActivitePresenter; // Inclusion du Trait d'affichage
+
     protected $table = 'activites';
 
     protected $fillable = [
@@ -38,68 +41,44 @@ class Activite extends Model
         'Autre'      => ['Adulte', 'Senior'],
     ];
 
-    /**
-     * Types possibles.
-     */
     const TYPE_ACTIVITE = 'activite';
     const TYPE_STAGE    = 'stage';
 
-    /**
-     * Dossier auquel appartient cette activité.
-     */
+    // ==========================================
+    // RELATIONS
+    // ==========================================
+
     public function dossier(): BelongsTo
     {
         return $this->belongsTo(DossierActivite::class, 'id_dossier');
     }
 
-    /**
-     * Adhérents inscrits à cette activité.
-     * Pivot : activites_adherents.
-     */
     public function adherents(): BelongsToMany
     {
-        return $this->belongsToMany(
-            Adherent::class,
-            'activites_adherents',
-            'id_activite',
-            'id_adherent'
-        )->withPivot([
-            'saison',
-            'date_entree',
-            'date_sortie',
-            'motif_sortie',
-            'est_un_abandon',
-        ])->withTimestamps();
+        return $this->belongsToMany(Adherent::class, 'activites_adherents', 'id_activite', 'id_adherent')
+            ->withPivot(['saison', 'date_entree', 'date_sortie', 'motif_sortie', 'est_un_abandon'])
+            ->withTimestamps();
     }
 
-    /**
-     * Adhérents encore actifs dans cette activité (pas de date_sortie).
-     */
     public function adherentsActifs(): BelongsToMany
     {
         return $this->adherents()->wherePivotNull('date_sortie');
     }
 
-    /**
-     * Séances planifiées pour cette activité.
-     */
     public function seances(): HasMany
     {
         return $this->hasMany(Seance::class, 'id_activite');
     }
 
-    /**
-     * Gestionnaires (users) responsables de cette activité.
-     */
     public function gestionnaires(): BelongsToMany
     {
-        return $this->belongsToMany(
-            User::class,
-            'activites_gestionnaire',
-            'id_activite',
-            'id_users'
-        )->withTimestamps();
+        return $this->belongsToMany(User::class, 'activites_gestionnaire', 'id_activite', 'id_users')
+            ->withTimestamps();
     }
+
+    // ==========================================
+    // SCOPES
+    // ==========================================
 
     public function scopeActivites($query)
     {
@@ -121,69 +100,22 @@ class Activite extends Model
         return $query->where('is_archived', true);
     }
 
+    // ==========================================
+    // ACCESSEURS DE DONNÉES (LOGIQUE MÉTIER)
+    // ==========================================
 
     public function getEstStageAttribute(): bool
     {
         return $this->type === self::TYPE_STAGE;
     }
 
-    public function getTarifFormatAttribute(): string
-    {
-        if ((float) $this->tarif === 0.0) {
-            return 'Gratuit';
-        }
-
-        return number_format((float) $this->tarif, 2, ',', ' ') . ' €';
-    }
-
     /**
-     * Résumé des horaires sous forme lisible.
-     * Ex. : ["Mercredi 14:00-16:00", "Samedi 10:00-11:30"]
-     *
-     * @return string[]
-     */
-    public function getHorairesListAttribute(): array
-    {
-        $horaires = $this->horaires;
-
-        if (is_string($horaires)) {
-            $horaires = json_decode($horaires, true);
-        }
-
-        if (empty($horaires) || !is_array($horaires)) {
-            return [];
-        }
-
-        if ($this->type === 'stage' || isset($horaires['stage'])) {
-            $data = $horaires['stage'] ?? [];
-            if (empty($data['date_debut']) || empty($data['date_fin'])) {
-                return [];
-            }
-
-            $dateDebut = \Carbon\Carbon::parse($data['date_debut'])->format('d/m/Y');
-            $dateFin   = \Carbon\Carbon::parse($data['date_fin'])->format('d/m/Y');
-            $hDebut    = $data['heure_debut'] ?? '';
-            $hFin      = $data['heure_fin'] ?? '';
-
-            return [
-                "Du {$dateDebut} au {$dateFin} ({$hDebut} - {$hFin})"
-            ];
-        }
-        return array_map(
-            fn($jour, $plage) => "{$jour} {$plage}",
-            array_keys($horaires),
-            $horaires
-        );
-    }
-
-    /**
-     * On centralise la logique de formatage des horaires ici.
-     * Cela permet de supprimer les blocs @php massifs dans les vues Edit et Show.
+     * Structure de données des horaires pour préremplir les formulaires (Edit).
      */
     public function getHorairesPlatsAttribute(): array
     {
         $plats = [];
-        if (is_array($this->horaires) && $this->type !== 'stage') {
+        if (is_array($this->horaires) && !$this->est_stage) {
             foreach ($this->horaires as $jour => $plagesStr) {
                 if ($jour === 'stage') continue;
                 foreach (explode(', ', $plagesStr) as $p) {
@@ -196,26 +128,9 @@ class Activite extends Model
         }
         return $plats;
     }
-    public function getFormattedHorairesAttribute()
-{
-    if ($this->type === 'stage' && isset($this->horaires['stage'])) {
-        return $this->horaires['stage'];
-    }
-
-    $list = [];
-    if (is_array($this->horaires)) {
-        foreach ($this->horaires as $jour => $plage) {
-            $list[] = "$jour ($plage)";
-        }
-    }
-    return $list;
-}
 
     /**
-     * Classes sous forme lisible, triées selon l'ordre canonique.
-     * Ex. : ["CP", "CE1", "CM1"]
-     *
-     * @return string[]
+     * Classes triées selon l'ordre canonique défini dans CLASSES_NIVEAUX.
      */
     public function getClassesListAttribute(): array
     {
@@ -228,15 +143,5 @@ class Activite extends Model
         usort($classes, fn($a, $b) => (array_search($a, $ordre) ?? 99) <=> (array_search($b, $ordre) ?? 99));
 
         return $classes;
-    }
-
-    /**
-     * Badge CSS selon le type.
-     */
-    public function getBadgeTypeClassAttribute(): string
-    {
-        return $this->est_stage
-            ? 'bg-violet-50 text-violet-600'
-            : 'bg-sky-50 text-sky-600';
     }
 }
