@@ -56,6 +56,23 @@ class AdherentFormulaireController extends Controller
         return ($formData['statut_juridique'] ?? '') === 'esr_pme' ? 200 : 50;
     }
 
+    private function getMontantCotisation(array $formData): int
+    {
+        if (($formData['is_adherent'] ?? 'non') === 'oui') return 0;
+        if (($formData['type_activite'] ?? '') === 'club_maker') return 0;
+
+        $activiteIds = array_filter((array) ($formData['activites_selectionnees'] ?? []));
+        if (empty($activiteIds)) return 10;
+
+        $isDrusenheim = \App\Models\Activite::whereIn('id', $activiteIds)
+            ->where(function ($q) {
+                $q->where('nom', 'like', '%drusenheim%')
+                    ->orWhere('ville', 'like', '%drusenheim%');
+            })->exists();
+
+        return $isDrusenheim ? 17 : 10;
+    }
+
     private function getUserPath(array $formData): array
     {
         $isAdherent    = ($formData['is_adherent']  ?? 'non') === 'oui';
@@ -689,13 +706,7 @@ class AdherentFormulaireController extends Controller
         $basePublic = $isSandbox ? 'https://www.helloasso-sandbox.com' : 'https://www.helloasso.com';
         $orgSlug    = config('services.helloasso.org_slug');
 
-        if ($this->isStructure($formData)) {
-            $formSlug = ($formData['statut_juridique'] ?? '') === 'esr_pme'
-                ? env('HELLOASSO_MEMBERSHIP_FORM_SLUG_PME', 'adhesion-savoirs-vivants-2025-2026-pme')
-                : env('HELLOASSO_MEMBERSHIP_FORM_SLUG_TPE', 'adhesion-savoirs-vivants-2025-2026-tpe');
-        } else {
-            $formSlug = env('HELLOASSO_MEMBERSHIP_FORM_SLUG');
-        }
+        $formSlug = env('HELLOASSO_MEMBERSHIP_FORM_SLUG');
 
         $url = "{$basePublic}/associations/{$orgSlug}/adhesions/{$formSlug}";
 
@@ -723,7 +734,7 @@ class AdherentFormulaireController extends Controller
 
         if (!empty($formData['_adherent_id']) && empty($formData['_paiement2_cree'])) {
             $typeActivite = $formData['type_activite'] ?? '';
-            $cotisation   = ($typeActivite !== 'club_maker') ? 10 : 0;
+            $cotisation = $this->getMontantCotisation($formData);
 
             if ($cotisation > 0) {
                 Paiement::create([
@@ -785,7 +796,7 @@ class AdherentFormulaireController extends Controller
 
         $typeActivite   = $formData['type_activite'] ?? '';
         $isDejaAdherent = ($formData['is_adherent'] ?? 'non') === 'oui';
-        $cotisation     = (!$isDejaAdherent && $typeActivite !== 'club_maker') ? 10 : 0;
+        $cotisation = $this->getMontantCotisation($formData);
 
         if ($cotisation > 0) {
             Paiement::create([
@@ -949,7 +960,7 @@ class AdherentFormulaireController extends Controller
 
             $montantActivites    = $this->calculerMontantActivites($activiteIds);
             $montantRessourcerie = !empty($ressourcerieIds) ? Ressourcerie::whereIn('id', $ressourcerieIds)->sum('prix') : 0;
-            $cotisation          = (!$isAdherent && $typeActivite !== 'club_maker') ? 10 : 0;
+            $cotisation = $this->getMontantCotisation($formData);
             $montantTotal        = (float) ($montantActivites + $montantRessourcerie + $cotisation);
 
             Inscription::create([
@@ -1036,7 +1047,7 @@ class AdherentFormulaireController extends Controller
             ]);
 
             $saison = Saison::current();
-            $aPaye  = !empty($formData['_helloasso_ok']) ? Inscription::PAYE : Inscription::EN_ATTENTE;
+            $aPaye = Inscription::EN_ATTENTE;
 
             Inscription::create([
                 'id_structure'     => $structure->id,
@@ -1090,13 +1101,6 @@ class AdherentFormulaireController extends Controller
              * (Idempotence) pour ne pas doubler les entrées financières.
              */
             if ($adherent) {
-                Inscription::where('id_adherent', $adherent->id)
-                    ->where('a_paye', Inscription::EN_ATTENTE)
-                    ->where('renouvellement', false)
-                    ->latest('id')
-                    ->take(1)
-                    ->update(['a_paye' => Inscription::PAYE]);
-
                 $dejaCreee = Paiement::where('id_adherent', $adherent->id)
                     ->where('source', 'HelloAsso')
                     ->where('montant', $amount)
@@ -1119,12 +1123,20 @@ class AdherentFormulaireController extends Controller
             $structure = AdherentStructure::where('mail', $email)->latest()->first();
 
             if ($structure) {
-                Inscription::where('id_structure', $structure->id)
-                    ->where('a_paye', Inscription::EN_ATTENTE)
-                    ->where('renouvellement', false)
-                    ->latest('id')
-                    ->take(1)
-                    ->update(['a_paye' => Inscription::PAYE]);
+                $dejaCreeeStruct = Paiement::where('id_structure', $structure->id)
+                    ->where('source', 'HelloAsso')
+                    ->where('montant', $amount)
+                    ->whereDate('date_paiement', today())
+                    ->exists();
+
+                if (!$dejaCreeeStruct) {
+                    Paiement::create([
+                        'id_structure'  => $structure->id,
+                        'montant'       => $amount,
+                        'source'        => 'HelloAsso',
+                        'date_paiement' => now()->toDateString(),
+                    ]);
+                }
 
                 $syncLog->update(['status' => 'success', 'payments_imported' => 1]);
                 return response()->json(['status' => 'ok'], 200);

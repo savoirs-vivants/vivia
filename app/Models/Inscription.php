@@ -11,6 +11,7 @@ class Inscription extends Model
 
     protected $fillable = [
         'id_adherent',
+        'id_structure',
         'saison',
         'date_inscription',
         'type_adhesion',

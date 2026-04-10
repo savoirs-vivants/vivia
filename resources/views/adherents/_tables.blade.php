@@ -311,4 +311,95 @@
             </div>
         @endif
     @endif
+
 </div>
+
+@if ($filterType === 'tous' && $structuresList->isNotEmpty())
+<div class="bg-white rounded-2xl border border-gray-100 shadow-[0_4px_24px_rgba(0,0,0,0.04)] overflow-hidden mt-6">
+
+    <div class="px-6 py-4 border-b border-gray-100">
+        <p class="text-xs font-black text-gray-400 uppercase tracking-widest">Structures</p>
+    </div>
+
+    <div class="overflow-x-auto">
+        <table class="w-full text-sm">
+            <thead>
+                <tr class="bg-gray-50/70 border-b border-gray-100">
+                    @foreach (['Structure', 'Statut', 'Correspondant', 'Contact'] as $col)
+                        <th class="px-{{ $loop->first ? '6' : '4' }} py-3 text-left text-[10px] font-black text-gray-400 uppercase tracking-widest">{{ $col }}</th>
+                    @endforeach
+                    <th class="px-4 py-3 text-right text-[10px] font-black text-gray-400 uppercase tracking-widest">Montant</th>
+                    <th class="px-4 py-3 text-left text-[10px] font-black text-gray-400 uppercase tracking-widest">{{ $tab === 'payes' ? 'Date' : 'Inscription' }}</th>
+                    @if ($tab === 'payes')
+                        <th class="px-6 py-3 text-left text-[10px] font-black text-gray-400 uppercase tracking-widest">Statut paiement</th>
+                        <th class="px-6 py-3"></th>
+                    @else
+                        <th class="px-6 py-3 text-right text-[10px] font-black text-gray-400 uppercase tracking-widest">Actions</th>
+                    @endif
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-50">
+                @foreach ($structuresList as $structure)
+                    <tr class="hover:bg-gray-50/70 transition-colors duration-100">
+                        <td class="px-6 py-4">
+                            <p class="font-bold text-sm text-[#0F143A]">{{ $structure->nom }}</p>
+                            @if ($structure->sigle)
+                                <p class="text-xs text-gray-400">{{ $structure->sigle }}</p>
+                            @endif
+                        </td>
+                        <td class="px-4 py-4">
+                            <span class="inline-flex px-2.5 py-1 rounded-lg text-xs font-bold {{ $structure->statutJuridiqueClass }}">
+                                {{ $structure->statutJuridiqueLabel }}
+                            </span>
+                        </td>
+                        <td class="px-4 py-4">
+                            <p class="text-sm font-semibold text-gray-700">{{ $structure->nom_correspondant ?? '—' }}</p>
+                        </td>
+                        <td class="px-4 py-4">
+                            @if ($structure->mail)
+                                <a href="mailto:{{ $structure->mail }}" class="text-xs text-teal-600 hover:underline">{{ $structure->mail }}</a>
+                            @else
+                                <span class="text-xs text-gray-300">—</span>
+                            @endif
+                        </td>
+                        <td class="px-4 py-4 text-right">
+                            <span class="font-black text-sm text-[#0F143A]">
+                                {{ number_format((float) ($structure->inscription->montant ?? $structure->montant_adhesion ?? 0), 2, ',', ' ') }} €
+                            </span>
+                        </td>
+                        <td class="px-4 py-4">
+                            <span class="text-sm text-gray-500">
+                                {{ $structure->inscription?->date_inscription?->isoFormat('D MMM YYYY') ?? '—' }}
+                            </span>
+                        </td>
+                        @if ($tab === 'payes')
+                            <td class="px-6 py-4">
+                                <span class="inline-flex px-3 py-1.5 bg-teal-100 text-teal-700 rounded-lg text-xs font-bold">Payée</span>
+                            </td>
+                            <td class="px-6 py-4 text-right">
+                                <a href="{{ route('structures.show', $structure) }}"
+                                   class="inline-flex items-center gap-1 px-3 py-1.5 bg-[#222A60]/5 hover:bg-[#222A60]/10 text-[#222A60] rounded-lg text-xs font-bold transition-all">
+                                    Voir la fiche
+                                    <svg class="w-3 h-3 opacity-60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"/>
+                                    </svg>
+                                </a>
+                            </td>
+                        @else
+                            <td class="px-6 py-4 text-right">
+                                <button @click="ouvrirModal({{ json_encode($structure->modalData()) }})"
+                                        class="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-[#16987C] hover:bg-[#138a6f] text-white rounded-lg text-xs font-bold transition-all duration-150 shadow-sm">
+                                    Valider
+                                    <svg class="w-3 h-3 opacity-80" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"/>
+                                    </svg>
+                                </button>
+                            </td>
+                        @endif
+                    </tr>
+                @endforeach
+            </tbody>
+        </table>
+    </div>
+</div>
+@endif

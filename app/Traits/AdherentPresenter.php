@@ -16,6 +16,9 @@ trait AdherentPresenter
         $activites = ($isReinscription && $dateInscr)
             ? $this->activitesActives->filter(fn($a) => $a->pivot->created_at >= $dateInscr->startOfDay())->values()
             : $this->activitesActives->values();
+        $isDrusenheim = $this->activitesActives->contains(function ($a) {
+            return stripos($a->nom, 'drusenheim') !== false || stripos($a->ville, 'drusenheim') !== false;
+        });
 
         return [
             'actionUrl'       => "/adherents/{$this->id}/valider",
@@ -43,6 +46,7 @@ trait AdherentPresenter
                 'info'  => collect($a->horaires_list)->first() ?? '',
                 'tarif' => number_format((float) $a->tarif, 2, ',', ' ') . ' €',
             ])->toArray(),
+            'montantAdhesion' => $isDrusenheim ? '17,00 €' : '10,00 €',
         ];
     }
 
