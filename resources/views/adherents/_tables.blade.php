@@ -18,7 +18,7 @@
         @if ($tab === 'attente')
             <div class="flex items-center gap-2 flex-wrap">
                 <span class="text-xs font-bold text-gray-400 uppercase tracking-widest mr-1">Source</span>
-                @foreach (['Tous', 'HelloAsso', 'Interne', 'Pass Culture'] as $src)
+                @foreach (['Tous', 'HelloAsso', 'Interne'] as $src)
                     <a href="{{ route('adherents.index', array_merge(request()->except('source', 'page'), ['source' => $src === 'Tous' ? null : $src, 'page' => 1])) }}"
                        class="px-3 py-1.5 rounded-lg text-xs font-bold transition-all duration-150 {{ ($filterSource ?? 'Tous') === $src ? 'bg-[#222A60] text-white shadow-sm' : 'bg-gray-100 text-gray-500 hover:bg-gray-200 hover:text-gray-700' }}">
                         {{ $src }}
