@@ -20,6 +20,7 @@ class Activite extends Model
         'adresse',
         'ville',
         'tarif',
+        'max_eleves',
         'horaires',
         'classes',
         'is_archived',

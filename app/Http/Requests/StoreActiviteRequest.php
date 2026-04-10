@@ -24,6 +24,7 @@ class StoreActiviteRequest extends FormRequest
             'fins.*'            => 'nullable|date_format:H:i',
             'gestionnaires'     => 'nullable|array',
             'gestionnaires.*'   => 'exists:users,id',
+            'max_eleves'        => 'nullable|integer|min:1',
             'classes'           => 'nullable|array',
             'classes.*'         => 'nullable|string',
             'dossier_action'    => 'nullable|in:none,existing,new',
