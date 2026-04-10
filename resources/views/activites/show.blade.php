@@ -46,7 +46,7 @@
                                 style="{{ $activite->est_stage ? 'background: rgba(251,191,36,.15);' : 'background: rgba(22,163,122,.18);' }}">
                                 <span
                                     class="w-1.5 h-1.5 rounded-full {{ $activite->est_stage ? 'bg-amber-300' : 'bg-emerald-400 animate-pulse' }}"></span>
-                                {{ $activite->est_stage ? 'Stage' : 'En cours' }}
+                                {{ $activite->est_stage ? 'Stage' : 'Atelier' }}
                             </div>
                             <h1 class="font-grotesk text-3xl sm:text-4xl font-black text-white tracking-tight mb-3">
                                 {{ $activite->nom }}</h1>

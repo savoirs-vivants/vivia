@@ -386,6 +386,52 @@ class AdherentFormulaireController extends Controller
                 ->values();
         }
 
+        $ticket = null;
+        if ($step === 11 && ($formData['mode_paiement'] ?? '') === 'interne' && !$isStructure) {
+            $adherentCree = \App\Models\Adherent::find($formData['_adherent_id'] ?? null);
+            $inscription  = $adherentCree ? $adherentCree->inscriptions()->latest()->first() : null;
+
+            $activitesTicket = \App\Models\Activite::whereIn('id', $formData['activites_selectionnees'] ?? [])->get();
+            $ressourceriesTicket = \App\Models\Ressourcerie::whereIn('id', $formData['ressourcerie_selectionnees'] ?? [])->get();
+
+            $isDrusenheimTicket = $activitesTicket->contains(function ($a) {
+                return stripos($a->nom, 'drusenheim') !== false || stripos($a->ville, 'drusenheim') !== false;
+            });
+
+            $montantCotisation = $this->getMontantCotisation($formData);
+
+            $lignes = [];
+            $month = now()->month;
+
+            foreach ($activitesTicket as $act) {
+                $prixAct = (float) $act->tarif;
+                if ($act->type === 'activite') {
+                    if ($month == 2 || $month == 3) {
+                        $prixAct = max(0, $prixAct - 50);
+                    } elseif ($month >= 4 && $month <= 6) {
+                        $prixAct = ($prixAct / 10) * (7 - $month);
+                    }
+                }
+                $lignes[] = ['nom' => $act->nom, 'prix' => $prixAct];
+            }
+
+            foreach ($ressourceriesTicket as $ress) {
+                $lignes[] = ['nom' => $ress->nom, 'prix' => (float) $ress->prix];
+            }
+
+            if ($montantCotisation > 0) {
+                $lignes[] = [
+                    'nom' => 'Adhésion annuelle' . ($isDrusenheimTicket ? ' Club Drusenheim' : ''),
+                    'prix' => (float) $montantCotisation
+                ];
+            }
+
+            $ticket = [
+                'lignes' => $lignes,
+                'total'  => $inscription ? $inscription->montant : 0,
+            ];
+        }
+
         return view('adhesion.index', compact(
             'step',
             'formData',
@@ -407,7 +453,9 @@ class AdherentFormulaireController extends Controller
             'ressourcerieSelectionnees',
             'totalRessourcerieStructure',
             'clubMakerActivites',
-            'nbInscritsParActivite'
+            'nbInscritsParActivite',
+            'isStructure',
+            'ticket'
         ));
     }
 
