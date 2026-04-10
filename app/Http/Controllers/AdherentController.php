@@ -240,8 +240,21 @@ class AdherentController extends Controller
                 $inscriptionEnAttente->update(['a_paye' => $statut]);
 
                 if ($statut === Inscription::PARTIEL && $request->filled('montant_recu')) {
-                    $adherent->paiements()->latest()->first()?->update([
-                        'montant' => (float) $request->montant_recu
+                    $adherent->paiements()->create([
+                        'montant'       => (float) $request->montant_recu,
+                        'source'        => 'Interne',
+                        'date_paiement' => now()->toDateString(),
+                        'commentaire'   => '1er versement (Partiel)',
+                        'id_structure'  => null,
+                    ]);
+                }
+
+                if ($statut === Inscription::PAYE) {
+                     $adherent->paiements()->create([
+                        'montant'       => (float) $inscriptionEnAttente->montant,
+                        'source'        => 'Interne',
+                        'date_paiement' => now()->toDateString(),
+                        'commentaire'   => 'Paiement intégral',
                     ]);
                 }
             }

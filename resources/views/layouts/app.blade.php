@@ -19,8 +19,8 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     @vite(['resources/css/app.css', 'resources/js/app.js', 'resources/js/password-toggle.js', 'resources/js/selection.js', 'resources/js/activites.js', 'resources/js/adherent.js', 'resources/js/statistiques.js', 'resources/js/carnet-bord.js'])
     @livewireStyles
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js" defer></script>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" defer></script>
 </head>
 
 <body class="font-grotesk bg-[#f3f5f8] antialiased" x-data="{ sidebarOpen: false }">
