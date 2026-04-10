@@ -154,6 +154,17 @@
                         </div>
 
                         <div>
+                            <label class="block text-xs font-black text-gray-400 uppercase tracking-widest mb-2">
+                                Nombre max d'élèves
+                                <span class="text-gray-300 font-normal normal-case tracking-normal ml-1">(optionnel)</span>
+                            </label>
+                            <input type="number" min="1" name="max_eleves"
+                                value="{{ old('max_eleves', $activite->max_eleves) }}" placeholder="Ex: 12"
+                                class="w-full px-4 py-3 bg-gray-50 border border-gray-100 rounded-xl text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-[#16987C]/30 focus:border-[#16987C]/40">
+                            <p class="text-[11px] text-gray-400 mt-1.5">Si renseigné, l'activité sera affichée comme complète une fois ce seuil atteint.</p>
+                        </div>
+
+                        <div>
                             <label
                                 class="block text-xs font-black text-gray-400 uppercase tracking-widest mb-2">Ville</label>
                             <input type="text" name="ville" value="{{ old('ville', $activite->ville) }}"
@@ -233,14 +244,6 @@
                                     </div>
                                 @endforelse
                             </div>
-                            <button type="button" id="btn-add-horaire"
-                                class="mt-3 inline-flex items-center gap-1.5 text-xs font-bold text-[#16987C] hover:text-[#0d7a63] transition-colors">
-                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
-                                        d="M12 4v16m8-8H4" />
-                                </svg>
-                                Ajouter un créneau
-                            </button>
                         </div>
 
                         <div x-show="typeActivite === 'stage'" x-cloak

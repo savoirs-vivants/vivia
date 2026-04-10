@@ -362,6 +362,7 @@ class ActiviteController extends Controller
             'type'       => $validated['type'],
             'nom'        => $validated['nom'],
             'tarif'      => $validated['tarif'],
+            'max_eleves' => $validated['max_eleves'] ?? null,
             'adresse'    => $validated['adresse'],
             'ville'      => $validated['ville'],
             'horaires'   => empty($horaires) ? null : $horaires,
