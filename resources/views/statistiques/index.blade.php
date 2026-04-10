@@ -275,210 +275,23 @@
 
         </div>
 
-        <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-
         <script>
-            document.addEventListener('DOMContentLoaded', function() {
-
-                Chart.defaults.color = '#9ca3af';
-
-                const ctxAge = document.getElementById('ageChart').getContext('2d');
-                new Chart(ctxAge, {
-                    type: 'bar',
-                    data: {
-                        labels: @json($ageData['labels']),
-                        datasets: [{
-                                label: 'Filles / Femmes',
-                                data: @json($ageData['filles']),
-                                backgroundColor: '#16987C',
-                                borderRadius: 4,
-                                barPercentage: 0.6,
-                                categoryPercentage: 0.8
-                            },
-                            {
-                                label: 'Garçons / Hommes',
-                                data: @json($ageData['garcons']),
-                                backgroundColor: '#3b82f6',
-                                borderRadius: 4,
-                                barPercentage: 0.6,
-                                categoryPercentage: 0.8
-                            }
-                        ]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        plugins: {
-                            legend: {
-                                position: 'top',
-                                labels: {
-                                    usePointStyle: true,
-                                    boxWidth: 8,
-                                    font: {
-                                        weight: 'bold',
-                                        size: 11
-                                    }
-                                }
-                            }
-                        },
-                        scales: {
-                            y: {
-                                beginAtZero: true,
-                                grid: {
-                                    color: '#f3f4f6',
-                                    drawBorder: false
-                                },
-                                border: {
-                                    display: false
-                                }
-                            },
-                            x: {
-                                grid: {
-                                    display: false
-                                },
-                                border: {
-                                    display: false
-                                }
-                            }
-                        }
-                    }
-                });
-
-                const ctxGender = document.getElementById('genderChart').getContext('2d');
-                new Chart(ctxGender, {
-                    type: 'doughnut',
-                    data: {
-                        labels: ['Filles / Femmes', 'Garçons / Hommes'],
-                        datasets: [{
-                            data: [{{ $nbFilles }}, {{ $nbGarcons }}],
-                            backgroundColor: ['#16987C', '#3b82f6'],
-                            borderWidth: 0,
-                            hoverOffset: 4
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        cutout: '70%',
-                        plugins: {
-                            legend: {
-                                display: false
-                            }
-                        }
-                    }
-                });
-
-                const ctxEvol = document.getElementById('evolutionChart').getContext('2d');
-
-                let gradientSaisonActuelle = ctxEvol.createLinearGradient(0, 0, 0, 300);
-                gradientSaisonActuelle.addColorStop(0, 'rgba(22, 152, 124, 0.2)');
-                gradientSaisonActuelle.addColorStop(1, 'rgba(22, 152, 124, 0)');
-
-                new Chart(ctxEvol, {
-                    type: 'line',
-                    data: {
-                        labels: @json($evolutionData['labels']),
-                        datasets: [{
-                                label: 'Saison {{ $saisonCourante }}',
-                                data: @json($evolutionData['courante']),
-                                borderColor: '#16987C',
-                                backgroundColor: gradientSaisonActuelle,
-                                borderWidth: 3,
-                                pointBackgroundColor: '#16987C',
-                                pointBorderColor: '#fff',
-                                pointBorderWidth: 2,
-                                pointRadius: 5,
-                                fill: true,
-                                tension: 0.4
-                            },
-                            {
-                                label: 'Saison {{ $saisonPrecedente ?? 'Précédente' }}',
-                                data: @json($evolutionData['precedente']),
-                                borderColor: '#9ca3af',
-                                borderWidth: 2,
-                                borderDash: [5, 5],
-                                pointBackgroundColor: '#9ca3af',
-                                pointRadius: 0,
-                                fill: false,
-                                tension: 0.4
-                            }
-                        ]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        plugins: {
-                            legend: {
-                                position: 'top',
-                                labels: {
-                                    usePointStyle: true,
-                                    boxWidth: 8,
-                                    font: {
-                                        weight: 'bold',
-                                        size: 11
-                                    }
-                                }
-                            }
-                        },
-                        scales: {
-                            y: {
-                                beginAtZero: true,
-                                grid: {
-                                    color: '#f3f4f6',
-                                    drawBorder: false
-                                },
-                                border: {
-                                    display: false
-                                }
-                            },
-                            x: {
-                                grid: {
-                                    display: false
-                                },
-                                border: {
-                                    display: false
-                                }
-                            }
-                        }
-                    }
-                });
-
-                const mapData = @json($mapData);
-                const mapContainer = document.getElementById('adherentsMap');
-
-                if (mapContainer) {
-                    setTimeout(function() {
-
-                        const adherentsMapInstance = L.map('adherentsMap').setView([46.603354, 1.888334], 5);
-
-                        L.tileLayer('https://api.maptiler.com/maps/base-v4/256/{z}/{x}/{y}.png?key=lpN2MwGYklm62ZAIZttO', {
-                            attribution: '&copy; <a href="https://www.maptiler.com/copyright/" target="_blank">MapTiler</a> &copy; <a href="https://www.openstreetmap.org/copyright" target="_blank">OpenStreetMap contributors</a>',
-                            maxZoom: 19,
-                            crossOrigin: true
-                        }).addTo(adherentsMapInstance);
-
-                        const bounds = [];
-
-                        mapData.forEach(point => {
-                            L.circleMarker([point.lat, point.lng], {
-                                color: '#ffffff',
-                                fillColor: 'blue',
-                                fillOpacity: 0.9,
-                                radius: 8,
-                                weight: 2
-                            }).addTo(adherentsMapInstance);
-
-                            bounds.push([point.lat, point.lng]);
-                        });
-
-                        if (bounds.length > 0) {
-                            adherentsMapInstance.fitBounds(bounds, {
-                                padding: [30, 30]
-                            });
-                        }
-
-                    }, 100); 
-                }
-            });
+            window.statistiquesData = {
+                saisonCourante: '{{ $saisonCourante }}',
+                saisonPrecedente: '{{ $saisonPrecedente ?? 'Précédente' }}',
+                nbFilles: {{ $nbFilles ?? 0 }},
+                nbGarcons: {{ $nbGarcons ?? 0 }},
+                ageData: {
+                    labels: @json($ageData['labels']),
+                    filles: @json($ageData['filles']),
+                    garcons: @json($ageData['garcons'])
+                },
+                evolutionData: {
+                    labels: @json($evolutionData['labels']),
+                    courante: @json($evolutionData['courante']),
+                    precedente: @json($evolutionData['precedente'])
+                },
+                mapData: @json($mapData)
+            };
         </script>
     @endsection

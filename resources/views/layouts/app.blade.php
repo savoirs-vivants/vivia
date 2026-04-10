@@ -17,9 +17,10 @@
         href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300..700&family=Space+Mono:wght@400;700&display=swap"
         rel="stylesheet">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    @vite(['resources/css/app.css', 'resources/js/app.js', 'resources/js/password-toggle.js', 'resources/js/selection.js', 'resources/js/activites.js', 'resources/js/adherent.js'])
+    @vite(['resources/css/app.css', 'resources/js/app.js', 'resources/js/password-toggle.js', 'resources/js/selection.js', 'resources/js/activites.js', 'resources/js/adherent.js', 'resources/js/statistiques.js'])
     @livewireStyles
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 </head>
 
 <body class="font-grotesk bg-[#f3f5f8] antialiased" x-data="{ sidebarOpen: false }">

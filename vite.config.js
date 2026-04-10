@@ -5,7 +5,7 @@ import tailwindcss from '@tailwindcss/vite';
 export default defineConfig({
     plugins: [
         laravel({
-            input: ['resources/css/app.css', 'resources/js/app.js', 'resources/js/password-toggle.js', 'resources/js/selection.js', 'resources/js/activites.js', 'resources/js/adherent.js'],
+            input: ['resources/css/app.css', 'resources/js/app.js', 'resources/js/password-toggle.js', 'resources/js/selection.js', 'resources/js/activites.js', 'resources/js/adherent.js', 'resources/js/statistiques.js'],
             refresh: true,
         }),
         tailwindcss(),
