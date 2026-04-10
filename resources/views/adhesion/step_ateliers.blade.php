@@ -215,72 +215,141 @@
                                         $horaires = is_string($activite->horaires)
                                             ? json_decode($activite->horaires, true)
                                             : $activite->horaires ?? [];
-                                        $isStage = isset($horaires['stage']);
+                                        $isStage  = isset($horaires['stage']);
+                                        $nbInscrits = $nbInscritsParActivite[$activite->id] ?? 0;
+                                        $isPleine   = $activite->max_eleves !== null && $nbInscrits >= $activite->max_eleves;
                                     @endphp
 
-                                    <div x-data="{ checked: {{ in_array($activite->id, $selectedActivites) ? 'true' : 'false' }} }">
-                                        <input type="checkbox" name="activites_selectionnees[]"
-                                            value="{{ $activite->id }}" x-model="checked" class="hidden">
-                                        <div @click="checked = !checked"
-                                            :class="checked
-                                                ?
-                                                'border-teal-600 bg-teal-50 ring-2 ring-teal-600/20' :
-                                                'border-gray-200 hover:border-slate-400 bg-white'"
-                                            class="border-2 rounded-xl p-4 transition-all flex items-center gap-4 cursor-pointer shadow-sm hover:shadow-md">
-                                            <div class="flex-1 min-w-0">
-                                                <h4 class="font-bold text-slate-900 text-sm leading-tight">
-                                                    {{ $activite->nom }}</h4>
-                                                <p
-                                                    class="text-[11px] font-semibold text-indigo-600 bg-indigo-50 border border-indigo-100 px-2 py-0.5 rounded inline-block mt-1">
-                                                    🎓 {{ implode(', ', (array) $activite->classes) }}
-                                                </p>
-                                                @if ($isStage)
-                                                    <div class="flex flex-wrap gap-1.5 mt-2.5">
-                                                        <span
-                                                            class="inline-flex items-center gap-1 bg-white border border-gray-200 text-slate-600 font-medium text-[11px] px-2 py-0.5 rounded-md shadow-sm">
-                                                            📅 Du
-                                                            {{ \Carbon\Carbon::parse($horaires['stage']['date_debut'])->format('d/m') }}
-                                                            au
-                                                            {{ \Carbon\Carbon::parse($horaires['stage']['date_fin'])->format('d/m/Y') }}
-                                                        </span>
-                                                        <span
-                                                            class="inline-flex items-center gap-1 bg-white border border-gray-200 text-slate-600 font-medium text-[11px] px-2 py-0.5 rounded-md shadow-sm">
-                                                            🕐 {{ $horaires['stage']['heure_debut'] }} -
-                                                            {{ $horaires['stage']['heure_fin'] }}
-                                                        </span>
-                                                    </div>
-                                                @elseif ($horaires && count($horaires) > 0)
-                                                    <div class="flex flex-wrap gap-1.5 mt-2.5">
-                                                        @foreach ($horaires as $jour => $heure)
-                                                            @if (is_string($heure))
-                                                                <span
-                                                                    class="inline-flex items-center gap-1 bg-white border border-gray-200 text-slate-600 font-medium text-[11px] px-2 py-0.5 rounded-md shadow-sm">
-                                                                    🕐 {{ $jour }} ·
-                                                                    {{ $heure }}
-                                                                </span>
-                                                            @endif
-                                                        @endforeach
-                                                    </div>
-                                                @endif
-
-                                                @if ($activite->tarif !== null)
-                                                    <p class="text-xs font-black text-teal-600 mt-1">
-                                                        {{ $activite->tarif > 0 ? number_format($activite->tarif, 0, ',', ' ') . ' €' : 'Gratuit' }}
-                                                    </p>
-                                                @endif
+                                    @if ($isPleine)
+                                        <div x-data="{
+                                            notifEnvoye: false,
+                                            loading: false,
+                                            async notifier() {
+                                                this.loading = true;
+                                                try {
+                                                    await fetch('{{ route('adhesion.notifier.activite', $token) }}', {
+                                                        method: 'POST',
+                                                        headers: {
+                                                            'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                                                            'Content-Type': 'application/json',
+                                                        },
+                                                        body: JSON.stringify({ activite_id: {{ $activite->id }} }),
+                                                    });
+                                                    this.notifEnvoye = true;
+                                                } catch(e) {}
+                                                this.loading = false;
+                                            }
+                                        }" class="relative border-2 border-gray-200 rounded-xl overflow-hidden">
+                                            <div class="absolute top-0 left-0 right-0 z-10 flex items-center justify-between px-4 py-2 bg-rose-500 text-white">
+                                                <span class="text-xs font-black uppercase tracking-widest">🚫 Complet</span>
+                                                <span class="text-xs font-semibold opacity-80">{{ $nbInscrits }} / {{ $activite->max_eleves }} inscrits</span>
                                             </div>
-                                            <div class="w-6 h-6 rounded-full border-2 flex items-center justify-center shrink-0 transition-colors"
-                                                :class="checked ? 'border-teal-600 bg-teal-600' :
-                                                    'border-gray-300'">
-                                                <svg x-show="checked" class="w-3 h-3 text-white" fill="currentColor"
-                                                    viewBox="0 0 20 20">
-                                                    <path fill-rule="evenodd"
-                                                        d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                                                        clip-rule="evenodd" />
-                                                </svg>
+
+                                            <div class="pt-9 px-4 pb-4 bg-gray-50 opacity-50 pointer-events-none select-none flex items-center gap-4">
+                                                <div class="flex-1 min-w-0">
+                                                    <h4 class="font-bold text-slate-900 text-sm leading-tight">{{ $activite->nom }}</h4>
+                                                    @if (!empty($activite->classes))
+                                                        <p class="text-[11px] font-semibold text-indigo-600 bg-indigo-50 border border-indigo-100 px-2 py-0.5 rounded inline-block mt-1">
+                                                            🎓 {{ implode(', ', (array) $activite->classes) }}
+                                                        </p>
+                                                    @endif
+                                                    @if ($isStage)
+                                                        <div class="flex flex-wrap gap-1.5 mt-2.5">
+                                                            <span class="inline-flex items-center gap-1 bg-white border border-gray-200 text-slate-600 font-medium text-[11px] px-2 py-0.5 rounded-md shadow-sm">
+                                                                📅 Du {{ \Carbon\Carbon::parse($horaires['stage']['date_debut'])->format('d/m') }} au {{ \Carbon\Carbon::parse($horaires['stage']['date_fin'])->format('d/m/Y') }}
+                                                            </span>
+                                                            <span class="inline-flex items-center gap-1 bg-white border border-gray-200 text-slate-600 font-medium text-[11px] px-2 py-0.5 rounded-md shadow-sm">
+                                                                🕐 {{ $horaires['stage']['heure_debut'] }} - {{ $horaires['stage']['heure_fin'] }}
+                                                            </span>
+                                                        </div>
+                                                    @elseif ($horaires && count($horaires) > 0)
+                                                        <div class="flex flex-wrap gap-1.5 mt-2.5">
+                                                            @foreach ($horaires as $jour => $heure)
+                                                                @if (is_string($heure))
+                                                                    <span class="inline-flex items-center gap-1 bg-white border border-gray-200 text-slate-600 font-medium text-[11px] px-2 py-0.5 rounded-md shadow-sm">
+                                                                        🕐 {{ $jour }} · {{ $heure }}
+                                                                    </span>
+                                                                @endif
+                                                            @endforeach
+                                                        </div>
+                                                    @endif
+                                                    @if ($activite->tarif !== null)
+                                                        <p class="text-xs font-black text-teal-600 mt-1">
+                                                            {{ $activite->tarif > 0 ? number_format($activite->tarif, 0, ',', ' ') . ' €' : 'Gratuit' }}
+                                                        </p>
+                                                    @endif
+                                                </div>
+                                                <div class="w-6 h-6 rounded-full border-2 border-gray-300 shrink-0"></div>
+                                            </div>
+
+                                            <div class="px-4 py-3 bg-white border-t border-gray-100">
+                                                <button type="button" @click="notifier()" :disabled="notifEnvoye || loading"
+                                                    x-show="!notifEnvoye"
+                                                    class="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-amber-50 hover:bg-amber-100 border border-amber-200 text-amber-700 text-xs font-bold rounded-lg transition-all disabled:opacity-50">
+                                                    <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6 6 0 10-12 0v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
+                                                    </svg>
+                                                    <span x-show="!loading">Je souhaite prévenir de mon envie de m'inscrire à cette activité</span>
+                                                    <span x-show="loading">Envoi en cours…</span>
+                                                </button>
+                                                <p x-show="notifEnvoye" x-transition
+                                                    class="text-center text-xs font-semibold text-emerald-600 py-2">
+                                                    ✅ Votre demande a bien été transmise à l'association.
+                                                </p>
                                             </div>
                                         </div>
-                                    </div>
+                                    @else
+                                        <div x-data="{ checked: {{ in_array($activite->id, $selectedActivites) ? 'true' : 'false' }} }">
+                                            <input type="checkbox" name="activites_selectionnees[]"
+                                                value="{{ $activite->id }}" x-model="checked" class="hidden">
+                                            <div @click="checked = !checked"
+                                                :class="checked
+                                                    ? 'border-teal-600 bg-teal-50 ring-2 ring-teal-600/20'
+                                                    : 'border-gray-200 hover:border-slate-400 bg-white'"
+                                                class="border-2 rounded-xl p-4 transition-all flex items-center gap-4 cursor-pointer shadow-sm hover:shadow-md">
+                                                <div class="flex-1 min-w-0">
+                                                    <h4 class="font-bold text-slate-900 text-sm leading-tight">
+                                                        {{ $activite->nom }}</h4>
+                                                    @if (!empty($activite->classes))
+                                                        <p class="text-[11px] font-semibold text-indigo-600 bg-indigo-50 border border-indigo-100 px-2 py-0.5 rounded inline-block mt-1">
+                                                            🎓 {{ implode(', ', (array) $activite->classes) }}
+                                                        </p>
+                                                    @endif
+                                                    @if ($isStage)
+                                                        <div class="flex flex-wrap gap-1.5 mt-2.5">
+                                                            <span class="inline-flex items-center gap-1 bg-white border border-gray-200 text-slate-600 font-medium text-[11px] px-2 py-0.5 rounded-md shadow-sm">
+                                                                📅 Du {{ \Carbon\Carbon::parse($horaires['stage']['date_debut'])->format('d/m') }} au {{ \Carbon\Carbon::parse($horaires['stage']['date_fin'])->format('d/m/Y') }}
+                                                            </span>
+                                                            <span class="inline-flex items-center gap-1 bg-white border border-gray-200 text-slate-600 font-medium text-[11px] px-2 py-0.5 rounded-md shadow-sm">
+                                                                🕐 {{ $horaires['stage']['heure_debut'] }} - {{ $horaires['stage']['heure_fin'] }}
+                                                            </span>
+                                                        </div>
+                                                    @elseif ($horaires && count($horaires) > 0)
+                                                        <div class="flex flex-wrap gap-1.5 mt-2.5">
+                                                            @foreach ($horaires as $jour => $heure)
+                                                                @if (is_string($heure))
+                                                                    <span class="inline-flex items-center gap-1 bg-white border border-gray-200 text-slate-600 font-medium text-[11px] px-2 py-0.5 rounded-md shadow-sm">
+                                                                        🕐 {{ $jour }} · {{ $heure }}
+                                                                    </span>
+                                                                @endif
+                                                            @endforeach
+                                                        </div>
+                                                    @endif
+                                                    @if ($activite->tarif !== null)
+                                                        <p class="text-xs font-black text-teal-600 mt-1">
+                                                            {{ $activite->tarif > 0 ? number_format($activite->tarif, 0, ',', ' ') . ' €' : 'Gratuit' }}
+                                                        </p>
+                                                    @endif
+                                                </div>
+                                                <div class="w-6 h-6 rounded-full border-2 flex items-center justify-center shrink-0 transition-colors"
+                                                    :class="checked ? 'border-teal-600 bg-teal-600' : 'border-gray-300'">
+                                                    <svg x-show="checked" class="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                                        <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+                                                    </svg>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    @endif
                                 @endforeach
                             </div>
                         </div>

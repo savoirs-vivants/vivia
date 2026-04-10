@@ -286,7 +286,16 @@ class AdherentFormulaireController extends Controller
         $filtre = $this->classesFiltrer($formData);
         $classesEligibles = $this->classesEligiblesDepuisOccupation($formData);
 
+        $saison = Saison::current();
         $activites = Activite::where('is_archived', false)->get();
+
+        $nbInscritsParActivite = DB::table('activites_adherents')
+            ->whereIn('id_activite', $activites->pluck('id'))
+            ->where('saison', $saison)
+            ->where('est_un_abandon', 0)
+            ->groupBy('id_activite')
+            ->selectRaw('id_activite, count(*) as nb')
+            ->pluck('nb', 'id_activite');
 
         $ateliers  = $activites->where('type', 'activite')->values()
             ->filter($filtre)
@@ -397,7 +406,8 @@ class AdherentFormulaireController extends Controller
             'montantStructure',
             'ressourcerieSelectionnees',
             'totalRessourcerieStructure',
-            'clubMakerActivites'
+            'clubMakerActivites',
+            'nbInscritsParActivite'
         ));
     }
 
@@ -815,6 +825,35 @@ class AdherentFormulaireController extends Controller
 
         Log::info("Cotisation validée pour adhérent {$formData['_adherent_id']} (URL directe HelloAsso)");
         return redirect()->route('adhesion.show', ['token' => $token, 'step' => 11]);
+    }
+
+    public function notifierActivitePleine(Request $request, string $token)
+    {
+        abort_if(!$request->session()->has("adhesion_{$token}"), 403);
+
+        $activiteId = (int) $request->input('activite_id');
+        $activite   = Activite::findOrFail($activiteId);
+        $formData   = $request->session()->get("adhesion_{$token}", []);
+
+        $prenom = $formData['prenom'] ?? ($formData['nom_correspondant'] ?? 'Prénom inconnu');
+        $nom    = $formData['nom']    ?? '';
+        $mail   = $formData['mail']   ?? ($formData['mail_structure'] ?? null);
+
+        try {
+            Mail::send('emails.activite_pleine_notification', [
+                'activite' => $activite,
+                'prenom'   => $prenom,
+                'nom'      => $nom,
+                'mail'     => $mail,
+            ], function ($message) use ($activite) {
+                $message->to('direction@savoirsvivants.fr')
+                    ->subject("⏳ Demande de pré-inscription — {$activite->nom}");
+            });
+        } catch (\Exception $e) {
+            Log::error("Erreur envoi mail activité pleine : " . $e->getMessage());
+        }
+
+        return response()->json(['ok' => true]);
     }
 
     private function sauvegarderAdherent(array $formData): int

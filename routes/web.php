@@ -39,6 +39,7 @@ Route::post('/adhesion/{token}/helloasso2', [AdherentFormulaireController::class
 Route::get('/adhesion/{token}/helloasso2/{status}', [AdherentFormulaireController::class, 'helloassoReturn2'])->name('adhesion.helloasso2.return');
 Route::post('/adhesion/{token}/verifier-cotisation', [AdherentFormulaireController::class, 'verifierCotisation'])->name('adhesion.verifier.cotisation');
 Route::post('/adhesion/helloasso/webhook', [AdherentFormulaireController::class, 'helloassoWebhook'])->name('adhesion.helloasso.webhook');
+Route::post('/adhesion/{token}/notifier-activite', [AdherentFormulaireController::class, 'notifierActivitePleine'])->name('adhesion.notifier.activite');
 
 Route::post('/helloasso/webhook', [AdherentFormulaireController::class, 'helloassoWebhook']);
 

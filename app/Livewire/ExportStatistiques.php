@@ -27,7 +27,7 @@ class ExportStatistiques extends Component
         $totalAdherents = $inscriptions->count();
 
         $adherentsIds = $inscriptions->pluck('id_adherent');
-        $adherents = Adherent::with('tuteur')->whereIn('id', $adherentsIds)->get();
+        $adherents = Adherent::with('tousLesTuteurs')->whereIn('id', $adherentsIds)->get();
 
         $idsPayes = $inscriptions->where('a_paye', 'Payé')->pluck('id_adherent');
         $adherentsPayes = $adherents->whereIn('id', $idsPayes);
