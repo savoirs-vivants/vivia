@@ -1082,7 +1082,7 @@ class AdherentFormulaireController extends Controller
             }
 
             $isPreInscription    = $this->isPreInscription($formData);
-            $aPaye               = $isPreInscription ? 'pre_inscrit' : 'en_attente';
+            $aPaye               = $isPreInscription ? 'pre_inscrit' : 'En attente';
 
             $montantReelActivites = $this->calculerMontantActivites($activiteIds);
             $montantRessourcerie  = !empty($ressourcerieIds) ? Ressourcerie::whereIn('id', $ressourcerieIds)->sum('prix') : 0;
