@@ -34,6 +34,12 @@ class AdherentFormulaireController extends Controller
         return redirect()->route('adhesion.show', ['token' => $token, 'step' => 1]);
     }
 
+    private function isPreInscription(array $formData): bool
+    {
+        $moisActuel = now()->month;
+        return ($moisActuel === 7 || $moisActuel === 8) && ($formData['type_activite'] ?? '') === 'atelier';
+    }
+
     private function isMineur(?string $dateNaiss): bool
     {
         if (empty($dateNaiss)) return false;
@@ -388,11 +394,11 @@ class AdherentFormulaireController extends Controller
 
         $ticket = null;
         if ($step === 11 && ($formData['mode_paiement'] ?? '') === 'interne' && !$isStructure) {
-            $adherentCree = \App\Models\Adherent::find($formData['_adherent_id'] ?? null);
+            $adherentCree = Adherent::find($formData['_adherent_id'] ?? null);
             $inscription  = $adherentCree ? $adherentCree->inscriptions()->latest()->first() : null;
 
-            $activitesTicket = \App\Models\Activite::whereIn('id', $formData['activites_selectionnees'] ?? [])->get();
-            $ressourceriesTicket = \App\Models\Ressourcerie::whereIn('id', $formData['ressourcerie_selectionnees'] ?? [])->get();
+            $activitesTicket = Activite::whereIn('id', $formData['activites_selectionnees'] ?? [])->get();
+            $ressourceriesTicket = Ressourcerie::whereIn('id', $formData['ressourcerie_selectionnees'] ?? [])->get();
 
             $isDrusenheimTicket = $activitesTicket->contains(function ($a) {
                 return stripos($a->nom, 'drusenheim') !== false || stripos($a->ville, 'drusenheim') !== false;
@@ -400,23 +406,35 @@ class AdherentFormulaireController extends Controller
 
             $montantCotisation = $this->getMontantCotisation($formData);
 
+            $isPreInscription = $this->isPreInscription($formData);
+
             $lignes = [];
             $month = now()->month;
+            $totalTicket = 0;
+            $isPreInscription = $this->isPreInscription($formData);
 
             foreach ($activitesTicket as $act) {
-                $prixAct = (float) $act->tarif;
-                if ($act->type === 'activite') {
-                    if ($month == 2 || $month == 3) {
-                        $prixAct = max(0, $prixAct - 50);
-                    } elseif ($month >= 4 && $month <= 6) {
-                        $prixAct = ($prixAct / 10) * (7 - $month);
+                if ($isPreInscription) {
+                    $prixAct = 50.0;
+                    $lignes[] = ['nom' => $act->nom . ' (Acompte)', 'prix' => $prixAct];
+                } else {
+                    $prixAct = (float) $act->tarif;
+                    if ($act->type === 'activite') {
+                        if ($month == 2 || $month == 3) {
+                            $prixAct = max(0, $prixAct - 50);
+                        } elseif ($month >= 4 && $month <= 6) {
+                            $prixAct = ($prixAct / 10) * (7 - $month);
+                        }
                     }
+                    $lignes[] = ['nom' => $act->nom, 'prix' => $prixAct];
                 }
-                $lignes[] = ['nom' => $act->nom, 'prix' => $prixAct];
+                $totalTicket += $prixAct;
             }
 
             foreach ($ressourceriesTicket as $ress) {
-                $lignes[] = ['nom' => $ress->nom, 'prix' => (float) $ress->prix];
+                $prixRess = (float) $ress->prix;
+                $lignes[] = ['nom' => $ress->nom, 'prix' => $prixRess];
+                $totalTicket += $prixRess;
             }
 
             if ($montantCotisation > 0) {
@@ -424,11 +442,12 @@ class AdherentFormulaireController extends Controller
                     'nom' => 'Adhésion annuelle' . ($isDrusenheimTicket ? ' Club Drusenheim' : ''),
                     'prix' => (float) $montantCotisation
                 ];
+                $totalTicket += $montantCotisation;
             }
 
             $ticket = [
                 'lignes' => $lignes,
-                'total'  => $inscription ? $inscription->montant : 0,
+                'total'  => $totalTicket,
             ];
         }
 
@@ -460,7 +479,7 @@ class AdherentFormulaireController extends Controller
             'nbInscritsParActivite',
             'isStructure',
             'ticket',
-            'titreFormulaire'
+            'titreFormulaire',
         ));
     }
 
@@ -490,6 +509,7 @@ class AdherentFormulaireController extends Controller
 
     public function next(Request $request, string $token)
     {
+
         abort_if(empty($token), 403, 'Lien invalide ou expiré.');
 
         $step     = (int) $request->input('current_step', 1);
@@ -588,9 +608,14 @@ class AdherentFormulaireController extends Controller
             $activitesIds      = array_filter((array) ($formData['activites_selectionnees'] ?? []));
             $ressourcerieIds   = array_filter((array) ($formData['ressourcerie_selectionnees'] ?? []));
             $estNouvelAdherent = ($formData['is_adherent'] ?? 'non') === 'non';
+            $isPreInscription  = $this->isPreInscription($formData);
 
             $totalActiviteEuros = 0;
-            if (!empty($activitesIds)) $totalActiviteEuros += $this->calculerMontantActivites($activitesIds);
+            if (!empty($activitesIds)) {
+                $totalActiviteEuros += $isPreInscription
+                    ? (count($activitesIds) * 50.0)
+                    : $this->calculerMontantActivites($activitesIds);
+            }
             if (!empty($ressourcerieIds)) $totalActiviteEuros += \App\Models\Ressourcerie::whereIn('id', $ressourcerieIds)->sum('prix');
 
             $isSinglePayment = in_array($formData['type_activite'] ?? '', ['soutien', 'recherche']);
@@ -726,14 +751,18 @@ class AdherentFormulaireController extends Controller
         $estNouvelAdherent = ($formData['is_adherent'] ?? 'non') === 'non';
 
         if (!empty($formData['_adherent_id']) && empty($formData['_paiement1_cree'])) {
-            $activiteIds      = array_filter((array) ($formData['activites_selectionnees'] ?? []));
-            $ressourcerieIds  = array_filter((array) ($formData['ressourcerie_selectionnees'] ?? []));
-            $totalActivites   = $this->calculerMontantActivites($activiteIds);
+            $activiteIds       = array_filter((array) ($formData['activites_selectionnees'] ?? []));
+            $ressourcerieIds   = array_filter((array) ($formData['ressourcerie_selectionnees'] ?? []));
+            $isPreInscription  = $this->isPreInscription($formData);
+
+            $totalActivites    = $isPreInscription ? (count($activiteIds) * 50.0) : $this->calculerMontantActivites($activiteIds);
             $totalRessourcerie = !empty($ressourcerieIds) ? \App\Models\Ressourcerie::whereIn('id', $ressourcerieIds)->sum('prix') : 0;
-            $montantActivite  = (float) ($totalActivites + $totalRessourcerie);
+            $montantActivite   = (float) ($totalActivites + $totalRessourcerie);
 
             if ($montantActivite > 0) {
-                $commentaireDynamique = $this->genererCommentairePaiement($activiteIds, $ressourcerieIds);
+                $commentaireDynamique = $isPreInscription
+                    ? 'Acompte pré-inscription'
+                    : $this->genererCommentairePaiement($activiteIds, $ressourcerieIds);
 
                 Paiement::create([
                     'id_adherent'   => $formData['_adherent_id'],
@@ -1052,10 +1081,13 @@ class AdherentFormulaireController extends Controller
                 }
             }
 
-            $montantActivites    = $this->calculerMontantActivites($activiteIds);
-            $montantRessourcerie = !empty($ressourcerieIds) ? Ressourcerie::whereIn('id', $ressourcerieIds)->sum('prix') : 0;
-            $cotisation = $this->getMontantCotisation($formData);
-            $montantTotal        = (float) ($montantActivites + $montantRessourcerie + $cotisation);
+            $isPreInscription    = $this->isPreInscription($formData);
+            $aPaye               = $isPreInscription ? 'pre_inscrit' : 'en_attente';
+
+            $montantReelActivites = $this->calculerMontantActivites($activiteIds);
+            $montantRessourcerie  = !empty($ressourcerieIds) ? Ressourcerie::whereIn('id', $ressourcerieIds)->sum('prix') : 0;
+            $cotisation           = $this->getMontantCotisation($formData);
+            $montantTotalReel     = (float) ($montantReelActivites + $montantRessourcerie + $cotisation);
 
             Inscription::create([
                 'id_adherent'      => $adherent->id,
@@ -1063,7 +1095,7 @@ class AdherentFormulaireController extends Controller
                 'date_inscription' => now()->toDateString(),
                 'type_adhesion'    => $typeActivite,
                 'a_paye'           => $aPaye,
-                'montant'          => $montantTotal,
+                'montant'          => $montantTotalReel,
                 'renouvellement'   => $isAdherent,
             ]);
 
@@ -1085,12 +1117,18 @@ class AdherentFormulaireController extends Controller
             }
 
             if (!empty($formData['_helloasso_ok'])) {
-                $montantActivite = (float) ($montantActivites + $montantRessourcerie);
-                if ($montantActivite > 0) {
-                    $commentaireDynamique = $this->genererCommentairePaiement($activiteIds, $ressourcerieIds);
+                $montantActivitePaye = $isPreInscription
+                    ? (count($activiteIds) * 50.0) + $montantRessourcerie
+                    : $montantReelActivites + $montantRessourcerie;
+
+                if ($montantActivitePaye > 0) {
+                    $commentaireDynamique = $isPreInscription
+                        ? 'Acompte pré-inscription via HelloAsso'
+                        : $this->genererCommentairePaiement($activiteIds, $ressourcerieIds);
+
                     Paiement::create([
                         'id_adherent'   => $adherent->id,
-                        'montant'       => $montantActivite,
+                        'montant'       => $montantActivitePaye,
                         'source'        => 'HelloAsso',
                         'date_paiement' => now()->toDateString(),
                         'commentaire'   => $commentaireDynamique,
@@ -1216,30 +1254,6 @@ class AdherentFormulaireController extends Controller
             }
 
             $adherent = Adherent::where('mail', $email)->latest()->first();
-
-            /* Le Webhook de paiement peut être appelé plusieurs fois par HelloAsso
-             * (retry automatique). On doit vérifier si on a déjà traité ce paiement
-             * (Idempotence) pour ne pas doubler les entrées financières.
-             */
-            if ($adherent) {
-                $dejaCreee = Paiement::where('id_adherent', $adherent->id)
-                    ->where('source', 'HelloAsso')
-                    ->where('montant', $amount)
-                    ->whereDate('date_paiement', today())
-                    ->exists();
-
-                if (!$dejaCreee) {
-                    Paiement::create([
-                        'id_adherent'   => $adherent->id,
-                        'montant'       => $amount,
-                        'source'        => 'HelloAsso',
-                        'date_paiement' => now()->toDateString(),
-                    ]);
-                }
-
-                $syncLog->update(['status' => 'success', 'payments_imported' => 1]);
-                return response()->json(['status' => 'ok'], 200);
-            }
 
             $structure = AdherentStructure::where('mail', $email)->latest()->first();
 
