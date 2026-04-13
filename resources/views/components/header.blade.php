@@ -78,7 +78,7 @@
                         </svg>
                         Modifier mon profil
                     </a>
-
+                    @if(auth()->user()->role === 'admin')
                     <a href="{{ route('profile.logs') }}"
                        class="flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-bold
                               text-gray-500 hover:bg-gray-50 hover:text-[#0F143A] transition-colors">
@@ -88,6 +88,7 @@
                         </svg>
                         Journal d'erreurs
                     </a>
+                    @endif
                 </div>
 
                 <div class="h-px bg-gray-100 my-2 mx-4"></div>

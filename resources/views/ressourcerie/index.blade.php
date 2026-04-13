@@ -88,8 +88,10 @@
                                 Prix</th>
                             <th class="px-5 py-3.5 text-left text-xs font-black text-gray-400 uppercase tracking-widest">
                                 Type de tarif</th>
+                            @can('gerer-ressourcerie')
                             <th class="px-5 py-3.5 text-right text-xs font-black text-gray-400 uppercase tracking-widest">
                                 Actions</th>
+                            @endcan
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-gray-50">
@@ -217,9 +219,11 @@
                                     <th
                                         class="px-5 py-3.5 text-left text-xs font-black text-gray-400 uppercase tracking-widest">
                                         Type de tarif</th>
+                                    @can('gerer-ressourcerie')
                                     <th
                                         class="px-5 py-3.5 text-right text-xs font-black text-gray-400 uppercase tracking-widest">
                                         Actions</th>
+                                    @endcan
                                 </tr>
                             </thead>
                             <tbody class="divide-y divide-gray-50">

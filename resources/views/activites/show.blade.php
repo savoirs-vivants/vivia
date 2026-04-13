@@ -59,6 +59,7 @@
                             <p class="text-sm font-black text-white">
                                 {{ $activite->gestionnaires->first()?->name ?? 'Non assigné' }}</p>
                         </div>
+                        @if(auth()->user()->role === 'admin' || auth()->user()->role === 'coordinateur')
                         <a href="{{ route('activites.edit', $activite) }}"
                             class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold text-white transition-all border border-white/20 bg-white/10 hover:bg-white/20">
                             <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -67,6 +68,7 @@
                             </svg>
                             Modifier
                         </a>
+                        @endif
                     </div>
                 </div>
 
@@ -244,6 +246,7 @@
                                         class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-black {{ $rateClass }}">{{ $adherent->taux_presence }}%
                                         d'assiduité</span>
                                 </div>
+                                @if(auth()->user()->role !== 'comptable')
                                 <button type="button" onclick="toggleAbandonForm({{ $adherent->id }})"
                                     class="opacity-100 lg:opacity-0 group-hover:opacity-100 transition-opacity p-2 rounded-xl text-gray-400 hover:text-rose-500 hover:bg-rose-50">
                                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -251,6 +254,7 @@
                                             d="M13 7a4 4 0 11-8 0 4 4 0 018 0zM9 14a6 6 0 00-6 6v1h12v-1a6 6 0 00-6-6zM21 12h-6" />
                                     </svg>
                                 </button>
+                                @endif
                             </div>
                             <div id="abandon-form-{{ $adherent->id }}"
                                 class="hidden bg-rose-50/50 border-t border-rose-100 p-4">

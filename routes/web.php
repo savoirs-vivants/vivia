@@ -15,15 +15,11 @@ use App\Http\Controllers\StatistiqueController;
 use App\Livewire\EditUser;
 use Illuminate\Support\Facades\Route;
 
-Route::get('/', function () {
-    return view('welcome');
-});
-
 Route::get('/inscription/{token}', [InscriptionController::class, 'show'])->name('inscription');
 Route::post('/inscription/{token}', [InscriptionController::class, 'complete'])->name('inscription.complete');
 
-Route::get('/connexion', [AuthController::class, 'showLogin'])->name('login');
-Route::post('/connexion', [AuthController::class, 'login'])->name('login.submit');
+Route::get('/', [AuthController::class, 'showLogin'])->name('login');
+Route::post('/', [AuthController::class, 'login'])->name('login.submit');
 
 Route::get('/mot-de-passe-oublie', [PasswordResetController::class, 'showForgot'])->name('password.forgot');
 Route::post('/mot-de-passe-oublie', [PasswordResetController::class, 'sendReset'])->name('password.send');
@@ -93,7 +89,7 @@ Route::middleware('auth')->group(function () {
 
     Route::get('/profil/modifier', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::put('/profil', [ProfileController::class, 'update'])->name('profile.update');
-    Route::get('/profil/logs-synchronisation', [ProfileController::class, 'journalSync'])->name('profile.logs');
+    Route::get('/profil/logs-synchronisation', [ProfileController::class, 'journalSync'])->middleware('role:admin')->name('profile.logs');
 
     Route::get('/statistiques', [StatistiqueController::class, 'index'])->middleware('role:admin,comptable')->name('statistiques.index');
 
