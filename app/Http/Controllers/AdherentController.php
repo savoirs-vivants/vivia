@@ -131,6 +131,14 @@ class AdherentController extends Controller
 
     public function show(Adherent $adherent)
     {
+
+        $saison = Saison::current();
+        abort_if(
+            !$adherent->inscriptions()->where('saison', $saison)->exists(),
+            403,
+            "Cet adhérent n'est pas inscrit pour la saison active ({$saison})."
+        );
+
         if (Auth::user()->role === 'animateur') {
             $mesActivitesIds = DB::table('activites_gestionnaire')
                 ->where('id_users', Auth::id())
@@ -287,6 +295,14 @@ class AdherentController extends Controller
 
     public function showStructure(AdherentStructure $structure)
     {
+
+        $saison = Saison::current();
+        abort_if(
+            !$structure->inscriptions()->where('saison', $saison)->exists(),
+            403,
+            "Cette structure n'est pas inscrite pour la saison active ({$saison})."
+        );
+        
         $structure->load(['inscriptions', 'inscription', 'paiements']);
         $saisons   = $structure->inscriptions->sortByDesc('saison');
         $totalPaye = (float) $structure->paiements->sum('montant');
