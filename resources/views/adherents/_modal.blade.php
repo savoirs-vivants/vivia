@@ -134,24 +134,34 @@
                     </div>
 
                     <template x-if="adherent.isPreInscrit">
-                        <div class="p-4 bg-indigo-50 border border-indigo-100 rounded-xl">
+                        <div x-data="{
+                            acompteVerse: adherent.paiements ? adherent.paiements.reduce((total, p) => total + parseFloat(p.montant), 0) : 60,
+                            montantTotal: parseFloat(adherent.montant.toString().replace(',', '.').replace(' €', ''))
+                        }" class="p-4 bg-indigo-50 border border-indigo-100 rounded-xl">
+
                             <p class="text-[10px] font-black text-indigo-400 uppercase tracking-widest mb-3">Validation
                                 de la rentrée</p>
+
                             <div class="flex items-center justify-between mb-2">
                                 <span class="text-sm font-semibold text-indigo-900">Total de l'adhésion</span>
                                 <span class="text-sm font-bold text-indigo-900" x-text="adherent.montant"></span>
                             </div>
+
                             <div class="flex items-center justify-between mb-2">
                                 <span class="text-sm text-indigo-700">Acompte déjà versé</span>
                                 <span class="text-sm text-indigo-700"
-                                    x-text="'- ' + ' 60,00 €'"></span>
+                                    x-text="'- ' + acompteVerse.toFixed(2).replace('.', ',') + ' €'"></span>
                             </div>
+
                             <div class="w-full h-px bg-indigo-200/60 my-2"></div>
+
                             <div class="flex items-center justify-between">
                                 <span class="text-sm font-black text-indigo-900">Reste à régler</span>
                                 <span class="text-lg font-black text-indigo-600"
-                                 x-text="(parseFloat(adherent.montant.replace(',', '.').replace(' €', '')) - 60).toFixed(2).replace('.', ',') + ' €'"></>
+                                    x-text="Math.max(0, montantTotal - acompteVerse).toFixed(2).replace('.', ',') + ' €'">
+                                </span>
                             </div>
+
                         </div>
                     </template>
 
@@ -180,7 +190,8 @@
                     </template>
 
                     <div class="space-y-3">
-                        <div class="flex items-center justify-between p-3 rounded-xl border" x-show="!adherent.isPreInscrit"
+                        <div class="flex items-center justify-between p-3 rounded-xl border"
+                            x-show="!adherent.isPreInscrit"
                             :class="adherent.source === 'HelloAsso' ?
                                 'bg-[#16987C]/8 border-[#16987C]/15' :
                                 'bg-amber-50 border-amber-100'">
