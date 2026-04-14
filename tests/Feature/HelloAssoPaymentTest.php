@@ -35,6 +35,12 @@ class HelloAssoPaymentTest extends TestCase
             ]
         ]);
 
+        $this->mock(\App\Services\HelloAssoService::class, function (\Mockery\MockInterface $mock) {
+            $mock->shouldReceive('createCheckout')
+                ->once()
+                ->andReturn('https://sandbox.helloasso.com/checkout-ok');
+        });
+
         $response = $this->post(route('adhesion.next', $token), [
             'current_step' => 10,
             'mode_paiement' => 'helloasso',

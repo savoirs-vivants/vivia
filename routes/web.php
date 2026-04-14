@@ -15,8 +15,6 @@ use App\Http\Controllers\StatistiqueController;
 use App\Livewire\EditUser;
 use Illuminate\Support\Facades\Route;
 
-\Carbon\Carbon::setTestNow(\Carbon\Carbon::create(2026, 9, 15, 12, 0, 0));
-
 Route::get('/inscription/{token}', [InscriptionController::class, 'show'])->name('inscription');
 Route::post('/inscription/{token}', [InscriptionController::class, 'complete'])->name('inscription.complete');
 

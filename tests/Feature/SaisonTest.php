@@ -42,7 +42,7 @@ class SaisonTest extends TestCase
     {
         Saison::query()->update(['est_active' => false]);
 
-        Carbon::setTestNow(Carbon::create(2026, 9, 1, 0, 0, 0));
+        Carbon::setTestNow(Carbon::create(2026, 7, 1, 0, 0, 0));
 
         $this->assertEquals('2026-2027', Saison::current());
     }
@@ -51,7 +51,7 @@ class SaisonTest extends TestCase
     {
         Saison::query()->update(['est_active' => false]);
 
-        Carbon::setTestNow(Carbon::create(2026, 8, 31, 23, 59, 59));
+        Carbon::setTestNow(Carbon::create(2026, 6, 30, 23, 59, 59));
 
         $this->assertEquals('2025-2026', Saison::current());
     }
