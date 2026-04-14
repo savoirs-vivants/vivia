@@ -19,7 +19,10 @@ use App\Models\Saison;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
+use \Illuminate\Support\Facades\Storage;
 use App\Services\HelloAssoService;
+use App\Services\GeocodingService;
+use App\Models\SyncLog;
 
 class AdherentFormulaireController extends Controller
 {
@@ -71,7 +74,7 @@ class AdherentFormulaireController extends Controller
         $activiteIds = array_filter((array) ($formData['activites_selectionnees'] ?? []));
         if (empty($activiteIds)) return 10;
 
-        $isDrusenheim = \App\Models\Activite::whereIn('id', $activiteIds)
+        $isDrusenheim = Activite::whereIn('id', $activiteIds)
             ->where(function ($q) {
                 $q->where('nom', 'like', '%drusenheim%')
                     ->orWhere('ville', 'like', '%drusenheim%');
@@ -466,8 +469,8 @@ class AdherentFormulaireController extends Controller
         $totalVersePreInscrit = 0;
 
         if ($step === 16 && !empty($formData['_pre_inscription_id'])) {
-            $preInscription = \App\Models\Inscription::find($formData['_pre_inscription_id']);
-            $adherentPre = \App\Models\Adherent::find($formData['_adherent_id']);
+            $preInscription = Inscription::find($formData['_pre_inscription_id']);
+            $adherentPre = Adherent::find($formData['_adherent_id']);
 
             if ($preInscription && $adherentPre) {
 
@@ -603,8 +606,8 @@ class AdherentFormulaireController extends Controller
 
         if ($step === 16) {
             $action = $request->input('action_pre_inscription');
-            $adherentStep16 = \App\Models\Adherent::find($formData['_adherent_id']);
-            $preInsc = \App\Models\Inscription::find($formData['_pre_inscription_id']);
+            $adherentStep16 = Adherent::find($formData['_adherent_id']);
+            $preInsc = Inscription::find($formData['_pre_inscription_id']);
 
             if ($action === 'pay_balance') {
                 $totalVerse = $adherentStep16->paiements()->sum('montant');
@@ -615,7 +618,7 @@ class AdherentFormulaireController extends Controller
                     $formData['_montant_solde']   = $resteAPayer;
                     $request->session()->put("adhesion_{$token}", $formData);
 
-                    $service = app(\App\Services\HelloAssoService::class);
+                    $service = app(HelloAssoService::class);
                     $payerInfo = ['prenom' => $adherentStep16->prenom, 'nom' => $adherentStep16->nom, 'mail' => $adherentStep16->mail];
 
                     try {
@@ -625,7 +628,7 @@ class AdherentFormulaireController extends Controller
                         return back()->withErrors(['helloasso' => 'Erreur de connexion au service de paiement : ' . $e->getMessage()]);
                     }
                 } else {
-                    $preInsc->update(['a_paye' => \App\Models\Inscription::EN_ATTENTE]);
+                    $preInsc->update(['a_paye' => Inscription::EN_ATTENTE]);
                     $formData['_helloasso_ok'] = true;
                     $formData['_last_completed'] = 11;
                     $request->session()->put("adhesion_{$token}", $formData);
@@ -633,7 +636,7 @@ class AdherentFormulaireController extends Controller
                 }
             } elseif ($action === 'cancel') {
                 if ($preInsc) {
-                    DB::table('activites_adherents')->where('id_adherent', $adherentStep16->id)->where('saison', \App\Models\Saison::current())->delete();
+                    DB::table('activites_adherents')->where('id_adherent', $adherentStep16->id)->where('saison', Saison::current())->delete();
                     $preInsc->delete();
                 }
                 $formData['_pre_inscription_handled'] = true;
@@ -653,7 +656,7 @@ class AdherentFormulaireController extends Controller
                     $formData['_adherent_id'] = $this->sauvegarderAdherent($formData);
                 }
             }
-            $service = app(\App\Services\HelloAssoService::class);
+            $service = app(HelloAssoService::class);
 
             $formData['mode_paiement']   = 'helloasso';
             $formData['_last_completed'] = 10;
@@ -673,7 +676,7 @@ class AdherentFormulaireController extends Controller
                         'mail'   => $formData['mail_structure'] ?? 'email@defaut.fr',
                     ];
                     $ressourcerieIds   = $formData['ressourcerie_selectionnees'] ?? [];
-                    $totalRessourcerie = \App\Models\Ressourcerie::whereIn('id', $ressourcerieIds)->sum('prix');
+                    $totalRessourcerie = Ressourcerie::whereIn('id', $ressourcerieIds)->sum('prix');
 
                     try {
                         $urlPaiement = $service->createCheckout(
@@ -713,7 +716,7 @@ class AdherentFormulaireController extends Controller
                     ? (count($activitesIds) * 50.0)
                     : $this->calculerMontantActivites($activitesIds);
             }
-            if (!empty($ressourcerieIds)) $totalActiviteEuros += \App\Models\Ressourcerie::whereIn('id', $ressourcerieIds)->sum('prix');
+            if (!empty($ressourcerieIds)) $totalActiviteEuros += Ressourcerie::whereIn('id', $ressourcerieIds)->sum('prix');
 
             $isSinglePayment = in_array($formData['type_activite'] ?? '', ['soutien', 'recherche']);
             if ($isSinglePayment && $totalActiviteEuros == 0) {
@@ -776,7 +779,7 @@ class AdherentFormulaireController extends Controller
         }
 
         if ($request->hasFile('carnet_sante')) {
-            \Illuminate\Support\Facades\Storage::disk('public')->makeDirectory('carnets');
+            Storage::disk('public')->makeDirectory('carnets');
             $filePath = $request->file('carnet_sante')->store('carnets', 'public');
             if ($filePath) {
                 $formData['carnet_sante_path'] = $filePath;
@@ -808,11 +811,11 @@ class AdherentFormulaireController extends Controller
         $request->session()->put("adhesion_{$token}", $formData);
 
         if (!empty($formData['_is_paying_solde'])) {
-            $adherentSolde = \App\Models\Adherent::find($formData['_adherent_id']);
-            $preInscSolde  = \App\Models\Inscription::find($formData['_pre_inscription_id']);
+            $adherentSolde = Adherent::find($formData['_adherent_id']);
+            $preInscSolde  = Inscription::find($formData['_pre_inscription_id']);
 
             if ($adherentSolde && $preInscSolde) {
-                \App\Models\Paiement::create([
+                Paiement::create([
                     'id_adherent'   => $adherentSolde->id,
                     'montant'       => $formData['_montant_solde'],
                     'source'        => 'HelloAsso',
@@ -836,7 +839,7 @@ class AdherentFormulaireController extends Controller
 
                 if (!empty($formData['_structure_id'])) {
                     $ressourcerieIds     = $formData['ressourcerie_selectionnees'] ?? [];
-                    $montantRessourcerie = \App\Models\Ressourcerie::whereIn('id', $ressourcerieIds)->sum('prix');
+                    $montantRessourcerie = Ressourcerie::whereIn('id', $ressourcerieIds)->sum('prix');
 
                     if ($montantRessourcerie > 0) {
                         Paiement::create([
@@ -876,7 +879,7 @@ class AdherentFormulaireController extends Controller
             $isPreInscription  = $this->isPreInscription($formData);
 
             $totalActivites    = $isPreInscription ? (count($activiteIds) * 50.0) : $this->calculerMontantActivites($activiteIds);
-            $totalRessourcerie = !empty($ressourcerieIds) ? \App\Models\Ressourcerie::whereIn('id', $ressourcerieIds)->sum('prix') : 0;
+            $totalRessourcerie = !empty($ressourcerieIds) ? Ressourcerie::whereIn('id', $ressourcerieIds)->sum('prix') : 0;
             $montantActivite   = (float) ($totalActivites + $totalRessourcerie);
 
             if ($montantActivite > 0) {
@@ -1101,7 +1104,7 @@ class AdherentFormulaireController extends Controller
              */
             $coords = null;
             try {
-                $geocoder = new \App\Services\GeocodingService();
+                $geocoder = new GeocodingService();
                 $coords = $geocoder->getCoordinates($formData['adresse'] ?? null, $formData['code_postal'] ?? null, $formData['ville'] ?? null);
             } catch (\Exception $e) {
                 Log::warning("Échec du géocodage silencieux : " . $e->getMessage());
@@ -1274,7 +1277,7 @@ class AdherentFormulaireController extends Controller
         $types = [];
 
         if (!empty($activiteIds)) {
-            $activites = \App\Models\Activite::whereIn('id', $activiteIds)->get();
+            $activites = Activite::whereIn('id', $activiteIds)->get();
 
             if ($activites->where('type', 'activite')->isNotEmpty()) {
                 $types[] = 'activité';
@@ -1351,7 +1354,7 @@ class AdherentFormulaireController extends Controller
             return response()->json(['status' => 'ignored'], 200);
         }
 
-        $syncLog = \App\Models\SyncLog::create([
+        $syncLog = SyncLog::create([
             'source' => 'webhook_helloasso',
             'status' => 'running',
             'payments_imported' => 0,
