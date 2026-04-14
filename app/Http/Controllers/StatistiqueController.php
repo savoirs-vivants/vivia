@@ -14,7 +14,7 @@ class StatistiqueController extends Controller
     public function index(Request $request)
     {
         $saisons = Saison::allSorted();
-        $saisonCourante = $request->get('saison', $saisons->first() ?? Saison::current());
+        $saisonCourante = $request->get('saison', Saison::current());
 
         $indexSaisonCourante = $saisons->search($saisonCourante);
         $saisonPrecedente = ($indexSaisonCourante !== false && $saisons->has($indexSaisonCourante + 1))
