@@ -18,10 +18,9 @@ Application Laravel de gestion des adhérents, activités et inscriptions pour s
 |---|---|
 | Backend | Laravel 13, Livewire v4 |
 | Frontend | TailwindCSS, Vite |
-| Base de données | SQLite (défaut) / MySQL / MariaDB |
+| Base de données | MySQL / MariaDB |
 | PDF | barryvdh/laravel-dompdf |
 | Exports | PHPSpreadsheet |
-| Files d'attente | Queue Laravel (driver database) |
 
 ## Prérequis
 
