@@ -23,6 +23,7 @@ use App\Services\HelloAssoService;
 
 class AdherentFormulaireController extends Controller
 {
+
     public function index(Request $request)
     {
         $token = bin2hex(random_bytes(16));
@@ -81,6 +82,10 @@ class AdherentFormulaireController extends Controller
 
     private function getUserPath(array $formData): array
     {
+        if (!empty($formData['_pre_inscription_id']) && empty($formData['_pre_inscription_handled'])) {
+            return [1, 16];
+        }
+
         $isAdherent    = ($formData['is_adherent']  ?? 'non') === 'oui';
         $activite      = $formData['type_activite'] ?? '';
         $isMineur      = $this->isMineur($formData['date_naiss'] ?? null);
@@ -173,6 +178,7 @@ class AdherentFormulaireController extends Controller
             13 => ['label' => 'Structure',      'icon' => '🏛️'],
             14 => ['label' => 'Autorisations',  'icon' => '📜'],
             15 => ['label' => 'Orientation',    'icon' => '🎓'],
+            16 => ['label' => 'Finalisation',   'icon' => '✨'],
         ];
     }
 
@@ -455,6 +461,37 @@ class AdherentFormulaireController extends Controller
         $isPreInscription = ($moisActuel === 7 || $moisActuel === 8);
         $titreFormulaire = $isPreInscription ? 'Formulaire de pré-inscription' : "Formulaire d'adhésion";
 
+        $preInscription = null;
+        $resteAPayer = 0;
+        $totalVersePreInscrit = 0;
+
+        if ($step === 16 && !empty($formData['_pre_inscription_id'])) {
+            $preInscription = \App\Models\Inscription::find($formData['_pre_inscription_id']);
+            $adherentPre = \App\Models\Adherent::find($formData['_adherent_id']);
+
+            if ($preInscription && $adherentPre) {
+
+                $totalVersePreInscrit = $adherentPre->paiements()->sum('montant');
+                $resteAPayer = max(0, $preInscription->montant - $totalVersePreInscrit);
+
+                $adherentPre->load('activitesActives');
+                $nomsActivites = $adherentPre->activitesActives->pluck('nom')->join(', ');
+
+                if (empty($nomsActivites)) {
+                    $nomsActivites = match ($preInscription->type_adhesion) {
+                        'ressourcerie' => 'Ressourcerie',
+                        'recherche'    => 'Recherche participative',
+                        'soutien'      => 'Adhésion de soutien',
+                        'stage'        => 'Stage',
+                        default        => 'Atelier',
+                    };
+                }
+
+                $preInscription->noms_activites = $nomsActivites;
+            }
+        }
+
+
         return view('adhesion.index', compact(
             'step',
             'formData',
@@ -480,6 +517,9 @@ class AdherentFormulaireController extends Controller
             'isStructure',
             'ticket',
             'titreFormulaire',
+            'preInscription',
+            'resteAPayer',
+            'totalVersePreInscrit'
         ));
     }
 
@@ -521,6 +561,22 @@ class AdherentFormulaireController extends Controller
             $numeroRecherche = $vraiNumero ?: $inputNumero;
 
             $adherentExistant   = Adherent::where('numero_adherent', $numeroRecherche)->first();
+
+            if ($adherentExistant) {
+                $preInscriptionDb = $adherentExistant->inscriptions()
+                    ->where('saison', Saison::current())
+                    ->whereIn('a_paye', ['acompte_paye', 'pre_inscrit'])
+                    ->latest()
+                    ->first();
+
+                if ($preInscriptionDb) {
+                    $request->merge([
+                        '_pre_inscription_id' => $preInscriptionDb->id,
+                        '_adherent_id'        => $adherentExistant->id
+                    ]);
+                }
+            }
+
             $structureExistante = null;
 
             if (!$adherentExistant) {
@@ -545,6 +601,47 @@ class AdherentFormulaireController extends Controller
             }
         }
 
+        if ($step === 16) {
+            $action = $request->input('action_pre_inscription');
+            $adherentStep16 = \App\Models\Adherent::find($formData['_adherent_id']);
+            $preInsc = \App\Models\Inscription::find($formData['_pre_inscription_id']);
+
+            if ($action === 'pay_balance') {
+                $totalVerse = $adherentStep16->paiements()->sum('montant');
+                $resteAPayer = max(0, $preInsc->montant - $totalVerse);
+
+                if ($resteAPayer > 0) {
+                    $formData['_is_paying_solde'] = true;
+                    $formData['_montant_solde']   = $resteAPayer;
+                    $request->session()->put("adhesion_{$token}", $formData);
+
+                    $service = app(\App\Services\HelloAssoService::class);
+                    $payerInfo = ['prenom' => $adherentStep16->prenom, 'nom' => $adherentStep16->nom, 'mail' => $adherentStep16->mail];
+
+                    try {
+                        $urlPaiement = $service->createCheckout((int) round($resteAPayer * 100), $payerInfo, $token, 'adhesion.helloasso.return', 'Solde de rentrée - Savoirs Vivants');
+                        return redirect($urlPaiement);
+                    } catch (\Exception $e) {
+                        return back()->withErrors(['helloasso' => 'Erreur de connexion au service de paiement : ' . $e->getMessage()]);
+                    }
+                } else {
+                    $preInsc->update(['a_paye' => \App\Models\Inscription::EN_ATTENTE]);
+                    $formData['_helloasso_ok'] = true;
+                    $formData['_last_completed'] = 11;
+                    $request->session()->put("adhesion_{$token}", $formData);
+                    return redirect()->route('adhesion.show', ['token' => $token, 'step' => 11]);
+                }
+            } elseif ($action === 'cancel') {
+                if ($preInsc) {
+                    DB::table('activites_adherents')->where('id_adherent', $adherentStep16->id)->where('saison', \App\Models\Saison::current())->delete();
+                    $preInsc->delete();
+                }
+                $formData['_pre_inscription_handled'] = true;
+                $request->session()->put("adhesion_{$token}", $formData);
+                return redirect()->route('adhesion.show', ['token' => $token, 'step' => 2]);
+            }
+        }
+
         if ($step === 10 && $request->input('mode_paiement') === 'helloasso') {
 
             if ($this->isStructure($formData)) {
@@ -556,7 +653,7 @@ class AdherentFormulaireController extends Controller
                     $formData['_adherent_id'] = $this->sauvegarderAdherent($formData);
                 }
             }
-            $service = new HelloAssoService();
+            $service = app(\App\Services\HelloAssoService::class);
 
             $formData['mode_paiement']   = 'helloasso';
             $formData['_last_completed'] = 10;
@@ -709,6 +806,29 @@ class AdherentFormulaireController extends Controller
         $formData = $request->session()->get("adhesion_{$token}", []);
         $formData['_last_completed'] = max((int)($formData['_last_completed'] ?? 0), 10);
         $request->session()->put("adhesion_{$token}", $formData);
+
+        if (!empty($formData['_is_paying_solde'])) {
+            $adherentSolde = \App\Models\Adherent::find($formData['_adherent_id']);
+            $preInscSolde  = \App\Models\Inscription::find($formData['_pre_inscription_id']);
+
+            if ($adherentSolde && $preInscSolde) {
+                \App\Models\Paiement::create([
+                    'id_adherent'   => $adherentSolde->id,
+                    'montant'       => $formData['_montant_solde'],
+                    'source'        => 'HelloAsso',
+                    'date_paiement' => now()->toDateString(),
+                    'commentaire'   => 'Restant de l\'acompte payé via HelloAsso',
+                ]);
+                $preInscSolde->update(['a_paye' => Inscription::EN_ATTENTE]);
+            }
+
+            $formData['_helloasso_ok'] = true;
+            $formData['_last_completed'] = 11;
+            unset($formData['_is_paying_solde']);
+            $request->session()->put("adhesion_{$token}", $formData);
+
+            return redirect()->route('adhesion.show', ['token' => $token, 'step' => 11]);
+        }
 
         if ($this->isStructure($formData)) {
             if (($formData['type_activite'] ?? '') === 'ressourcerie' && empty($formData['_ressourcerie_paid'])) {

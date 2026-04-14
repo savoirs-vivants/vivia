@@ -103,6 +103,8 @@
                     @include('adhesion.step_paiement')
                 @elseif ($step === 11)
                     @include('adhesion.step_confirmation')
+                @elseif ($step === 16)
+                    @include('adhesion.step_pre_inscription')
                 @endif
 
             </div>
