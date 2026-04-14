@@ -34,8 +34,8 @@
         </div>
 
         <div style="text-align: center; margin-bottom: 32px;">
-            <a href="{{ route('backoffice') }}" style="display: inline-block; background-color: #16987C; color: #ffffff; text-decoration: none; font-size: 16px; font-weight: 600; padding: 14px 32px; border-radius: 8px; box-shadow: 0 4px 6px rgba(22, 152, 124, 0.2); transition: background-color 0.2s;">
-                Accéder au Back-Office
+            <a href="{{ route('adherents.index') }}" style="display: inline-block; background-color: #16987C; color: #ffffff; text-decoration: none; font-size: 16px; font-weight: 600; padding: 14px 32px; border-radius: 8px; box-shadow: 0 4px 6px rgba(22, 152, 124, 0.2); transition: background-color 0.2s;">
+                Accéder à l'application
             </a>
         </div>
 
