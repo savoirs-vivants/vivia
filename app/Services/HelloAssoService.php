@@ -36,7 +36,7 @@ class HelloAssoService
         return Cache::remember('helloasso_token', now()->addMinutes(25), function () {
             Log::info('HelloAsso: récupération d\'un nouveau token');
 
-            $response = Http::withoutVerifying()->post($this->authUrl, [
+            $response = Http::asForm()->post($this->authUrl, [
                 'grant_type'    => 'client_credentials',
                 'client_id'     => $this->clientId,
                 'client_secret' => $this->clientSecret,
@@ -76,7 +76,7 @@ class HelloAssoService
 
         Log::info('HelloAsso createCheckout payload', $payload);
 
-        $response = Http::withoutVerifying()->withToken($accessToken)
+        $response = Http::withToken($accessToken)
             ->post("{$this->baseUrl}/organizations/{$this->orgSlug}/checkout-intents", $payload);
 
         Log::info('HelloAsso checkout response', [
@@ -104,7 +104,7 @@ class HelloAssoService
     {
         $accessToken = $this->getAccessToken();
 
-        $response = Http::withoutVerifying()->withToken($accessToken)
+        $response = Http::withToken($accessToken)
             ->get("{$this->baseUrl}/organizations/{$this->orgSlug}/forms/Membership/{$formSlug}/payments", [
                 'pageSize' => 20,
                 'pageIndex' => 1,
@@ -143,7 +143,7 @@ class HelloAssoService
     {
         $accessToken = $this->getAccessToken();
 
-        $response = Http::withoutVerifying()->withToken($accessToken)
+        $response = Http::withToken($accessToken)
             ->get("{$this->baseUrl}/organizations/{$this->orgSlug}/forms/Membership/{$formSlug}/public");
 
         if ($response->successful()) {

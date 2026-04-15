@@ -36,10 +36,10 @@ return [
     ],
 
     'helloasso' => [
-        'sandbox'       => env('HELLOASSO_SANDBOX', true),
-        'client_id'     => env('HELLOASSO_CLIENT_ID'),
+        'sandbox' => env('HELLOASSO_SANDBOX', false),
+        'client_id' => env('HELLOASSO_CLIENT_ID'),
         'client_secret' => env('HELLOASSO_CLIENT_SECRET'),
-        'org_slug'      => env('HELLOASSO_ORGANIZATION_SLUG'),
+        'org_slug' => env('HELLOASSO_ORGANIZATION_SLUG'),
+        'membership_form_slug' => env('HELLOASSO_MEMBERSHIP_FORM_SLUG'),
     ],
-
 ];
