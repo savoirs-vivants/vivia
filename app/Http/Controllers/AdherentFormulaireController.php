@@ -23,6 +23,7 @@ use \Illuminate\Support\Facades\Storage;
 use App\Services\HelloAssoService;
 use App\Services\GeocodingService;
 use App\Models\SyncLog;
+use App\Models\Setting;
 
 class AdherentFormulaireController extends Controller
 {
@@ -760,7 +761,8 @@ class AdherentFormulaireController extends Controller
                     /* L'utilisation de env() dans le code est dangereuse en production
                      * car Laravel le cache. Il faut privilégier config().
                      */
-                    $formSlug = config('services.helloasso.membership_form_slug', env('HELLOASSO_MEMBERSHIP_FORM_SLUG'));
+                    $formSlug = Setting::where('key', 'helloasso_membership_form_slug')->value('value')
+                        ?? config('services.helloasso.membership_form_slug');
                     $price    = $service->getBaseMembershipPrice($formSlug);
 
                     if ($price > 0) {
@@ -779,6 +781,9 @@ class AdherentFormulaireController extends Controller
         }
 
         if ($request->hasFile('carnet_sante')) {
+            $request->validate([
+                'carnet_sante' => 'file|mimes:pdf,jpg,jpeg,png|max:5120',
+            ]);
             Storage::disk('public')->makeDirectory('carnets');
             $filePath = $request->file('carnet_sante')->store('carnets', 'public');
             if ($filePath) {
@@ -923,7 +928,8 @@ class AdherentFormulaireController extends Controller
         $basePublic = $isSandbox ? 'https://www.helloasso-sandbox.com' : 'https://www.helloasso.com';
         $orgSlug    = config('services.helloasso.org_slug');
 
-        $formSlug = env('HELLOASSO_MEMBERSHIP_FORM_SLUG');
+        $formSlug = Setting::where('key', 'helloasso_membership_form_slug')->value('value')
+            ?? config('services.helloasso.membership_form_slug');
 
         $url = "{$basePublic}/associations/{$orgSlug}/adhesions/{$formSlug}";
 

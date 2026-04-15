@@ -11,6 +11,7 @@ use App\Http\Controllers\DossierActiviteController;
 use App\Http\Controllers\InscriptionController;
 use App\Http\Controllers\PasswordResetController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\SettingController;
 use App\Http\Controllers\StatistiqueController;
 use App\Livewire\EditUser;
 use Illuminate\Support\Facades\Route;
@@ -91,8 +92,10 @@ Route::middleware('auth')->group(function () {
     Route::put('/profil', [ProfileController::class, 'update'])->name('profile.update');
     Route::get('/profil/logs-synchronisation', [ProfileController::class, 'journalSync'])->middleware('role:admin')->name('profile.logs');
 
+    Route::get('/parametres', [SettingController::class, 'index'])->name('settings.index');
+    Route::post('/parametres', [SettingController::class, 'update'])->name('settings.update');
+
     Route::get('/statistiques', [StatistiqueController::class, 'index'])->middleware('role:admin,comptable')->name('statistiques.index');
 
     Route::get('/users/search', [ActiviteController::class, 'searchUsers'])->name('users.search');
-
 });
