@@ -58,6 +58,7 @@ class DashboardController extends Controller
         $totalAdherents = DB::table('inscriptions')
             ->where('saison', $saison)
             ->whereNotNull('id_adherent')
+            ->whereIn('a_paye', ['oui', 'Payé'])
             ->distinct('id_adherent')
             ->count('id_adherent');
 
@@ -66,6 +67,7 @@ class DashboardController extends Controller
             ->whereMonth('date_inscription', now()->month)
             ->whereYear('date_inscription', now()->year)
             ->whereNotNull('id_adherent')
+            ->whereIn('a_paye', ['oui', 'Payé'])
             ->distinct('id_adherent')
             ->count('id_adherent');
 
