@@ -35,7 +35,7 @@ Application Laravel de gestion des adhérents, activités et inscriptions pour s
 ### 1. Cloner le dépôt
 
 ```bash
-git clone https://git.unistra.fr/strebes/vivia.git
+git clone https://github.com/savoirs-vivants/vivia.git
 cd Vivia
 ```
 
