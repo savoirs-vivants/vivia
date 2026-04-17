@@ -1379,12 +1379,32 @@ class AdherentFormulaireController extends Controller
                     'status' => 'error',
                     'errors' => ["Email manquant dans le payload HelloAsso (Formulaire: {$formSlug})"]
                 ]);
-                return response()->json(['status' => 'missing_email'], 400);
+                return response()->json(['status' => 'missing_email'], 200);
             }
 
             $adherent = Adherent::where('mail', $email)->latest()->first();
-
             $structure = AdherentStructure::where('mail', $email)->latest()->first();
+
+            if ($adherent) {
+                $dejaCree = Paiement::where('id_adherent', $adherent->id)
+                    ->where('source', 'HelloAsso')
+                    ->where('montant', $amount)
+                    ->whereDate('date_paiement', today())
+                    ->exists();
+
+                if (!$dejaCree) {
+                    Paiement::create([
+                        'id_adherent'   => $adherent->id,
+                        'montant'       => $amount,
+                        'source'        => 'HelloAsso',
+                        'date_paiement' => now()->toDateString(),
+                        'commentaire'   => 'Paiement Webhook HelloAsso',
+                    ]);
+                }
+
+                $syncLog->update(['status' => 'success', 'payments_imported' => 1]);
+                return response()->json(['status' => 'ok'], 200);
+            }
 
             if ($structure) {
                 $dejaCreeeStruct = Paiement::where('id_structure', $structure->id)
@@ -1411,7 +1431,7 @@ class AdherentFormulaireController extends Controller
                 'errors' => ["Paiement de {$amount}€ reçu pour {$firstName} {$lastName}, mais l'email {$email} est introuvable."]
             ]);
 
-            return response()->json(['status' => 'not_found'], 404);
+            return response()->json(['status' => 'not_found_but_acknowledged'], 200);
         } catch (\Exception $e) {
             Log::error("Erreur critique Webhook HelloAsso : " . $e->getMessage());
 
