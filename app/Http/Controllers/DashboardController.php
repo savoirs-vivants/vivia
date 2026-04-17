@@ -344,20 +344,14 @@ class DashboardController extends Controller
         $contenuText = $request->input('message');
 
         $attachments = [];
-        $fichiersASupprimer = [];
 
         if ($request->hasFile('pieces_jointes')) {
             foreach ($request->file('pieces_jointes') as $file) {
-                $path = $file->store('temp_mails');
-                $fullPath = storage_path('app/' . $path);
-
                 $attachments[] = [
-                    'path' => $fullPath,
-                    'name' => $file->getClientOriginalName(),
-                    'mime' => $file->getMimeType(),
+                    'file_data' => file_get_contents($file->getRealPath()),
+                    'name'      => $file->getClientOriginalName(),
+                    'mime'      => $file->getMimeType(),
                 ];
-
-                $fichiersASupprimer[] = $fullPath;
             }
         }
 
@@ -368,25 +362,20 @@ class DashboardController extends Controller
             try {
                 Mail::send([], [], function ($message) use ($email, $sujet, $contenuText, $attachments) {
                     $message->to($email)
-                            ->subject($sujet)
-                            ->html(nl2br(e($contenuText)));
+                        ->subject($sujet)
+                        ->html(nl2br(e($contenuText)));
 
                     foreach ($attachments as $attachment) {
-                        $message->attach($attachment['path'], [
-                            'as'   => $attachment['name'],
+                        $message->attachData($attachment['file_data'], $attachment['name'], [
                             'mime' => $attachment['mime'],
                         ]);
                     }
                 });
                 $mailsEnvoyes++;
+
+                usleep(100000);
             } catch (\Exception $e) {
                 \Illuminate\Support\Facades\Log::error("Erreur envoi mail groupé à {$email} : " . $e->getMessage());
-            }
-        }
-
-        foreach ($fichiersASupprimer as $fichier) {
-            if (file_exists($fichier)) {
-                unlink($fichier);
             }
         }
 
