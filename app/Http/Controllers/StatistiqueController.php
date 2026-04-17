@@ -23,6 +23,7 @@ class StatistiqueController extends Controller
 
         $adherentsIdsCourants = Inscription::where('saison', $saisonCourante)
             ->whereNotNull('id_adherent')
+            ->whereIn('a_paye', ['oui', 'Payé'])
             ->distinct()
             ->pluck('id_adherent');
 

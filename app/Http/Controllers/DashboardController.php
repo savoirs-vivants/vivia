@@ -81,15 +81,21 @@ class DashboardController extends Controller
             ->whereIn('a_paye', ['en attente', 'En attente', 'partiel', 'Partiel', 'non', 'Non'])
             ->sum('montant');
 
-        $statuts = DB::table('inscriptions')
-            ->where('saison', $saison)
-            ->select('a_paye', DB::raw('COUNT(*) as nb'))
-            ->groupBy('a_paye')
-            ->pluck('nb', 'a_paye');
+        $statutPaye = $totalAdherents;
 
-        $statutPaye    = $statuts->get('oui', 0) + $statuts->get('Payé', 0);
-        $statutAttente = $statuts->get('en attente', 0) + $statuts->get('En attente', 0) + $statuts->get('non', 0) + $statuts->get('Non', 0);
-        $statutPartiel = $statuts->get('partiel', 0) + $statuts->get('Partiel', 0);
+        $statutAttente = DB::table('inscriptions')
+            ->where('saison', $saison)
+            ->whereNotNull('id_adherent')
+            ->whereIn('a_paye', ['en attente', 'En attente', 'non', 'Non'])
+            ->distinct('id_adherent')
+            ->count('id_adherent');
+
+        $statutPartiel = DB::table('inscriptions')
+            ->where('saison', $saison)
+            ->whereNotNull('id_adherent')
+            ->whereIn('a_paye', ['partiel', 'Partiel'])
+            ->distinct('id_adherent')
+            ->count('id_adherent');
 
         $activitesStats = DB::table('activites')
             ->leftJoin('activites_adherents', function ($join) use ($saison) {
