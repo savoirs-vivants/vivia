@@ -323,7 +323,7 @@ class DashboardController extends Controller
             ->pluck('adherents.mail')
             ->toArray();
 
-        $emailsStructures = DB::table('adherents_structures')
+        $emailsStructures = DB::table('adherents_structure')
             ->join('inscriptions', 'adherents_structure.id', '=', 'inscriptions.id_structure')
             ->where('inscriptions.saison', $saison)
             ->whereIn('inscriptions.a_paye', ['oui', 'Payé'])
