@@ -56,6 +56,8 @@
         </main>
     @endif
 
+    @stack('modals')
+
     @livewireScripts
 </body>
 

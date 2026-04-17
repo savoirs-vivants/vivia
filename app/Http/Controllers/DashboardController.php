@@ -323,14 +323,14 @@ class DashboardController extends Controller
             ->pluck('adherents.mail')
             ->toArray();
 
-        $emailsStructures = DB::table('adherent_structures')
-            ->join('inscriptions', 'adherent_structures.id', '=', 'inscriptions.id_structure')
+        $emailsStructures = DB::table('adherents_structures')
+            ->join('inscriptions', 'adherents_structure.id', '=', 'inscriptions.id_structure')
             ->where('inscriptions.saison', $saison)
             ->whereIn('inscriptions.a_paye', ['oui', 'Payé'])
-            ->whereNotNull('adherent_structures.mail')
-            ->where('adherent_structures.mail', '!=', '')
+            ->whereNotNull('adherents_structure.mail')
+            ->where('adherents_structure.mail', '!=', '')
             ->distinct()
-            ->pluck('adherent_structures.mail')
+            ->pluck('adherents_structure.mail')
             ->toArray();
 
         $tousLesEmails = array_unique(array_merge($emailsAdherents, $emailsStructures));

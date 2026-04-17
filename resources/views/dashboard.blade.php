@@ -413,7 +413,9 @@
         </div>
         @endif
     </div>
+    @endsection
 
+@push('modals')
     @if ($isGestionnaire && $prochaineSeance && $prochaineSeance->statut !== 'terminee')
         @include('partials.carnet-bord-overlays')
     @endif
@@ -421,8 +423,7 @@
     @if(Auth::user()->role === 'admin' || Auth::user()->role === 'comptable')
         @include('partials.mail-adherents-overlay')
     @endif
-
-@endsection
+@endpush
 
 @if(empty($isRoleRestreint) || !$isGestionnaire)
 <script>
