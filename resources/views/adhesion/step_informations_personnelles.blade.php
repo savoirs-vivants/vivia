@@ -96,8 +96,8 @@
                                         {{ !empty($formData['bulletin'] ?? '') ? 'checked' : '' }}
                                         class="{{ $check }} mt-0.5">
                                     <span class="text-sm text-gray-700 leading-relaxed">
-                                        <strong class="text-slate-900">Bulletin d'information</strong> — J'accepte de
-                                        recevoir les bulletins et actualités de l'association par email.
+                                        <strong class="text-slate-900">Mail d'information</strong> — J'accepte de
+                                        recevoir des mails d'information de l'association par email.
                                     </span>
                                 </label>
                                 <label class="flex items-start gap-3 cursor-pointer group">
