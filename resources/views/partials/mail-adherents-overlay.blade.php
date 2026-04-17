@@ -69,10 +69,13 @@
                     <label class="block text-xs font-black text-gray-400 uppercase tracking-widest mb-2">
                         📎 Pièces jointes (Optionnel)
                     </label>
-                    <input type="file" name="piece_jointe"
+
+                    <input type="file" id="pieces_jointes_input" name="pieces_jointes[]" multiple
                         class="block w-full text-sm text-gray-500 file:mr-4 file:py-2.5 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-bold file:bg-[#16A37A]/10 file:text-[#16A37A] hover:file:bg-[#16A37A]/20 transition-all">
                     <p class="mt-1.5 text-xs text-gray-400">Max 5 fichiers (5 Mo/fichier). Formats conseillés: PDF, JPG,
                         PNG.</p>
+
+                    <ul id="file-list-display" class="mt-3 space-y-2"></ul>
                 </div>
 
             </div>
@@ -91,41 +94,4 @@
     </div>
 </div>
 
-<script>
-    document.addEventListener('DOMContentLoaded', function() {
-        const radios = document.querySelectorAll('input[name="type_mail"]');
-        const inputObjet = document.getElementById('objet');
-        const textareaMessage = document.getElementById('message');
-
-        const templateAgObjet = "Invitation à l'Assemblée Générale de l’Association Savoirs Vivants";
-
-        const templateAgMessage = `L’association Savoirs Vivants organise son Assemblée Générale qui se tiendra le [DATE ET LIEU].
-
-Votre présence est nécessaire pour permettre le bon fonctionnement démocratique de l’association mais aussi pour participer à définir les orientations futures de l’association.
-
-Voici l’ordre du jour qui sera proposé lors de notre Assemblée :
-- Validation du compte rendu de l’Assemblée Générale précédente
-- Vote du rapport moral
-- Vote du rapport du trésorier
-- Présentation du rapport d’activités
-- Verre de l’amitié
-
-Je reste à votre disposition pour préparer ce moment important dans la vie de l’association.
-
-Laure Froehlig
-
-Présidente`;
-
-        radios.forEach(radio => {
-            radio.addEventListener('change', function() {
-                if (this.value === 'ag') {
-                    inputObjet.value = templateAgObjet;
-                    textareaMessage.value = templateAgMessage;
-                } else if (this.value === 'info') {
-                    inputObjet.value = "";
-                    textareaMessage.value = "";
-                }
-            });
-        });
-    });
-</script>
+<script src="{{ asset('js/mail-overlay.js') }}?v={{ time() }}"></script>

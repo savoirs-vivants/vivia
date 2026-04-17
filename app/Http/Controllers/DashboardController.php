@@ -344,18 +344,24 @@ class DashboardController extends Controller
         $contenuText = $request->input('message');
 
         $attachments = [];
+        $fichiersASupprimer = [];
+
         if ($request->hasFile('pieces_jointes')) {
             foreach ($request->file('pieces_jointes') as $file) {
+                $path = $file->store('temp_mails');
+                $fullPath = storage_path('app/' . $path);
+
                 $attachments[] = [
-                    'path' => $file->getRealPath(),
+                    'path' => $fullPath,
                     'name' => $file->getClientOriginalName(),
                     'mime' => $file->getMimeType(),
                 ];
+
+                $fichiersASupprimer[] = $fullPath;
             }
         }
 
         set_time_limit(0);
-
         $mailsEnvoyes = 0;
 
         foreach ($tousLesEmails as $email) {
@@ -375,6 +381,12 @@ class DashboardController extends Controller
                 $mailsEnvoyes++;
             } catch (\Exception $e) {
                 \Illuminate\Support\Facades\Log::error("Erreur envoi mail groupé à {$email} : " . $e->getMessage());
+            }
+        }
+
+        foreach ($fichiersASupprimer as $fichier) {
+            if (file_exists($fichier)) {
+                unlink($fichier);
             }
         }
 

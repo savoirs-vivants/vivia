@@ -36,6 +36,12 @@
     "src": "resources/js/carnet-bord.js",
     "isEntry": true
   },
+  "resources/js/mail-overlay.js": {
+    "file": "assets/mail-overlay-BRYv52fA.js",
+    "name": "mail-overlay",
+    "src": "resources/js/mail-overlay.js",
+    "isEntry": true
+  },
   "resources/js/password-toggle.js": {
     "file": "assets/password-toggle-BoPmYyLo.js",
     "name": "password-toggle",
