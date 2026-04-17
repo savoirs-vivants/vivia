@@ -167,8 +167,7 @@
             <div
                 class="px-5 sm:px-8 py-5 sm:py-6 border-b border-gray-100 bg-white flex items-center justify-between shrink-0">
                 <div>
-                    <h3
-                        class="font-grotesk font-black text-lg sm:text-xl text-gray-900 tracking-tight flex items-center gap-2 sm:gap-3">
+                    <h3 class="font-grotesk font-black text-lg sm:text-xl text-gray-900 tracking-tight flex items-center gap-2 sm:gap-3">
                         @if ($isGestionnaire)
                             <span class="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-teal-50 text-teal-600 flex items-center justify-center text-sm sm:text-base">📋</span>
                             Carnet de bord
@@ -185,7 +184,17 @@
                         @endif
                     </p>
                 </div>
-            </div>
+
+                @if(Auth::user()->role === 'admin' || Auth::user()->role === 'comptable')
+                <button onclick="document.getElementById('overlay-mail-adherents').style.display='flex';"
+                        class="bg-[#16A37A] hover:bg-[#0f7a5b] text-white px-4 py-2 sm:px-5 sm:py-2.5 rounded-xl font-bold text-sm transition-all shadow-md hover:shadow-lg flex items-center gap-2 shrink-0">
+                    <svg class="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                    </svg>
+                    <span class="hidden sm:inline">Envoyer un mail</span>
+                </button>
+                @endif
+                </div>
         @endif
 
             <div class="flex flex-col lg:flex-row flex-1 bg-gray-50/30">
@@ -546,6 +555,10 @@
             </div>
         </div>
     </div>
+    @endif
+
+    @if(Auth::user()->role === 'admin' || Auth::user()->role === 'comptable')
+        @include('partials.mail-adherents-overlay')
     @endif
 
 @endsection

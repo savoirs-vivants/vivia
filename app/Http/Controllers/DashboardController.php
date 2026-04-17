@@ -298,4 +298,86 @@ class DashboardController extends Controller
 
         return ['seance' => $seance, 'adherents' => $adherents, 'absentsIds' => $absentsIds];
     }
+
+    public function envoyerMailAdherents(Request $request)
+    {
+        abort_if(in_array(Auth::user()->role, ['coordinateur', 'animateur']), 403);
+
+        $request->validate([
+            'type_mail'        => 'required|in:ag,info',
+            'objet'            => 'required|string|max:255',
+            'message'          => 'required|string',
+            'pieces_jointes'   => 'nullable|array|max:5',
+            'pieces_jointes.*' => 'file|max:5120',
+        ]);
+
+        $saison = Saison::current();
+
+        $emailsAdherents = DB::table('adherents')
+            ->join('inscriptions', 'adherents.id', '=', 'inscriptions.id_adherent')
+            ->where('inscriptions.saison', $saison)
+            ->whereIn('inscriptions.a_paye', ['oui', 'Payé'])
+            ->whereNotNull('adherents.mail')
+            ->where('adherents.mail', '!=', '')
+            ->distinct()
+            ->pluck('adherents.mail')
+            ->toArray();
+
+        $emailsStructures = DB::table('adherent_structures')
+            ->join('inscriptions', 'adherent_structures.id', '=', 'inscriptions.id_structure')
+            ->where('inscriptions.saison', $saison)
+            ->whereIn('inscriptions.a_paye', ['oui', 'Payé'])
+            ->whereNotNull('adherent_structures.mail')
+            ->where('adherent_structures.mail', '!=', '')
+            ->distinct()
+            ->pluck('adherent_structures.mail')
+            ->toArray();
+
+        $tousLesEmails = array_unique(array_merge($emailsAdherents, $emailsStructures));
+
+        if (empty($tousLesEmails)) {
+            return back()->withErrors(['mail' => 'Aucun email trouvé pour les adhérents de cette saison.']);
+        }
+
+        $prefixe = $request->input('type_mail') === 'ag' ? '[Assemblée Générale]' : '[Information]';
+        $sujet = $prefixe . ' ' . $request->input('objet');
+        $contenuText = $request->input('message');
+
+        $attachments = [];
+        if ($request->hasFile('pieces_jointes')) {
+            foreach ($request->file('pieces_jointes') as $file) {
+                $attachments[] = [
+                    'path' => $file->getRealPath(),
+                    'name' => $file->getClientOriginalName(),
+                    'mime' => $file->getMimeType(),
+                ];
+            }
+        }
+
+        set_time_limit(0);
+
+        $mailsEnvoyes = 0;
+
+        foreach ($tousLesEmails as $email) {
+            try {
+                Mail::send([], [], function ($message) use ($email, $sujet, $contenuText, $attachments) {
+                    $message->to($email)
+                            ->subject($sujet)
+                            ->html(nl2br(e($contenuText)));
+
+                    foreach ($attachments as $attachment) {
+                        $message->attach($attachment['path'], [
+                            'as'   => $attachment['name'],
+                            'mime' => $attachment['mime'],
+                        ]);
+                    }
+                });
+                $mailsEnvoyes++;
+            } catch (\Exception $e) {
+                \Illuminate\Support\Facades\Log::error("Erreur envoi mail groupé à {$email} : " . $e->getMessage());
+            }
+        }
+
+        return back()->with('success', 'Votre email a été envoyé personnellement à ' . $mailsEnvoyes . ' contacts avec succès.');
+    }
 }

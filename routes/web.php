@@ -43,8 +43,11 @@ Route::post('/helloasso/webhook', [AdherentFormulaireController::class, 'helloas
 Route::middleware('auth')->group(function () {
 
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+    Route::post('/dashboard/send-mail', [DashboardController::class, 'envoyerMailAdherents'])->name('dashboard.send-mail');
+    
     Route::post('/seances/{seance}/appel', [DashboardController::class, 'enregistrerAppel'])->name('seances.appel');
     Route::post('/seances/{seance}/terminer', [DashboardController::class, 'terminerSeance'])->name('seances.terminer');
+
 
     Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
