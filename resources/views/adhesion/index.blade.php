@@ -18,6 +18,42 @@
         $radio = 'h-4 w-4 border-gray-300 text-teal-600 focus:ring-teal-500 cursor-pointer';
     @endphp
 
+    @if (in_array(now()->month, [7, 8]) && empty($formData['_saison_cible']))
+        <div class="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/60 backdrop-blur-sm p-4 font-grotesk">
+            <div class="bg-white rounded-2xl shadow-xl max-w-md w-full p-6 animate-[fadeIn_0.3s_ease-out]">
+
+                <div class="text-center mb-6">
+                    <span class="text-4xl">☀️</span>
+                    <h2 class="text-xl font-bold text-gray-900 mt-3">Période estivale</h2>
+                    <p class="text-sm text-gray-500 mt-1">Que souhaitez-vous faire aujourd'hui ?</p>
+                </div>
+
+                <form method="POST" action="{{ route('adhesion.setSaison', $token) }}" class="space-y-3">
+                    @csrf
+
+                    <button type="submit" name="saison_cible" value="actuelle"
+                        class="w-full group text-left border-2 border-orange-200 hover:border-orange-500 bg-orange-50 hover:bg-orange-100 p-4 rounded-xl transition-all cursor-pointer">
+                        <h3 class="font-bold text-orange-900 text-base flex items-center gap-2">
+                            🏕️ M'inscrire à un stage d'été
+                        </h3>
+                        <p class="text-orange-700/80 text-xs mt-1">Pour la fin de saison
+                            ({{ App\Models\Saison::current() }})</p>
+                    </button>
+
+                    <button type="submit" name="saison_cible" value="suivante"
+                        class="w-full group text-left border-2 border-teal-200 hover:border-teal-500 bg-teal-50 hover:bg-teal-100 p-4 rounded-xl transition-all cursor-pointer">
+                        <h3 class="font-bold text-teal-900 text-base flex items-center gap-2">
+                            🎒 Me pré-inscrire pour la rentrée
+                        </h3>
+                        <p class="text-teal-700/80 text-xs mt-1">Pour la saison prochaine
+                            ({{ App\Models\Saison::preinscriptions() }})</p>
+                    </button>
+                </form>
+
+            </div>
+        </div>
+    @endif
+
     <div class="min-h-screen bg-gray-50 py-6 px-4 font-grotesk">
         <div class="max-w-xl mx-auto">
 
@@ -35,7 +71,8 @@
                             <span class="text-gray-300 mx-1">/</span>
                             <span class="text-gray-500">{{ $totalSteps }}</span>
                         </p>
-                        <span class="text-xs font-semibold text-teal-700 bg-teal-50 border border-teal-100 px-2.5 py-1 rounded-full">
+                        <span
+                            class="text-xs font-semibold text-teal-700 bg-teal-50 border border-teal-100 px-2.5 py-1 rounded-full">
                             {{ $stepMeta[$step]['icon'] }} {{ $stepMeta[$step]['label'] }}
                         </span>
                     </div>
@@ -49,13 +86,15 @@
                         @foreach ($path as $i => $s)
                             @php
                                 $pathIdx = array_search($step, $path);
-                                $isDone    = $i < $pathIdx;
+                                $isDone = $i < $pathIdx;
                                 $isCurrent = $s === $step;
                             @endphp
 
                             @if ($i > 0)
-                                <div class="h-px flex-1 min-w-[6px] transition-colors duration-300
-                                    {{ $isDone ? 'bg-teal-400' : 'bg-gray-200' }}"></div>
+                                <div
+                                    class="h-px flex-1 min-w-[6px] transition-colors duration-300
+                                    {{ $isDone ? 'bg-teal-400' : 'bg-gray-200' }}">
+                                </div>
                             @endif
 
                             <div class="shrink-0 rounded-full transition-all duration-300
@@ -114,36 +153,35 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/signature_pad/4.1.7/signature_pad.umd.min.js"></script>
 
     <script>
-
         function cotisationPaiement() {
-                        return {
-                            loading: false,
-                            dejaClique: {{ !empty($formData['_via_url_checkout']) ? 'true' : 'false' }},
-                            init() {},
-                            async ouvrirHelloAsso() {
-                                this.loading = true;
-                                try {
-                                    const response = await fetch('{{ route('adhesion.helloasso2.checkout', $token) }}', {
-                                        method: 'POST',
-                                        headers: {
-                                            'X-CSRF-TOKEN': '{{ csrf_token() }}',
-                                            'Accept': 'application/json',
-                                            'X-Requested-With': 'XMLHttpRequest',
-                                        },
-                                    });
-                                    const data = await response.json();
-                                    if (data.url) {
-                                        window.open(data.url, '_blank');
-                                        this.dejaClique = true;
-                                    }
-                                } catch (e) {
-                                    console.error(e);
-                                } finally {
-                                    this.loading = false;
-                                }
-                            }
+            return {
+                loading: false,
+                dejaClique: {{ !empty($formData['_via_url_checkout']) ? 'true' : 'false' }},
+                init() {},
+                async ouvrirHelloAsso() {
+                    this.loading = true;
+                    try {
+                        const response = await fetch('{{ route('adhesion.helloasso2.checkout', $token) }}', {
+                            method: 'POST',
+                            headers: {
+                                'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                                'Accept': 'application/json',
+                                'X-Requested-With': 'XMLHttpRequest',
+                            },
+                        });
+                        const data = await response.json();
+                        if (data.url) {
+                            window.open(data.url, '_blank');
+                            this.dejaClique = true;
                         }
+                    } catch (e) {
+                        console.error(e);
+                    } finally {
+                        this.loading = false;
                     }
+                }
+            }
+        }
 
         (function() {
             const canvas = document.getElementById('canvas-adherent');

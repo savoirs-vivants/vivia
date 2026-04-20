@@ -14,13 +14,12 @@
                 $isStructureStep2 = in_array($statutJuridique, ['tpe_asso', 'esr_pme']);
                 $isDejaAdherent = ($formData['is_adherent'] ?? 'non') === 'oui';
 
-                $moisActuel = now()->month;
-                $isPreInscription = $moisActuel === 7 || $moisActuel === 8;
+                $saisonCible = $formData['_saison_cible'] ?? 'actuelle';
+
+                $options = [];
 
                 if ($isStructureStep2) {
-                    $options = [];
-
-                    if (!$isPreInscription) {
+                    if ($saisonCible === 'suivante') {
                         $options[] = [
                             'value' => 'ressourcerie',
                             'label' => 'Ressourcerie',
@@ -28,7 +27,6 @@
                             'desc' => 'Louer du matériel pédagogique robotique',
                         ];
                     }
-
                     $options[] = [
                         'value' => 'recherche',
                         'label' => 'Programme de recherche',
@@ -37,7 +35,6 @@
                             'Participer à un programme de recherche participative' .
                             ($isDejaAdherent ? ' (gratuit)' : ''),
                     ];
-
                     if (!$isDejaAdherent) {
                         $options[] = [
                             'value' => 'soutien',
@@ -47,47 +44,51 @@
                         ];
                     }
                 } else {
-                    $options = [
-                        [
+                    if ($saisonCible === 'actuelle' && in_array(now()->month, [7, 8])) {
+                        $options[] = [
+                            'value' => 'stage',
+                            'label' => 'Inscription à un stage d\'été',
+                            'icon' => '🏕️',
+                            'desc' => 'Stages d\'été (Saison ' . App\Models\Saison::current() . ')',
+                        ];
+                    } else {
+                        $options[] = [
                             'value' => 'atelier',
                             'label' => 'Inscription à un atelier',
                             'icon' => '🔧',
                             'desc' => 'Ateliers robotiques',
-                        ],
-                        [
+                        ];
+                        $options[] = [
                             'value' => 'recherche',
                             'label' => 'Recherche participative',
                             'icon' => '🔬',
-                            'desc' => 'Participer à un programme de recherche' . ($isDejaAdherent ? ' (gratuit)' : ''),
-                        ],
-                    ];
-
-                    if (!$isDejaAdherent) {
-                        $options[] = [
-                            'value' => 'soutien',
-                            'label' => 'Inscription par soutien',
-                            'icon' => '🤝',
-                            'desc' => 'Soutenir financièrement l\'association',
+                            'desc' => 'Participer à un programme' . ($isDejaAdherent ? ' (gratuit)' : ''),
                         ];
-                    }
-                    if (!$isPreInscription) {
-                        array_splice($options, 1, 0, [
-                            [
-                                'value' => 'ressourcerie',
-                                'label' => 'Ressourcerie',
-                                'icon' => '🤖',
-                                'desc' => 'Louer un Codey Rocky',
-                            ],
-                        ]);
 
-                        array_splice($options, 2, 0, [
-                            [
+                        if (!$isDejaAdherent) {
+                            $options[] = [
+                                'value' => 'soutien',
+                                'label' => 'Inscription par soutien',
+                                'icon' => '🤝',
+                                'desc' => 'Soutenir financièrement l\'association',
+                            ];
+                        }
+
+                        $options[] = [
+                            'value' => 'ressourcerie',
+                            'label' => 'Ressourcerie',
+                            'icon' => '🤖',
+                            'desc' => 'Louer un Codey Rocky',
+                        ];
+
+                        if (!in_array(now()->month, [7, 8])) {
+                            $options[] = [
                                 'value' => 'stage',
                                 'label' => 'Inscription à un stage',
                                 'icon' => '📚',
                                 'desc' => 'Stages sur plusieurs jours',
-                            ],
-                        ]);
+                            ];
+                        }
 
                         if (!$isDejaAdherent) {
                             $options[] = [

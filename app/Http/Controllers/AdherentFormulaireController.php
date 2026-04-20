@@ -254,7 +254,7 @@ class AdherentFormulaireController extends Controller
                     }
                 }
 
-                $saison = Saison::current();
+                $saison = $this->determinerSaisonDynamique($formData);
                 $activitesDejaInscritesIds = $adherentExistant->activites()
                     ->wherePivot('saison', $saison)
                     ->wherePivot('est_un_abandon', 0)
@@ -302,7 +302,7 @@ class AdherentFormulaireController extends Controller
         $filtre = $this->classesFiltrer($formData);
         $classesEligibles = $this->classesEligiblesDepuisOccupation($formData);
 
-        $saison = Saison::current();
+        $saison = $this->determinerSaisonDynamique($formData);
         $activites = Activite::where('is_archived', false)->get();
 
         $nbInscritsParActivite = DB::table('activites_adherents')
@@ -1334,7 +1334,7 @@ class AdherentFormulaireController extends Controller
                 'statut_juridique'   => $formData['statut_juridique'] ?? null,
             ]);
 
-            $saison = Saison::current();
+            $saison = $this->determinerSaisonDynamique($formData);
             $aPaye = Inscription::EN_ATTENTE;
 
             Inscription::create([
@@ -1468,5 +1468,29 @@ class AdherentFormulaireController extends Controller
         }
 
         return $total;
+    }
+
+    public function setSaisonCible(Request $request, string $token)
+    {
+        $formData = $request->session()->get("adhesion_{$token}", []);
+
+        $formData['_saison_cible'] = $request->input('saison_cible');
+
+        if ($formData['_saison_cible'] === 'actuelle') {
+            $formData['type_activite'] = 'stage';
+        }
+
+        $request->session()->put("adhesion_{$token}", $formData);
+
+        return back();
+    }
+
+    private function determinerSaisonDynamique(array $formData): string
+    {
+        if (($formData['_saison_cible'] ?? 'actuelle') === 'suivante') {
+            return Saison::preinscriptions(); // 2026-2027
+        }
+
+        return Saison::current();
     }
 }

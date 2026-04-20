@@ -31,6 +31,7 @@ Route::get('/adhesion', [AdherentFormulaireController::class, 'index'])->name('a
 Route::post('/adhesion/recup-numero', [AdherentFormulaireController::class, 'envoyerCodeRecup'])->name('adhesion.recup');
 Route::get('/adhesion/{token}',  [AdherentFormulaireController::class, 'show'])->name('adhesion.show');
 Route::post('/adhesion/{token}', [AdherentFormulaireController::class, 'next'])->name('adhesion.next');
+Route::post('/adhesion/{token}/choix-saison', [AdherentFormulaireController::class, 'setSaisonCible'])->name('adhesion.setSaison');
 Route::get('/adhesion/{token}/helloasso/{status}', [AdherentFormulaireController::class, 'helloassoReturn'])->name('adhesion.helloasso.return');
 Route::post('/adhesion/{token}/helloasso2', [AdherentFormulaireController::class, 'helloassoCheckout2'])->name('adhesion.helloasso2.checkout');
 Route::get('/adhesion/{token}/helloasso2/{status}', [AdherentFormulaireController::class, 'helloassoReturn2'])->name('adhesion.helloasso2.return');
@@ -44,7 +45,7 @@ Route::middleware('auth')->group(function () {
 
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
     Route::post('/dashboard/send-mail', [DashboardController::class, 'envoyerMailAdherents'])->name('dashboard.send-mail');
-    
+
     Route::post('/seances/{seance}/appel', [DashboardController::class, 'enregistrerAppel'])->name('seances.appel');
     Route::post('/seances/{seance}/terminer', [DashboardController::class, 'terminerSeance'])->name('seances.terminer');
 
