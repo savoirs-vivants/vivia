@@ -15,6 +15,7 @@ use App\Http\Controllers\SettingController;
 use App\Http\Controllers\StatistiqueController;
 use App\Livewire\EditUser;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\HelloAssoController;
 
 Route::get('/inscription/{token}', [InscriptionController::class, 'show'])->name('inscription');
 Route::post('/inscription/{token}', [InscriptionController::class, 'complete'])->name('inscription.complete');
@@ -32,12 +33,13 @@ Route::post('/adhesion/recup-numero', [AdherentFormulaireController::class, 'env
 Route::get('/adhesion/{token}',  [AdherentFormulaireController::class, 'show'])->name('adhesion.show');
 Route::post('/adhesion/{token}', [AdherentFormulaireController::class, 'next'])->name('adhesion.next');
 Route::post('/adhesion/{token}/choix-saison', [AdherentFormulaireController::class, 'setSaisonCible'])->name('adhesion.setSaison');
-Route::get('/adhesion/{token}/helloasso/{status}', [AdherentFormulaireController::class, 'helloassoReturn'])->name('adhesion.helloasso.return');
-Route::post('/adhesion/{token}/helloasso2', [AdherentFormulaireController::class, 'helloassoCheckout2'])->name('adhesion.helloasso2.checkout');
-Route::get('/adhesion/{token}/helloasso2/{status}', [AdherentFormulaireController::class, 'helloassoReturn2'])->name('adhesion.helloasso2.return');
-Route::post('/adhesion/{token}/verifier-cotisation', [AdherentFormulaireController::class, 'verifierCotisation'])->name('adhesion.verifier.cotisation');
-Route::post('/adhesion/helloasso/webhook', [AdherentFormulaireController::class, 'helloassoWebhook'])->name('adhesion.helloasso.webhook');
 Route::post('/adhesion/{token}/notifier-activite', [AdherentFormulaireController::class, 'notifierActivitePleine'])->name('adhesion.notifier.activite');
+
+Route::get('/adhesion/{token}/helloasso/{status}', [HelloAssoController::class, 'helloassoReturn'])->name('adhesion.helloasso.return');
+Route::post('/adhesion/{token}/helloasso2', [HelloAssoController::class, 'helloassoCheckout2'])->name('adhesion.helloasso2.checkout');
+Route::get('/adhesion/{token}/helloasso2/{status}', [HelloAssoController::class, 'helloassoReturn2'])->name('adhesion.helloasso2.return');
+Route::post('/adhesion/{token}/verifier-cotisation', [HelloAssoController::class, 'verifierCotisation'])->name('adhesion.verifier.cotisation');
+Route::post('/adhesion/helloasso/webhook', [HelloAssoController::class, 'helloassoWebhook'])->name('adhesion.helloasso.webhook');
 
 Route::post('/helloasso/webhook', [AdherentFormulaireController::class, 'helloassoWebhook']);
 
