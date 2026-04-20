@@ -17,6 +17,7 @@ use App\Livewire\EditUser;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\HelloAssoController;
 use App\Http\Controllers\RechercheController;
+use Illuminate\Support\Facades\Artisan;
 
 Route::get('/inscription/{token}', [InscriptionController::class, 'show'])->name('inscription');
 Route::post('/inscription/{token}', [InscriptionController::class, 'complete'])->name('inscription.complete');
@@ -43,6 +44,15 @@ Route::post('/adhesion/{token}/verifier-cotisation', [HelloAssoController::class
 Route::post('/adhesion/helloasso/webhook', [HelloAssoController::class, 'helloassoWebhook'])->name('adhesion.helloasso.webhook');
 
 Route::post('/helloasso/webhook', [AdherentFormulaireController::class, 'helloassoWebhook']);
+
+Route::get('/cron/bH4U$m+=vc5fpJf', function () {
+    try {
+        Artisan::call('schedule:run');
+        return "Planificateur exécuté avec succès.";
+    } catch (\Exception $e) {
+        return 'Erreur : ' . $e->getMessage();
+    }
+})->middleware('throttle:2,1');
 
 Route::middleware('auth')->group(function () {
 
