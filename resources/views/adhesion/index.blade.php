@@ -144,6 +144,8 @@
                     @include('adhesion.step_confirmation')
                 @elseif ($step === 16)
                     @include('adhesion.step_pre_inscription')
+                @elseif ($step === 17)
+                    @include('adhesion.step_recherches')
                 @endif
 
             </div>

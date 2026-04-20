@@ -58,6 +58,7 @@ class AdherentFormulaireController extends Controller
         $activite      = $formData['type_activite'] ?? '';
         $isMineur      = $this->isMineur($formData['date_naiss'] ?? null);
         $isClubMaker   = ($activite === 'club_maker');
+        $isRecherche   = ($activite === 'recherche');
         $needsActivite = in_array($activite, ['atelier', 'stage', 'ressourcerie']);
 
         if ($this->isStructure($formData)) {
@@ -73,7 +74,8 @@ class AdherentFormulaireController extends Controller
         $path[] = 5;
 
         if ($needsActivite || $isClubMaker) $path[] = 6;
-        if (!$isClubMaker) $path[] = 7;
+        if ($isRecherche) $path[] = 17;
+        if (!$isClubMaker && !$isRecherche) $path[] = 7;
         if ($isMineur) $path[] = 8;
 
         $path[] = 9;
@@ -154,6 +156,7 @@ class AdherentFormulaireController extends Controller
             14 => ['label' => 'Autorisations',  'icon' => '📜'],
             15 => ['label' => 'Orientation',    'icon' => '🎓'],
             16 => ['label' => 'Finalisation',   'icon' => '✨'],
+            17 => ['label' => 'Recherches',     'icon' => '🔬'],
         ];
     }
 
@@ -308,6 +311,10 @@ class AdherentFormulaireController extends Controller
                     return true;
                 }
             })
+            ->values();
+
+        $recherchesDispos = $activites->where('type', 'recherche')->values()
+            ->filter(fn($a) => !in_array($a->id, $activitesDejaInscritesIds))
             ->values();
 
         $statutJuridique = $formData['statut_juridique'] ?? null;
@@ -509,7 +516,8 @@ class AdherentFormulaireController extends Controller
             'titreFormulaire',
             'preInscription',
             'resteAPayer',
-            'totalVersePreInscrit'
+            'totalVersePreInscrit',
+            'recherchesDispos'
         ));
     }
 

@@ -286,6 +286,19 @@ trait AdhesionSharedLogic
 
                 DB::table('activites_adherents')->insertOrIgnore($pivotData);
             }
+            $rechercheIds = array_filter((array) ($formData['recherches_selectionnees'] ?? []));
+            if (!empty($rechercheIds)) {
+                $pivotRecherche = array_map(fn($idRech) => [
+                    'id_adherent'    => $adherent->id,
+                    'id_activite'    => $idRech,
+                    'saison'         => $saison,
+                    'date_entree'    => now()->toDateString(),
+                    'est_un_abandon' => 0,
+                    'created_at'     => now(),
+                    'updated_at'     => now(),
+                ], $rechercheIds);
+                DB::table('activites_adherents')->insertOrIgnore($pivotRecherche);
+            }
 
             if (!empty($formData['_helloasso_ok'])) {
                 $montantActivitePaye = $isPreInscription
