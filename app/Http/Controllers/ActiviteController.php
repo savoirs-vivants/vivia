@@ -31,6 +31,7 @@ class ActiviteController extends Controller
 
         $toutesActivites = Activite::withCount('adherentsActifs as nb_inscrits')
             ->with('dossier')
+            ->where('type', '!=', 'recherche')
             ->when($mesActivitesIds, fn($q) => $q->whereIn('id', $mesActivitesIds))
             ->when($search, fn($q) => $q->where('nom', 'like', "%{$search}%"))
             ->when($type,   fn($q) => $q->where('type', $type))
@@ -67,6 +68,8 @@ class ActiviteController extends Controller
 
     public function toggleArchive(Activite $activite)
     {
+        abort_if($activite->type === 'recherche', 404);
+        
         $activite->update(['is_archived' => !$activite->is_archived]);
         return back()->with('success', $activite->is_archived ? "L'activité a été archivée." : "L'activité a été restaurée.");
     }
@@ -95,6 +98,8 @@ class ActiviteController extends Controller
 
     public function edit(Activite $activite)
     {
+        abort_if($activite->type === 'recherche', 404);
+
         $selectedUsers = old('gestionnaires')
             ? User::whereIn('id', old('gestionnaires'))->get(['id', 'firstname', 'name'])
             : $activite->gestionnaires->map(fn($u) => [
@@ -112,6 +117,8 @@ class ActiviteController extends Controller
 
     public function update(UpdateActiviteRequest $request, Activite $activite)
     {
+        abort_if($activite->type === 'recherche', 404);
+
         $data = $this->preparerDonneesActivite($request);
 
         $anciensHoraires = is_array($activite->horaires) ? json_encode($activite->horaires) : $activite->horaires;
@@ -131,6 +138,8 @@ class ActiviteController extends Controller
 
     public function show(Activite $activite)
     {
+        abort_if($activite->type === 'recherche', 404);
+
         Saison::syncActive();
 
         if (Auth::user()->role === 'animateur') {
