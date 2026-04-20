@@ -20,6 +20,12 @@
     "src": "resources/js/adherent.js",
     "isEntry": true
   },
+  "resources/js/adhesion.js": {
+    "file": "assets/adhesion-BbemT5S0.js",
+    "name": "adhesion",
+    "src": "resources/js/adhesion.js",
+    "isEntry": true
+  },
   "resources/js/app.js": {
     "file": "assets/app-B90DZP5i.js",
     "name": "app",
