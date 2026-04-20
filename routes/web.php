@@ -92,13 +92,15 @@ Route::middleware('auth')->group(function () {
     Route::put('/ressourcerie/{ressourcerie}', [RessourcerieController::class, 'update'])->middleware('role:admin,coordinateur')->name('ressourcerie.update');
     Route::post('/ressourcerie/{ressourcerie}/toggle-archive', [RessourcerieController::class, 'toggleArchive'])->middleware('role:admin,coordinateur')->name('ressourcerie.toggleArchive');
 
-    Route::get('/recherches', [RechercheController::class, 'index'])->name('recherches.index');
-    Route::get('/recherches/create', [RechercheController::class, 'create'])->name('recherches.create');
-    Route::post('/recherches', [RechercheController::class, 'store'])->name('recherches.store');
-    Route::get('/recherches/{recherche}', [RechercheController::class, 'show'])->name('recherches.show');
-    Route::get('/recherches/{recherche}/edit', [RechercheController::class, 'edit'])->name('recherches.edit');
-    Route::put('/recherches/{recherche}', [RechercheController::class, 'update'])->name('recherches.update');
-    Route::post('/recherches/{recherche}/archive', [RechercheController::class, 'toggleArchive'])->name('recherches.toggleArchive');
+    Route::middleware('can:gerer-recherche')->group(function () {
+        Route::get('/recherches', [RechercheController::class, 'index'])->name('recherches.index');
+        Route::get('/recherches/create', [RechercheController::class, 'create'])->name('recherches.create');
+        Route::post('/recherches', [RechercheController::class, 'store'])->name('recherches.store');
+        Route::get('/recherches/{recherche}', [RechercheController::class, 'show'])->name('recherches.show');
+        Route::get('/recherches/{recherche}/edit', [RechercheController::class, 'edit'])->name('recherches.edit');
+        Route::put('/recherches/{recherche}', [RechercheController::class, 'update'])->name('recherches.update');
+        Route::post('/recherches/{recherche}/archive', [RechercheController::class, 'toggleArchive'])->name('recherches.toggleArchive');
+    });
 
     Route::post('/dossiers-activite', [DossierActiviteController::class, 'store'])->name('dossiers.store');
     Route::delete('/dossiers-activite/{dossier}', [DossierActiviteController::class, 'destroy'])->name('dossiers.destroy');

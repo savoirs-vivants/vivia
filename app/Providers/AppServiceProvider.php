@@ -32,6 +32,9 @@ class AppServiceProvider extends ServiceProvider
         Gate::define('acces-statistiques', fn(User $u) => in_array($u->role, ['admin', 'comptable']));
 
         Gate::define('voir-tous-adherents', fn(User $u) => in_array($u->role, ['admin', 'comptable']));
+
+         Gate::define('gerer-recherche', fn(User $u) => in_array($u->role, ['admin']));
+
     }
 }
 
