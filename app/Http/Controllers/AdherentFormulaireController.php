@@ -155,11 +155,18 @@ class AdherentFormulaireController extends Controller
     private function classesFiltrer(array $formData): \Closure
     {
         $classesEligibles = $this->classesEligiblesDepuisOccupation($formData);
+        $isMineur = $this->isMineur($formData['date_naiss'] ?? null);
+        $typeActivite = $formData['type_activite'] ?? '';
 
-        if ($classesEligibles === null) return fn() => true;
+        return function ($activite) use ($classesEligibles, $isMineur, $typeActivite) {
 
-        return function ($activite) use ($classesEligibles) {
+            if (!$isMineur && $typeActivite === 'atelier') {
+                return empty($activite->classes);
+            }
+
+            if ($classesEligibles === null) return true;
             if (empty($activite->classes)) return true;
+
             return count(array_intersect($activite->classes, $classesEligibles)) > 0;
         };
     }
