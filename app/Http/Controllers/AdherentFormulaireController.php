@@ -326,9 +326,24 @@ class AdherentFormulaireController extends Controller
             ->filter(fn($a) => !Str::contains(strtolower($a->nom), 'maker'))
             ->values();
 
-        $stages    = $activites->where('type', 'stage')->values()
+        $stages = $activites->where('type', 'stage')->values()
             ->filter($filtre)
             ->filter(fn($a) => !in_array($a->id, $activitesDejaInscritesIds))
+            ->filter(function ($stage) {
+                $horaires = is_string($stage->horaires)
+                    ? json_decode($stage->horaires, true)
+                    : $stage->horaires;
+                $dateFin = $horaires['stage']['date_fin'] ?? null;
+                $dateDebut = $horaires['stage']['date_debut'] ?? null;
+
+                $dateRef = $dateFin ?? $dateDebut;
+                if (!$dateRef) return true;
+                try {
+                    return Carbon::parse($dateRef)->startOfDay()->gte(now()->startOfDay());
+                } catch (\Exception $e) {
+                    return true;
+                }
+            })
             ->values();
 
         $statutJuridique = $formData['statut_juridique'] ?? null;
