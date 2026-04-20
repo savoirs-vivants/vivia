@@ -15,9 +15,14 @@ use Illuminate\Support\Facades\Mail;
 use App\Http\Requests\StoreActiviteRequest;
 use App\Http\Requests\UpdateActiviteRequest;
 use App\Http\Requests\AbandonnerAdherentRequest;
+use App\Services\ActiviteService;
 
 class ActiviteController extends Controller
 {
+    public function __construct(protected ActiviteService $activiteService)
+    {
+    }
+
     public function index(Request $request)
     {
         $search = $request->query('q');
@@ -69,7 +74,7 @@ class ActiviteController extends Controller
     public function toggleArchive(Activite $activite)
     {
         abort_if($activite->type === 'recherche', 404);
-        
+
         $activite->update(['is_archived' => !$activite->is_archived]);
         return back()->with('success', $activite->is_archived ? "L'activité a été archivée." : "L'activité a été restaurée.");
     }
@@ -84,14 +89,14 @@ class ActiviteController extends Controller
 
     public function store(StoreActiviteRequest $request)
     {
-        $data = $this->preparerDonneesActivite($request);
+        $data = $this->activiteService->preparerDonneesActivite($request);
         $activite = Activite::create($data);
 
         if ($request->filled('gestionnaires')) {
             $activite->gestionnaires()->sync($request->validated('gestionnaires'));
         }
 
-        $this->genererSeancesAuto($activite);
+        $this->activiteService->genererSeancesAuto($activite);
 
         return redirect()->route('activites.index')->with('success', 'L\'événement a été créé avec succès.');
     }
@@ -119,7 +124,7 @@ class ActiviteController extends Controller
     {
         abort_if($activite->type === 'recherche', 404);
 
-        $data = $this->preparerDonneesActivite($request);
+        $data = $this->activiteService->preparerDonneesActivite($request);
 
         $anciensHoraires = is_array($activite->horaires) ? json_encode($activite->horaires) : $activite->horaires;
         $nouveauxHoraires = json_encode($data['horaires']);
@@ -130,7 +135,7 @@ class ActiviteController extends Controller
         $activite->gestionnaires()->sync($request->validated('gestionnaires', []));
 
         if ($horairesOntChange) {
-            $this->regenererFuturesSeances($activite);
+            $this->activiteService->regenererFuturesSeances($activite);
         }
 
         return redirect()->route('activites.show', $activite)->with('success', 'L\'événement a été modifié avec succès.');
@@ -153,7 +158,7 @@ class ActiviteController extends Controller
         $finSaison = $saisonModel ? $saisonModel->date_fin : Carbon::create(now()->month >= 7 ? now()->year + 1 : now()->year, 6, 30)->toDateString();
 
         if (!$derniereSeance || $derniereSeance < $finSaison) {
-            $this->genererSeancesAuto($activite);
+            $this->activiteService->genererSeancesAuto($activite);
         }
 
         $dateDebutSaison = $saisonModel ? $saisonModel->date_debut : Carbon::create((int)explode('-', $saison)[0], 9, 1);
@@ -340,176 +345,4 @@ class ActiviteController extends Controller
         return back()->with('success', 'La séance a été annulée, et les tuteurs ont été prévenus par email.');
     }
 
-    /* ==============================================================================
-     * MÉTHODES PRIVÉES
-     * ============================================================================== */
-
-    private function preparerDonneesActivite(Request $request): array
-    {
-        $validated = $request->validated();
-        $horaires = [];
-
-        if ($validated['type'] === 'stage') {
-            $horaires['stage'] = [
-                'date_debut'  => $request->input('date_debut_stage'),
-                'date_fin'    => $request->input('date_fin_stage'),
-                'heure_debut' => $request->input('heure_debut_stage'),
-                'heure_fin'   => $request->input('heure_fin_stage'),
-            ];
-        } else {
-            $jours = $request->input('jours', []);
-            $debuts = $request->input('debuts', []);
-            $fins = $request->input('fins', []);
-
-            foreach ($jours as $index => $jour) {
-                if (!empty($jour) && !empty($debuts[$index]) && !empty($fins[$index])) {
-                    $plage = $debuts[$index] . '-' . $fins[$index];
-                    $horaires[$jour] = isset($horaires[$jour]) ? $horaires[$jour] . ', ' . $plage : $plage;
-                }
-            }
-        }
-
-        $idDossier = null;
-        if ($request->input('dossier_action') === 'existing') {
-            $idDossier = $request->input('id_dossier');
-        } elseif ($request->input('dossier_action') === 'new' && $request->filled('nouveau_dossier')) {
-            $idDossier = DossierActivite::create(['nom' => $request->input('nouveau_dossier')])->id;
-        }
-
-        return [
-            'type'       => $validated['type'],
-            'nom'        => $validated['nom'],
-            'tarif'      => $validated['tarif'],
-            'max_eleves' => $validated['max_eleves'] ?? null,
-            'adresse'    => $validated['adresse'],
-            'ville'      => $validated['ville'],
-            'horaires'   => empty($horaires) ? null : $horaires,
-            'classes'    => $request->input('classes') ?: null,
-            'id_dossier' => $idDossier,
-        ];
-    }
-
-    private function regenererFuturesSeances(Activite $activite)
-    {
-        $futuresSeances = DB::table('seances')
-            ->where('id_activite', $activite->id)
-            ->where('date', '>=', now()->startOfDay())
-            ->pluck('id_seance');
-
-        if ($futuresSeances->isNotEmpty()) {
-            $seancesAvecAppel = DB::table('presence')
-                ->whereIn('id_seance', $futuresSeances)
-                ->pluck('id_seance')
-                ->unique();
-
-            $seancesASupprimer = $futuresSeances->diff($seancesAvecAppel);
-
-            DB::table('seances')->whereIn('id_seance', $seancesASupprimer)->delete();
-        }
-
-        $this->genererSeancesAuto($activite, true);
-    }
-
-    private function genererSeancesAuto(Activite $activite, $depuisAujourdhui = false)
-    {
-        $horaires = is_string($activite->horaires) ? json_decode($activite->horaires, true) : $activite->horaires;
-        if (empty($horaires) || !is_array($horaires)) return;
-
-        $nouvellesSeances = [];
-
-        if ($activite->type === 'stage' && isset($horaires['stage'])) {
-            $debutStage = $horaires['stage']['date_debut'] ?? null;
-            $finStage   = $horaires['stage']['date_fin'] ?? null;
-            $heureDebut = $horaires['stage']['heure_debut'] ?? '00:00';
-
-            if (!$debutStage || !$finStage) return;
-
-            $dateCourante = Carbon::parse($debutStage);
-            $dateFin      = Carbon::parse($finStage);
-
-            if ($depuisAujourdhui && $dateCourante->isPast()) {
-                $dateCourante = now()->startOfDay();
-            }
-
-            while ($dateCourante->lte($dateFin)) {
-                $nouvellesSeances[] = [
-                    'id_activite' => $activite->id,
-                    'date'        => $dateCourante->format('Y-m-d') . ' ' . $heureDebut . ':00',
-                ];
-                $dateCourante->addDay();
-            }
-        } else {
-            $joursMap = [
-                'Lundi' => Carbon::MONDAY,
-                'Mardi' => Carbon::TUESDAY,
-                'Mercredi' => Carbon::WEDNESDAY,
-                'Jeudi' => Carbon::THURSDAY,
-                'Vendredi' => Carbon::FRIDAY,
-                'Samedi' => Carbon::SATURDAY,
-                'Dimanche' => Carbon::SUNDAY,
-            ];
-
-            $saisonActive = Saison::where('nom', Saison::current())->first();
-
-            $finGeneration = $saisonActive
-                ? Carbon::parse($saisonActive->date_fin)
-                : Carbon::create(now()->month >= 7 ? now()->year + 1 : now()->year, 6, 30);
-
-            $debutSaison = $saisonActive
-                ? Carbon::parse($saisonActive->date_debut)->startOfDay()
-                : now()->startOfDay();
-
-            $rentree = clone $debutSaison;
-            if ($rentree->month === 7 || $rentree->month === 8) {
-                $rentree->month(9)->day(1);
-            }
-
-            if ($depuisAujourdhui) {
-                $baseDate = now()->startOfDay();
-                if ($baseDate->lessThan($rentree)) {
-                    $baseDate = clone $rentree;
-                }
-            } else {
-                $baseDate = clone $rentree;
-            }
-
-            foreach ($horaires as $jour => $plagesStr) {
-                if (!isset($joursMap[$jour])) continue;
-
-                $plages = explode(',', $plagesStr);
-                $dateCourante = clone $baseDate;
-
-                if ($dateCourante->dayOfWeekIso !== $joursMap[$jour]) {
-                    $dateCourante->next($joursMap[$jour]);
-                }
-
-                while ($dateCourante->lte($finGeneration)) {
-                    foreach ($plages as $plage) {
-                        $heureDebut = trim(explode('-', $plage)[0]);
-                        $nouvellesSeances[] = [
-                            'id_activite' => $activite->id,
-                            'date'        => $dateCourante->format('Y-m-d') . ' ' . $heureDebut . ':00',
-                        ];
-                    }
-                    $dateCourante->addWeek();
-                }
-            }
-        }
-
-        /* Bulk Insert. Au lieu de faire 40 requêtes `insert()` dans une boucle (très lent),
-         * on insère tout le tableau en une seule requête SQL. `insertOrIgnore` permet de
-         * ne pas écraser ni doubler les séances qui existent déjà si l'activité est mise à jour.
-         */
-        if (!empty($nouvellesSeances)) {
-            $datesExistantes = DB::table('seances')->where('id_activite', $activite->id)->pluck('date')->toArray();
-
-            $aInserer = array_filter($nouvellesSeances, function ($seance) use ($datesExistantes) {
-                return !in_array($seance['date'], $datesExistantes);
-            });
-
-            if (!empty($aInserer)) {
-                DB::table('seances')->insert($aInserer);
-            }
-        }
-    }
 }
