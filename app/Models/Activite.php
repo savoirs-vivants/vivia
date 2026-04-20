@@ -16,6 +16,7 @@ class Activite extends Model
 
     protected $fillable = [
         'nom',
+        'description',
         'type',
         'adresse',
         'ville',
