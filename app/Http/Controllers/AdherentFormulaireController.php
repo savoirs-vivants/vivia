@@ -554,11 +554,27 @@ class AdherentFormulaireController extends Controller
         $formData = $request->session()->get("adhesion_{$token}", []);
 
         if ($step === 1 && $request->input('is_adherent') === 'oui') {
-            $inputNumero     = trim($request->input('numero_adherent'));
-            $vraiNumero      = Cache::get("recup_adherent_{$inputNumero}");
-            $numeroRecherche = $vraiNumero ?: $inputNumero;
+            $input = trim($request->input('numero_adherent'));
 
-            $adherentExistant   = Adherent::where('numero_adherent', $numeroRecherche)->first();
+            $adherentExistant = null;
+            $structureExistante = null;
+
+            if (filter_var($input, FILTER_VALIDATE_EMAIL)) {
+                $adherentExistant = Adherent::where('mail', $input)->first();
+
+                if (!$adherentExistant) {
+                    $structureExistante = AdherentStructure::where('mail', $input)->first();
+                }
+            } else {
+                $vraiNumero = Cache::get("recup_adherent_{$input}");
+                $numeroRecherche = $vraiNumero ?: $input;
+
+                $adherentExistant = Adherent::where('numero_adherent', $numeroRecherche)->first();
+
+                if (!$adherentExistant) {
+                    $structureExistante = AdherentStructure::where('numero_adherent', $numeroRecherche)->first();
+                }
+            }
 
             if ($adherentExistant) {
                 $preInscriptionDb = $adherentExistant->inscriptions()
@@ -575,14 +591,10 @@ class AdherentFormulaireController extends Controller
                 }
             }
 
-            $structureExistante = null;
-
-            if (!$adherentExistant) {
-                $structureExistante = AdherentStructure::where('numero_adherent', $numeroRecherche)->first();
-            }
-
             if (!$adherentExistant && !$structureExistante) {
-                return back()->withErrors(['numero_adherent' => 'Ce numéro ou code temporaire est introuvable.']);
+                return back()->withErrors([
+                    'numero_adherent' => 'Cet identifiant (numéro, code ou email) est introuvable.'
+                ]);
             }
 
             if ($structureExistante) {
@@ -841,5 +853,4 @@ class AdherentFormulaireController extends Controller
 
         return back();
     }
-
 }

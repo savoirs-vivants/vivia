@@ -16,7 +16,7 @@
                             </div>
 
                             <div class="mb-5">
-                                <label class="{{ $label }}">Aimerais-tu que ce que tu vas apprendre avec nous te permette de découvrir un métier ou une formation ?</label>
+                                <label class="{{ $label }}">Aimerais-tu que ce que tu vas apprendre avec nous puisse t’aider à découvrir un métier ou une formation ?</label>
                                 <textarea name="decouverte_metier" rows="4" required
                                     placeholder="Dis-nous ce que tu espères découvrir ou apprendre..."
                                     class="{{ $field }}">{{ $formData['decouverte_metier'] ?? '' }}</textarea>

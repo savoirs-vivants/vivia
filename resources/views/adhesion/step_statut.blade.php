@@ -61,12 +61,12 @@
                                     class="mb-5 p-4 bg-teal-50 rounded-xl border border-teal-100">
 
                                     <div class="flex justify-between items-end mb-2">
-                                        <label class="{{ $label }} !mb-0">🔢 Numéro d'adhérent</label>
+                                        <label class="{{ $label }} !mb-0">🔢 Numéro d'adhérent ou adresse mail</label>
                                     </div>
 
                                     <input type="text" name="numero_adherent"
                                         value="{{ $formData['numero_adherent'] ?? '' }}"
-                                        placeholder="Ex : ADH-26-XXXX" class="{{ $field }}">
+                                        class="{{ $field }}">
 
                                     @error('numero_adherent')
                                         <p class="text-sm font-bold text-red-500 mt-2">❌ {{ $message }}</p>
