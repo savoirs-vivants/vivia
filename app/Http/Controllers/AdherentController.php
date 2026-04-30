@@ -16,6 +16,7 @@ use Illuminate\Support\Str;
 use App\Http\Requests\CommentaireAdherentRequest;
 use App\Http\Requests\AjouterVersementRequest;
 use App\Http\Requests\UpdateFicheAdherentRequest;
+use App\Models\Seance;
 use Barryvdh\DomPDF\Facade\Pdf;
 
 class AdherentController extends Controller
@@ -412,9 +413,38 @@ class AdherentController extends Controller
     public function downloadPdf(Adherent $adherent)
     {
         $adherent->load(['tousLesTuteurs', 'activitesActives', 'inscription', 'paiements']);
-        $pdf = Pdf::loadView('adherents.pdf', compact('adherent'));
+        $seances = Seance::with('activite')
+            ->join('activites_adherents', function ($join) use ($adherent) {
+                $join->on('seances.id_activite', '=', 'activites_adherents.id_activite')
+                    ->where('activites_adherents.id_adherent', $adherent->id);
+            })
+            ->whereRaw('DATE(seances.date) >= activites_adherents.date_entree')
+            ->where(function ($q) {
+                $q->whereNull('activites_adherents.date_sortie')
+                    ->orWhereRaw('DATE(seances.date) <= activites_adherents.date_sortie');
+            })
+            ->select('seances.*')
+            ->orderByDesc('seances.date')
+            ->get();
+
+        $absencesMap = Presence::where('id_adherent', $adherent->id)
+            ->whereIn('id_seance', $seances->pluck('id_seance'))
+            ->get()
+            ->keyBy('id_seance');
+
+        $toutesLesSeances = $seances->map(function ($seance) use ($absencesMap) {
+            $presence = $absencesMap->get($seance->id_seance);
+            $seance->statut_presence = $presence?->statut ?? 'Présent';
+            return $seance;
+        });
+
+        $presences = $toutesLesSeances->filter(fn($s) => \Carbon\Carbon::parse($s->date)->isPast() || $s->statut === 'terminee');
+
+
+        $pdf = PDF::loadView('adherents.pdf', compact('adherent', 'presences'));
 
         $fileName = 'fiche_' . Str::slug($adherent->prenom . '_' . $adherent->nom) . '.pdf';
+
         return $pdf->download($fileName);
     }
 
