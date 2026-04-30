@@ -64,9 +64,11 @@
                                     <span x-show="!editMode">{{ $adherent->prenom }} {{ $adherent->nom }}</span>
 
                                     <div x-show="editMode" x-cloak class="flex items-center gap-3 mb-2 w-full max-w-md">
-                                        <input type="text" name="prenom" value="{{ $adherent->prenom }}" form="form-update-adherent" placeholder="Prénom"
+                                        <input type="text" name="prenom" value="{{ $adherent->prenom }}"
+                                            form="form-update-adherent" placeholder="Prénom"
                                             class="w-1/2 bg-white border border-gray-200 rounded-lg text-lg px-3 py-1.5 focus:ring-2 focus:ring-[#222A60] outline-none transition-all">
-                                        <input type="text" name="nom" value="{{ $adherent->nom }}" form="form-update-adherent" placeholder="Nom"
+                                        <input type="text" name="nom" value="{{ $adherent->nom }}"
+                                            form="form-update-adherent" placeholder="Nom"
                                             class="w-1/2 bg-white border border-gray-200 rounded-lg text-lg px-3 py-1.5 focus:ring-2 focus:ring-[#222A60] outline-none transition-all">
                                     </div>
                                 </div>
@@ -123,7 +125,8 @@
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                                     d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                                             </svg>
-                                            Inscrit le {{ $adherent->inscription->date_inscription->isoFormat('D MMM YYYY') }}
+                                            Inscrit le
+                                            {{ $adherent->inscription->date_inscription->isoFormat('D MMM YYYY') }}
                                         </span>
                                     @endif
                                 </div>
@@ -134,19 +137,25 @@
                             <div class="flex items-center gap-2">
                                 <button @click.prevent="editMode = !editMode"
                                     class="inline-flex items-center gap-2 px-4 py-2 bg-[#222A60] hover:bg-[#1a2050] text-white text-sm font-bold rounded-xl transition-all shadow-sm">
-                                    <svg x-show="!editMode" class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <svg x-show="!editMode" class="w-3.5 h-3.5" fill="none" stroke="currentColor"
+                                        viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                             d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
                                     </svg>
-                                    <svg x-show="editMode" x-cloak class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12" />
+                                    <svg x-show="editMode" x-cloak class="w-3.5 h-3.5" fill="none" stroke="currentColor"
+                                        viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
+                                            d="M6 18L18 6M6 6l12 12" />
                                     </svg>
                                     <span x-text="editMode ? 'Annuler' : 'Modifier la fiche'"></span>
                                 </button>
 
                                 <button type="submit" form="form-update-adherent" x-show="editMode" x-cloak
                                     class="inline-flex items-center gap-2 px-4 py-2 bg-emerald-500 hover:bg-emerald-600 text-white text-sm font-bold rounded-xl transition-all shadow-sm">
-                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7" /></svg>
+                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3"
+                                            d="M5 13l4 4L19 7" />
+                                    </svg>
                                     Enregistrer
                                 </button>
 
@@ -205,7 +214,8 @@
 
             <div class="xl:col-span-2 space-y-6">
 
-                <div class="bg-white rounded-2xl border border-gray-100 shadow-[0_2px_12px_rgba(0,0,0,0.03)] overflow-hidden">
+                <div
+                    class="bg-white rounded-2xl border border-gray-100 shadow-[0_2px_12px_rgba(0,0,0,0.03)] overflow-hidden">
                     <div class="px-6 py-4 border-b border-gray-50 flex items-center gap-2">
                         <svg class="w-4 h-4 text-[#222A60]/40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -217,26 +227,90 @@
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-0">
                             @php
                                 $infos = [
-                                    ['name' => 'date_naiss', 'type' => 'date', 'label' => 'Date de naissance', 'display' => $adherent->date_naiss?->isoFormat('D MMMM YYYY'), 'value' => $adherent->date_naiss?->format('Y-m-d')],
-                                    ['name' => 'genre', 'type' => 'text', 'label' => 'Genre', 'display' => $adherent->genre, 'value' => $adherent->genre],
-                                    ['name' => 'adresse', 'type' => 'text', 'label' => 'Adresse', 'display' => $adherent->adresse, 'value' => $adherent->adresse],
-                                    ['name' => 'code_postal', 'type' => 'text', 'label' => 'Code Postal', 'display' => $adherent->code_postal, 'value' => $adherent->code_postal],
-                                    ['name' => 'ville', 'type' => 'text', 'label' => 'Ville', 'display' => $adherent->ville, 'value' => $adherent->ville],
-                                    ['name' => 'tel', 'type' => 'text', 'label' => 'Téléphone', 'display' => $adherent->tel, 'value' => $adherent->tel],
-                                    ['name' => 'mail', 'type' => 'email', 'label' => 'Email', 'display' => $adherent->mail, 'value' => $adherent->mail],
-                                    ['name' => 'occupation', 'type' => 'text', 'label' => 'Situation scolaire', 'display' => $adherent->occupation, 'value' => $adherent->occupation],
-                                    ['name' => 'etablissement', 'type' => 'text', 'label' => 'Établissement', 'display' => $adherent->etablissement, 'value' => $adherent->etablissement],
-                                    ['name' => 'regime_social', 'type' => 'text', 'label' => 'Couverture sociale', 'display' => $adherent->regime_social, 'value' => $adherent->regime_social],
+                                    [
+                                        'name' => 'date_naiss',
+                                        'type' => 'date',
+                                        'label' => 'Date de naissance',
+                                        'display' => $adherent->date_naiss?->isoFormat('D MMMM YYYY'),
+                                        'value' => $adherent->date_naiss?->format('Y-m-d'),
+                                    ],
+                                    [
+                                        'name' => 'genre',
+                                        'type' => 'text',
+                                        'label' => 'Genre',
+                                        'display' => $adherent->genre,
+                                        'value' => $adherent->genre,
+                                    ],
+                                    [
+                                        'name' => 'adresse',
+                                        'type' => 'text',
+                                        'label' => 'Adresse',
+                                        'display' => $adherent->adresse,
+                                        'value' => $adherent->adresse,
+                                    ],
+                                    [
+                                        'name' => 'code_postal',
+                                        'type' => 'text',
+                                        'label' => 'Code Postal',
+                                        'display' => $adherent->code_postal,
+                                        'value' => $adherent->code_postal,
+                                    ],
+                                    [
+                                        'name' => 'ville',
+                                        'type' => 'text',
+                                        'label' => 'Ville',
+                                        'display' => $adherent->ville,
+                                        'value' => $adherent->ville,
+                                    ],
+                                    [
+                                        'name' => 'tel',
+                                        'type' => 'text',
+                                        'label' => 'Téléphone',
+                                        'display' => $adherent->tel,
+                                        'value' => $adherent->tel,
+                                    ],
+                                    [
+                                        'name' => 'mail',
+                                        'type' => 'email',
+                                        'label' => 'Email',
+                                        'display' => $adherent->mail,
+                                        'value' => $adherent->mail,
+                                    ],
+                                    [
+                                        'name' => 'occupation',
+                                        'type' => 'text',
+                                        'label' => 'Situation scolaire',
+                                        'display' => $adherent->occupation,
+                                        'value' => $adherent->occupation,
+                                    ],
+                                    [
+                                        'name' => 'etablissement',
+                                        'type' => 'text',
+                                        'label' => 'Établissement',
+                                        'display' => $adherent->etablissement,
+                                        'value' => $adherent->etablissement,
+                                    ],
+                                    [
+                                        'name' => 'regime_social',
+                                        'type' => 'text',
+                                        'label' => 'Couverture sociale',
+                                        'display' => $adherent->regime_social,
+                                        'value' => $adherent->regime_social,
+                                    ],
                                 ];
                             @endphp
                             @foreach ($infos as $info)
-                                <div class="flex items-baseline justify-between py-3 border-b border-gray-50 last:border-0">
-                                    <span class="text-xs font-semibold text-gray-400 shrink-0 mr-4">{{ $info['label'] }}</span>
+                                <div
+                                    class="flex items-baseline justify-between py-3 border-b border-gray-50 last:border-0">
+                                    <span
+                                        class="text-xs font-semibold text-gray-400 shrink-0 mr-4">{{ $info['label'] }}</span>
 
-                                    <span x-show="!editMode" class="text-sm font-semibold text-[#0F143A] text-right">{{ $info['display'] ?? '—' }}</span>
+                                    <span x-show="!editMode"
+                                        class="text-sm font-semibold text-[#0F143A] text-right">{{ $info['display'] ?? '—' }}</span>
 
                                     <div x-show="editMode" x-cloak class="w-2/3 text-right">
-                                        <input type="{{ $info['type'] }}" name="{{ $info['name'] }}" value="{{ $info['value'] }}" form="form-update-adherent"
+                                        <input type="{{ $info['type'] }}" name="{{ $info['name'] }}"
+                                            value="{{ $info['value'] }}" form="form-update-adherent"
                                             class="w-full bg-white border border-gray-200 rounded-lg text-sm px-3 py-1.5 focus:ring-2 focus:ring-[#222A60] outline-none transition-all">
                                     </div>
                                 </div>
@@ -245,64 +319,79 @@
                     </div>
                 </div>
 
-                <div x-show="editMode || {{ ($adherent->idee_metier || $adherent->decouverte_metier) ? 'true' : 'false' }}"
+                <div x-show="editMode || {{ $adherent->idee_metier || $adherent->decouverte_metier ? 'true' : 'false' }}"
                     class="bg-white rounded-2xl border border-gray-100 shadow-[0_2px_12px_rgba(0,0,0,0.03)] overflow-hidden">
                     <div class="px-6 py-4 border-b border-gray-50 flex items-center gap-2">
                         <span class="text-indigo-400 text-sm">🎓</span>
-                        <h2 class="text-xs font-black text-gray-400 uppercase tracking-widest">Orientation professionnelle</h2>
+                        <h2 class="text-xs font-black text-gray-400 uppercase tracking-widest">Orientation professionnelle
+                        </h2>
                     </div>
                     <div class="p-6 space-y-4">
                         <div x-show="editMode || {{ $adherent->idee_metier ? 'true' : 'false' }}">
-                            <p class="text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-1.5">Idée de métier</p>
-                            <p x-show="!editMode" class="text-sm text-[#0F143A] font-medium leading-relaxed">{{ $adherent->idee_metier }}</p>
+                            <p class="text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-1.5">Idée de métier
+                            </p>
+                            <p x-show="!editMode" class="text-sm text-[#0F143A] font-medium leading-relaxed">
+                                {{ $adherent->idee_metier }}</p>
                             <textarea x-show="editMode" x-cloak name="idee_metier" form="form-update-adherent" rows="2"
                                 class="w-full bg-white border border-gray-200 rounded-lg text-sm p-3 focus:ring-2 focus:ring-[#222A60] outline-none">{{ $adherent->idee_metier }}</textarea>
                         </div>
                         <div x-show="editMode || {{ $adherent->decouverte_metier ? 'true' : 'false' }}">
-                            <p class="text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-1.5">Découverte métier / formation</p>
-                            <p x-show="!editMode" class="text-sm text-[#0F143A] font-medium leading-relaxed">{{ $adherent->decouverte_metier }}</p>
+                            <p class="text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-1.5">Découverte
+                                métier / formation</p>
+                            <p x-show="!editMode" class="text-sm text-[#0F143A] font-medium leading-relaxed">
+                                {{ $adherent->decouverte_metier }}</p>
                             <textarea x-show="editMode" x-cloak name="decouverte_metier" form="form-update-adherent" rows="2"
                                 class="w-full bg-white border border-gray-200 rounded-lg text-sm p-3 focus:ring-2 focus:ring-[#222A60] outline-none">{{ $adherent->decouverte_metier }}</textarea>
                         </div>
                     </div>
                 </div>
 
-                <div x-show="editMode || {{ ($adherent->problemes_sante || $adherent->allergies || $adherent->conduite_a_tenir || $adherent->restrictions_alimentaires || $adherent->carnet) ? 'true' : 'false' }}"
+                <div x-show="editMode || {{ $adherent->problemes_sante || $adherent->allergies || $adherent->conduite_a_tenir || $adherent->restrictions_alimentaires || $adherent->carnet ? 'true' : 'false' }}"
                     class="bg-white rounded-2xl border border-gray-100 shadow-[0_2px_12px_rgba(0,0,0,0.03)] overflow-hidden">
                     <div class="px-6 py-4 border-b border-gray-50 flex items-center gap-2">
                         <span class="text-rose-400 text-sm">🏥</span>
-                        <h2 class="text-xs font-black text-gray-400 uppercase tracking-widest">Informations Médicales & Santé</h2>
+                        <h2 class="text-xs font-black text-gray-400 uppercase tracking-widest">Informations Médicales &
+                            Santé</h2>
                     </div>
                     <div class="p-6 grid grid-cols-1 sm:grid-cols-2 gap-6">
 
                         <div x-show="editMode || {{ $adherent->problemes_sante ? 'true' : 'false' }}">
-                            <p class="text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-1.5">Problèmes de santé</p>
-                            <p x-show="!editMode" class="text-sm text-[#0F143A] font-medium leading-relaxed">{{ $adherent->problemes_sante }}</p>
+                            <p class="text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-1.5">Problèmes de
+                                santé</p>
+                            <p x-show="!editMode" class="text-sm text-[#0F143A] font-medium leading-relaxed">
+                                {{ $adherent->problemes_sante }}</p>
                             <textarea x-show="editMode" x-cloak name="problemes_sante" form="form-update-adherent" rows="2"
                                 class="w-full bg-white border border-gray-200 rounded-lg text-sm p-3 focus:ring-2 focus:ring-rose-400 outline-none">{{ $adherent->problemes_sante }}</textarea>
                         </div>
 
                         <div x-show="editMode || {{ $adherent->allergies ? 'true' : 'false' }}">
                             <p class="text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-1.5">Allergies</p>
-                            <p x-show="!editMode" class="text-sm text-[#0F143A] font-medium leading-relaxed">{{ $adherent->allergies }}</p>
+                            <p x-show="!editMode" class="text-sm text-[#0F143A] font-medium leading-relaxed">
+                                {{ $adherent->allergies }}</p>
                             <textarea x-show="editMode" x-cloak name="allergies" form="form-update-adherent" rows="2"
                                 class="w-full bg-white border border-gray-200 rounded-lg text-sm p-3 focus:ring-2 focus:ring-rose-400 outline-none">{{ $adherent->allergies }}</textarea>
                         </div>
 
-                        <div x-show="editMode || {{ $adherent->conduite_a_tenir ? 'true' : 'false' }}" class="sm:col-span-2">
+                        <div x-show="editMode || {{ $adherent->conduite_a_tenir ? 'true' : 'false' }}"
+                            class="sm:col-span-2">
                             <div class="p-4 bg-amber-50 rounded-xl border border-amber-100">
-                                <p class="text-[11px] font-bold text-amber-700 uppercase tracking-widest mb-1.5 flex items-center gap-1.5">
+                                <p
+                                    class="text-[11px] font-bold text-amber-700 uppercase tracking-widest mb-1.5 flex items-center gap-1.5">
                                     <span class="text-base leading-none">🚨</span> Protocole d'urgence (Conduite à tenir)
                                 </p>
-                                <p x-show="!editMode" class="text-sm text-amber-900 font-semibold leading-relaxed">{{ $adherent->conduite_a_tenir }}</p>
+                                <p x-show="!editMode" class="text-sm text-amber-900 font-semibold leading-relaxed">
+                                    {{ $adherent->conduite_a_tenir }}</p>
                                 <textarea x-show="editMode" x-cloak name="conduite_a_tenir" form="form-update-adherent" rows="3"
                                     class="w-full bg-white border border-amber-200 rounded-lg text-sm p-3 focus:ring-2 focus:ring-amber-400 outline-none mt-2">{{ $adherent->conduite_a_tenir }}</textarea>
                             </div>
                         </div>
 
-                        <div x-show="editMode || {{ $adherent->restrictions_alimentaires ? 'true' : 'false' }}" class="sm:col-span-2">
-                            <p class="text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-1.5">Restrictions alimentaires</p>
-                            <p x-show="!editMode" class="text-sm text-[#0F143A] font-medium leading-relaxed">{{ $adherent->restrictions_alimentaires }}</p>
+                        <div x-show="editMode || {{ $adherent->restrictions_alimentaires ? 'true' : 'false' }}"
+                            class="sm:col-span-2">
+                            <p class="text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-1.5">Restrictions
+                                alimentaires</p>
+                            <p x-show="!editMode" class="text-sm text-[#0F143A] font-medium leading-relaxed">
+                                {{ $adherent->restrictions_alimentaires }}</p>
                             <textarea x-show="editMode" x-cloak name="restrictions_alimentaires" form="form-update-adherent" rows="2"
                                 class="w-full bg-white border border-gray-200 rounded-lg text-sm p-3 focus:ring-2 focus:ring-rose-400 outline-none">{{ $adherent->restrictions_alimentaires }}</textarea>
                         </div>
@@ -318,7 +407,8 @@
                     </div>
                 </div>
 
-                <div class="bg-white rounded-2xl border border-gray-100 shadow-[0_2px_12px_rgba(0,0,0,0.03)] overflow-hidden">
+                <div
+                    class="bg-white rounded-2xl border border-gray-100 shadow-[0_2px_12px_rgba(0,0,0,0.03)] overflow-hidden">
                     <div class="px-6 py-4 border-b border-gray-50 flex items-center gap-2">
                         <svg class="w-4 h-4 text-[#222A60]/40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -339,15 +429,19 @@
                                 ->where('a_paye', \App\Models\Inscription::PAYE)
                                 ->where('id', '!=', $derniereInscription?->id ?? 0)
                                 ->isNotEmpty();
-                            $activitesReins = $isReinscription && $derniereInscription
-                                ? $adherent->activitesActives->filter(fn($a) => $a->pivot->created_at >= $derniereInscription->created_at)
-                                : collect();
+                            $activitesReins =
+                                $isReinscription && $derniereInscription
+                                    ? $adherent->activitesActives->filter(
+                                        fn($a) => $a->pivot->created_at >= $derniereInscription->created_at,
+                                    )
+                                    : collect();
                         @endphp
 
-                        @if($isReinscription && $activitesReins->isNotEmpty())
+                        @if ($isReinscription && $activitesReins->isNotEmpty())
                             <div class="px-6 py-3 bg-amber-50 border-b border-amber-200">
                                 <p class="text-xs font-bold text-amber-700 flex items-center gap-1.5">
-                                    <span>🔄</span> Ré-inscription récente ({{ $activitesReins->pluck('nom')->implode(', ') }})
+                                    <span>🔄</span> Ré-inscription récente
+                                    ({{ $activitesReins->pluck('nom')->implode(', ') }})
                                 </p>
                             </div>
                         @endif
@@ -366,11 +460,15 @@
                             <div class="px-6 py-4 {{ $isNew ? 'bg-amber-50/30 border-r-4 border-amber-300' : '' }}">
                                 <div class="flex items-start justify-between gap-4">
                                     <div class="flex items-start gap-3">
-                                        <div class="mt-0.5 w-2 h-2 rounded-full shrink-0 {{ $activite->est_stage ? 'bg-violet-400' : 'bg-[#16987C]' }} {{ $isNew ? 'animate-pulse' : '' }}"></div>
+                                        <div
+                                            class="mt-0.5 w-2 h-2 rounded-full shrink-0 {{ $activite->est_stage ? 'bg-violet-400' : 'bg-[#16987C]' }} {{ $isNew ? 'animate-pulse' : '' }}">
+                                        </div>
                                         <div>
                                             <p class="font-bold text-sm text-[#0F143A]">{{ $activite->nom }}</p>
-                                            @if($isNew)
-                                                <p class="text-xs font-semibold text-amber-600 mt-1 px-2 py-0.5 bg-amber-100 rounded">NOUVEAU</p>
+                                            @if ($isNew)
+                                                <p
+                                                    class="text-xs font-semibold text-amber-600 mt-1 px-2 py-0.5 bg-amber-100 rounded">
+                                                    NOUVEAU</p>
                                             @endif
                                             <p class="text-xs text-gray-400 mt-0.5">
                                                 @if ($activite->adresse)
@@ -388,15 +486,18 @@
                                 </div>
                             </div>
                         @empty
-                            <div class="px-6 py-8 text-center text-sm text-gray-300 font-medium">Aucune activité active</div>
+                            <div class="px-6 py-8 text-center text-sm text-gray-300 font-medium">Aucune activité active
+                            </div>
                         @endforelse
                     </div>
                 </div>
 
-                <div class="bg-white rounded-2xl border border-gray-100 shadow-[0_2px_12px_rgba(0,0,0,0.03)] overflow-hidden">
+                <div
+                    class="bg-white rounded-2xl border border-gray-100 shadow-[0_2px_12px_rgba(0,0,0,0.03)] overflow-hidden">
                     <div class="px-6 py-4 border-b border-gray-50 flex items-center justify-between">
                         <div class="flex items-center gap-2">
-                            <svg class="w-4 h-4 text-[#222A60]/40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <svg class="w-4 h-4 text-[#222A60]/40" fill="none" stroke="currentColor"
+                                viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                     d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
                             </svg>
@@ -410,7 +511,9 @@
                             @php
                                 $statut = strtolower($seance->statut_presence);
                                 $estAbsent = $statut === 'absent';
-                                $badgeClass = $estAbsent ? 'bg-rose-50 text-rose-500' : 'bg-emerald-50 text-emerald-600';
+                                $badgeClass = $estAbsent
+                                    ? 'bg-rose-50 text-rose-500'
+                                    : 'bg-emerald-50 text-emerald-600';
                                 $dotClass = $estAbsent ? 'bg-rose-400' : 'bg-emerald-500';
                                 $label = $estAbsent ? 'Absent' : 'Présent';
                             @endphp
@@ -446,11 +549,13 @@
                     <div
                         class="bg-white rounded-2xl border border-gray-100 shadow-[0_2px_12px_rgba(0,0,0,0.03)] overflow-hidden">
                         <div class="px-6 py-4 border-b border-gray-50 flex items-center gap-2">
-                            <svg class="w-4 h-4 text-[#222A60]/40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <svg class="w-4 h-4 text-[#222A60]/40" fill="none" stroke="currentColor"
+                                viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                     d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
                             </svg>
-                            <h2 class="text-xs font-black text-gray-400 uppercase tracking-widest">Représentants & Tuteurs</h2>
+                            <h2 class="text-xs font-black text-gray-400 uppercase tracking-widest">Représentants & Tuteurs
+                            </h2>
                         </div>
                         <div class="divide-y divide-gray-50">
                             @foreach ($adherent->tousLesTuteurs as $tuteur)
@@ -502,10 +607,12 @@
                     </div>
                 @endif
 
-                <div class="bg-white rounded-2xl border border-gray-100 shadow-[0_2px_12px_rgba(0,0,0,0.03)] overflow-hidden">
+                <div
+                    class="bg-white rounded-2xl border border-gray-100 shadow-[0_2px_12px_rgba(0,0,0,0.03)] overflow-hidden">
                     <div class="px-6 py-4 border-b border-gray-50 flex items-center gap-2">
                         <span class="text-teal-500 text-sm">📜</span>
-                        <h2 class="text-xs font-black text-gray-400 uppercase tracking-widest">Engagements & Autorisations</h2>
+                        <h2 class="text-xs font-black text-gray-400 uppercase tracking-widest">Engagements & Autorisations
+                        </h2>
                     </div>
                     <div class="p-6 space-y-4">
                         <div class="space-y-4">
@@ -513,40 +620,59 @@
                             <div class="flex items-center gap-3">
                                 <span x-show="!editMode"
                                     class="w-6 h-6 flex items-center justify-center rounded-full shrink-0 text-sm {{ $adherent->communication ? 'bg-emerald-100 text-emerald-600' : 'bg-rose-100 text-rose-500' }}">
-                                    @if ($adherent->communication) ✓ @else ✕ @endif
+                                    @if ($adherent->communication)
+                                        ✓
+                                    @else
+                                        ✕
+                                    @endif
                                 </span>
                                 <div x-show="editMode" x-cloak class="flex items-center h-6 shrink-0">
-                                    <input type="hidden" name="communication" value="0" form="form-update-adherent">
-                                    <input type="checkbox" name="communication" value="1" form="form-update-adherent" {{ $adherent->communication ? 'checked' : '' }}
+                                    <input type="hidden" name="communication" value="0"
+                                        form="form-update-adherent">
+                                    <input type="checkbox" name="communication" value="1"
+                                        form="form-update-adherent" {{ $adherent->communication ? 'checked' : '' }}
                                         class="w-5 h-5 rounded border-gray-300 text-[#16987C] focus:ring-[#16987C] transition-all cursor-pointer">
                                 </div>
-                                <span class="text-sm text-[#0F143A] font-medium leading-tight">Droit à l'image accordé</span>
+                                <span class="text-sm text-[#0F143A] font-medium leading-tight">Droit à l'image
+                                    accordé</span>
                             </div>
 
                             <div class="flex items-center gap-3">
                                 <span x-show="!editMode"
                                     class="w-6 h-6 flex items-center justify-center rounded-full shrink-0 text-sm {{ $adherent->bulletin ? 'bg-emerald-100 text-emerald-600' : 'bg-gray-100 text-gray-400' }}">
-                                    @if ($adherent->bulletin) ✓ @else - @endif
+                                    @if ($adherent->bulletin)
+                                        ✓
+                                    @else
+                                        -
+                                    @endif
                                 </span>
                                 <div x-show="editMode" x-cloak class="flex items-center h-6 shrink-0">
                                     <input type="hidden" name="bulletin" value="0" form="form-update-adherent">
-                                    <input type="checkbox" name="bulletin" value="1" form="form-update-adherent" {{ $adherent->bulletin ? 'checked' : '' }}
+                                    <input type="checkbox" name="bulletin" value="1" form="form-update-adherent"
+                                        {{ $adherent->bulletin ? 'checked' : '' }}
                                         class="w-5 h-5 rounded border-gray-300 text-[#16987C] focus:ring-[#16987C] transition-all cursor-pointer">
                                 </div>
-                                <span class="text-sm text-[#0F143A] font-medium leading-tight">Abonné au bulletin d'information</span>
+                                <span class="text-sm text-[#0F143A] font-medium leading-tight">Abonné au bulletin
+                                    d'information</span>
                             </div>
 
                             <div class="flex items-center gap-3">
                                 <span x-show="!editMode"
                                     class="w-6 h-6 flex items-center justify-center rounded-full shrink-0 text-sm {{ $adherent->manif ? 'bg-emerald-100 text-emerald-600' : 'bg-gray-100 text-gray-400' }}">
-                                    @if ($adherent->manif) ✓ @else - @endif
+                                    @if ($adherent->manif)
+                                        ✓
+                                    @else
+                                        -
+                                    @endif
                                 </span>
                                 <div x-show="editMode" x-cloak class="flex items-center h-6 shrink-0">
                                     <input type="hidden" name="manif" value="0" form="form-update-adherent">
-                                    <input type="checkbox" name="manif" value="1" form="form-update-adherent" {{ $adherent->manif ? 'checked' : '' }}
+                                    <input type="checkbox" name="manif" value="1" form="form-update-adherent"
+                                        {{ $adherent->manif ? 'checked' : '' }}
                                         class="w-5 h-5 rounded border-gray-300 text-[#16987C] focus:ring-[#16987C] transition-all cursor-pointer">
                                 </div>
-                                <span class="text-sm text-[#0F143A] font-medium leading-tight">Participation aux manifestations</span>
+                                <span class="text-sm text-[#0F143A] font-medium leading-tight">Participation aux
+                                    manifestations</span>
                             </div>
                         </div>
 
@@ -615,13 +741,16 @@
                 @endif
 
                 @if ($adherent->paiements->count() > 0)
-                    <div class="bg-white rounded-2xl border border-gray-100 shadow-[0_2px_12px_rgba(0,0,0,0.03)] overflow-hidden">
+                    <div
+                        class="bg-white rounded-2xl border border-gray-100 shadow-[0_2px_12px_rgba(0,0,0,0.03)] overflow-hidden">
                         <div class="px-6 py-4 border-b border-gray-50 flex items-center gap-2">
-                            <svg class="w-4 h-4 text-[#222A60]/40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <svg class="w-4 h-4 text-[#222A60]/40" fill="none" stroke="currentColor"
+                                viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                     d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
                             </svg>
-                            <h2 class="text-xs font-black text-gray-400 uppercase tracking-widest">Détail des Encaissements</h2>
+                            <h2 class="text-xs font-black text-gray-400 uppercase tracking-widest">Détail des Encaissements
+                            </h2>
                         </div>
 
                         <div class="divide-y divide-gray-50">
@@ -631,7 +760,8 @@
                                         <div>
                                             <p class="text-sm font-semibold text-[#0F143A]">
                                                 {{ number_format($paiement->montant, 2, ',', ' ') }} €
-                                                <span class="inline-flex ml-2 px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider
+                                                <span
+                                                    class="inline-flex ml-2 px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider
                                                     {{ strtolower($paiement->source) === 'helloasso' ? 'bg-[#16987C]/10 text-[#16987C]' : 'bg-amber-100 text-amber-700' }}">
                                                     {{ $paiement->source }}
                                                 </span>
@@ -650,7 +780,8 @@
                             @endforeach
                         </div>
 
-                        <div class="mx-5 my-4 p-4 bg-[#16987C]/8 rounded-xl border border-[#16987C]/15 flex items-center justify-between">
+                        <div
+                            class="mx-5 my-4 p-4 bg-[#16987C]/8 rounded-xl border border-[#16987C]/15 flex items-center justify-between">
                             <span class="text-sm font-bold text-[#16987C]">Total encaissé</span>
                             <span class="font-grotesk text-lg font-black text-[#16987C]">
                                 {{ number_format($adherent->paiements->sum('montant'), 2, ',', ' ') }} €
@@ -659,33 +790,57 @@
                     </div>
                 @endif
 
-                <div class="bg-white rounded-2xl border border-gray-100 shadow-[0_2px_12px_rgba(0,0,0,0.03)] overflow-hidden">
+                <div
+                    class="bg-white rounded-2xl border border-gray-100 shadow-[0_2px_12px_rgba(0,0,0,0.03)] overflow-hidden">
                     <div class="px-6 py-4 border-b border-gray-50 flex items-center gap-2">
                         <svg class="w-4 h-4 text-[#222A60]/40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" />
+                                d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
                         </svg>
-                        <h2 class="text-xs font-black text-gray-400 uppercase tracking-widest">Commentaire gestionnaire</h2>
+                        <h2 class="text-xs font-black text-gray-400 uppercase tracking-widest">Pièces jointes</h2>
                     </div>
 
-                    @if ($adherent->commentaire)
-                        <div class="mx-5 mt-4 p-4 bg-amber-50/60 rounded-xl border border-amber-100">
-                            <div class="flex items-center gap-2 mb-2">
-                                <span class="text-[10px] font-black text-amber-600 uppercase tracking-widest">Note
-                                    interne</span>
+                    @if (!empty($adherent->commentaire))
+                        <div class="mx-5 mt-4 p-4 bg-gray-50/80 rounded-xl border border-gray-100">
+                            <div class="flex items-center gap-2 mb-3">
+                                <span class="text-[10px] font-black text-gray-500 uppercase tracking-widest">Fichiers
+                                    enregistrés</span>
                             </div>
-                            <p class="text-sm text-gray-600 leading-relaxed">{{ $adherent->commentaire }}</p>
+                            <div class="flex flex-col gap-2">
+                                @foreach ($adherent->commentaire as $fichier)
+                                    <a href="{{ Storage::url($fichier['chemin']) }}" target="_blank"
+                                        class="flex items-center gap-2 p-2 bg-white rounded-lg border border-gray-100 hover:border-[#16987C]/40 transition-colors group">
+                                        <svg class="w-4 h-4 text-gray-400 group-hover:text-[#16987C]" fill="none"
+                                            stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                        </svg>
+                                        <span
+                                            class="text-sm text-gray-600 group-hover:text-[#16987C] truncate">{{ $fichier['nom_original'] }}</span>
+                                    </a>
+                                @endforeach
+                            </div>
                         </div>
                     @endif
 
-                    <form action="{{ route('adherents.commentaire', $adherent) }}" method="POST" class="px-5 py-4">
+                    <form action="{{ route('adherents.fichiers', $adherent) }}" method="POST"
+                        enctype="multipart/form-data" class="px-5 py-4">
                         @csrf
-                        <textarea name="commentaire" rows="3" placeholder="Ajouter une note..."
-                            class="w-full px-4 py-3 bg-gray-50 border border-gray-100 rounded-xl text-sm text-gray-700 placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-[#16987C]/30 focus:border-[#16987C]/40 transition-all resize-none"></textarea>
+
+                        <div class="relative flex items-center justify-center w-full mb-3">
+                            <input type="file" name="nouveaux_fichiers[]" multiple id="file-upload"
+                                class="block w-full text-sm text-gray-500
+                          file:mr-4 file:py-2.5 file:px-4
+                          file:rounded-xl file:border-0
+                          file:text-xs file:font-bold
+                          file:bg-gray-50 file:text-gray-700
+                          hover:file:bg-gray-100 cursor-pointer border border-gray-100 rounded-xl" />
+                        </div>
+
                         <div class="flex justify-end mt-2">
                             <button type="submit"
                                 class="inline-flex items-center gap-1.5 px-4 py-2 bg-[#222A60] hover:bg-[#1a2050] text-white text-xs font-bold rounded-xl transition-all">
-                                Enregistrer
+                                Ajouter les fichiers
                             </button>
                         </div>
                     </form>
@@ -694,4 +849,4 @@
             </div>
         </div>
     </div>
-    @endsection
+@endsection

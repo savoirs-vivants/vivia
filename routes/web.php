@@ -74,7 +74,7 @@ Route::middleware('auth')->group(function () {
 
     Route::get('/adherents', [AdherentController::class, 'index'])->name('adherents.index');
     Route::get('/adherents/{adherent}', [AdherentController::class, 'show'])->name('adherents.show');
-    Route::post('/adherents/{adherent}/commentaire', [AdherentController::class, 'commentaire'])->name('adherents.commentaire');
+    Route::post('/adherents/{adherent}/fichiers', [AdherentController::class, 'uploaderFichiers'])->name('adherents.fichiers');
     Route::post('/adherents/{adherent}/valider', [AdherentController::class, 'valider'])->name('adherents.valider');
     Route::post('/adherents/{adherent}/versement', [AdherentController::class, 'ajouterVersement'])->name('adherents.versement');
     Route::get('/adherents/{adherent}/pdf', [AdherentController::class, 'downloadPdf'])->name('adherents.pdf');

@@ -55,6 +55,7 @@ class Adherent extends Model
         'manif'         => 'boolean',
         'communication' => 'boolean',
         'bulletin'      => 'boolean',
+        'commentaire'    => 'array',
     ];
 
     public static function genererNumeroUnique(): string

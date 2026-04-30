@@ -205,10 +205,33 @@ class AdherentController extends Controller
         ));
     }
 
-    public function commentaire(CommentaireAdherentRequest $request, Adherent $adherent)
+    public function uploaderFichiers(Request $request, Adherent $adherent)
     {
-        $adherent->update(['commentaire' => $request->commentaire]);
-        return redirect()->route('adherents.show', $adherent)->with('success', 'Note enregistrée.');
+        $request->validate([
+            'nouveaux_fichiers' => 'required|array',
+            'nouveaux_fichiers.*' => 'file|max:5120',
+        ]);
+
+        $fichiersExistants = $adherent->fichiers ?? [];
+
+        if ($request->hasFile('nouveaux_fichiers')) {
+            foreach ($request->file('nouveaux_fichiers') as $fichier) {
+
+                $chemin = $fichier->store('adherents/documents', 'public');
+
+                $fichiersExistants[] = [
+                    'chemin' => $chemin,
+                    'nom_original' => $fichier->getClientOriginalName(),
+                    'type' => $fichier->getClientMimeType(),
+                    'date_ajout' => now()->toDateTimeString(),
+                ];
+            }
+        }
+
+        $adherent->commentaire = $fichiersExistants;
+        $adherent->save();
+
+        return back()->with('success', 'Fichiers ajoutés avec succès.');
     }
 
     /* Les paiements touchent plusieurs tables critiques. On utilise DB::transaction
@@ -302,7 +325,7 @@ class AdherentController extends Controller
             403,
             "Cette structure n'est pas inscrite pour la saison active ({$saison})."
         );
-        
+
         $structure->load(['inscriptions', 'inscription', 'paiements']);
         $saisons   = $structure->inscriptions->sortByDesc('saison');
         $totalPaye = (float) $structure->paiements->sum('montant');
