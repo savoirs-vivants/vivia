@@ -59,15 +59,15 @@
                             <p class="text-sm font-black text-white">
                                 {{ $activite->gestionnaires->first()?->name ?? 'Non assigné' }}</p>
                         </div>
-                        @if(auth()->user()->role === 'admin' || auth()->user()->role === 'coordinateur')
-                        <a href="{{ route('activites.edit', $activite) }}"
-                            class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold text-white transition-all border border-white/20 bg-white/10 hover:bg-white/20">
-                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
-                            </svg>
-                            Modifier
-                        </a>
+                        @if (auth()->user()->role === 'admin' || auth()->user()->role === 'coordinateur')
+                            <a href="{{ route('activites.edit', $activite) }}"
+                                class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold text-white transition-all border border-white/20 bg-white/10 hover:bg-white/20">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                                </svg>
+                                Modifier
+                            </a>
                         @endif
                     </div>
                 </div>
@@ -191,7 +191,8 @@
                                                     class="text-[10px] text-left font-black uppercase tracking-widest mt-0.5 transition-colors"
                                                     :class="isAbsent ? 'text-rose-500' : 'text-[#16987C]'"
                                                     x-text="isAbsent ? 'Absent' : 'Présent'"></button>
-                                                <input type="hidden" :name="'presences[' + {{ $adherent->id }} + '][statut]'"
+                                                <input type="hidden"
+                                                    :name="'presences[' + {{ $adherent->id }} + '][statut]'"
                                                     :value="isAbsent ? 'absent' : 'present'">
                                             </div>
                                         </div>
@@ -199,11 +200,6 @@
                                         <div class="col-span-full text-center py-8 text-sm text-gray-400">Aucun adhérent
                                             éligible pour cette séance</div>
                                     @endforelse
-                                </div>
-                                <div class="p-4 border-t border-gray-100 flex justify-end">
-                                    <button type="submit"
-                                        class="px-6 py-2 bg-[#222A60] text-white text-sm font-bold rounded-xl hover:bg-[#1a2050] transition-colors">Enregistrer
-                                        l'appel</button>
                                 </div>
                             </form>
                         </div>
@@ -246,14 +242,14 @@
                                         class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-black {{ $rateClass }}">{{ $adherent->taux_presence }}%
                                         d'assiduité</span>
                                 </div>
-                                @if(auth()->user()->role !== 'comptable')
-                                <button type="button" onclick="toggleAbandonForm({{ $adherent->id }})"
-                                    class="opacity-100 lg:opacity-0 group-hover:opacity-100 transition-opacity p-2 rounded-xl text-gray-400 hover:text-rose-500 hover:bg-rose-50">
-                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                            d="M13 7a4 4 0 11-8 0 4 4 0 018 0zM9 14a6 6 0 00-6 6v1h12v-1a6 6 0 00-6-6zM21 12h-6" />
-                                    </svg>
-                                </button>
+                                @if (auth()->user()->role !== 'comptable')
+                                    <button type="button" onclick="toggleAbandonForm({{ $adherent->id }})"
+                                        class="opacity-100 lg:opacity-0 group-hover:opacity-100 transition-opacity p-2 rounded-xl text-gray-400 hover:text-rose-500 hover:bg-rose-50">
+                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M13 7a4 4 0 11-8 0 4 4 0 018 0zM9 14a6 6 0 00-6 6v1h12v-1a6 6 0 00-6-6zM21 12h-6" />
+                                        </svg>
+                                    </button>
                                 @endif
                             </div>
                             <div id="abandon-form-{{ $adherent->id }}"
@@ -330,3 +326,9 @@
         </div>
     </div>
 @endsection
+
+<script>
+    function toggleAbandonForm(id) {
+        document.getElementById('abandon-form-' + id).classList.toggle('hidden');
+    }
+</script>
