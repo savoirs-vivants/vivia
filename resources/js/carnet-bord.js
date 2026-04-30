@@ -234,17 +234,28 @@ document.addEventListener('DOMContentLoaded', function() {
 
         const canGoHomeAlone = enfant.tous_les_tuteurs && enfant.tous_les_tuteurs.some(t => t.rentre_fin == 1 || t.rentre_fin === true);
         const tuteursContainer = document.getElementById('enfant-tuteurs-list');
+
         if(enfant.tous_les_tuteurs && enfant.tous_les_tuteurs.length > 0) {
             let html = enfant.tous_les_tuteurs.map(t => {
                 let badge = '';
                 let bgClass = '';
                 let icon = '';
 
-                if(t.type === 'parent_tuteur') {
+                const nomComplet = t.nom_complet || `${t.prenom} ${t.nom}`;
+                const telData = t.tel || t.telephone;
+                const mailData = t.mail || t.email;
+
+                const telHtml = telData ? `<p class="flex items-center gap-1.5 text-xs mt-1 text-slate-500 font-medium"><svg class="w-3.5 h-3.5 text-slate-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/></svg>${telData}</p>` : '';
+
+                const emailHtml = mailData ? `<p class="flex items-center gap-1.5 text-xs mt-0.5 text-slate-500 font-medium"><svg class="w-3.5 h-3.5 text-slate-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>${mailData}</p>` : '';
+
+                let typeTuteur = t.pivot ? (t.pivot.type || t.type) : t.type;
+
+                if(typeTuteur === 'parent_tuteur') {
                     badge = 'Parent / Tuteur';
                     bgClass = 'bg-slate-50 border-slate-200 text-slate-700';
                     icon = '👨‍👩‍👧';
-                } else if(t.type === 'autre_autorise') {
+                } else if(typeTuteur === 'autre_autorise') {
                     badge = 'Autorisé(e)';
                     bgClass = 'bg-teal-50 border-teal-200 text-teal-800';
                     icon = '✅';
@@ -254,14 +265,17 @@ document.addEventListener('DOMContentLoaded', function() {
                     icon = '🚫';
                 }
 
-                const nomComplet = t.nom_complet || `${t.prenom} ${t.nom}`;
                 return `
-                <div class="flex items-center justify-between p-2.5 rounded-xl border ${bgClass}">
-                    <div class="flex items-center gap-3">
-                        <span class="text-xl bg-white/60 w-8 h-8 rounded-lg flex items-center justify-center shadow-sm border border-black/5">${icon}</span>
-                        <div><p class="text-sm font-bold leading-tight">${nomComplet}</p></div>
+                <div class="flex items-start justify-between p-3 rounded-xl border ${bgClass}">
+                    <div class="flex items-start gap-3">
+                        <span class="text-xl bg-white/60 w-8 h-8 rounded-lg flex items-center justify-center shadow-sm border border-black/5 mt-0.5 shrink-0">${icon}</span>
+                        <div class="min-w-0">
+                            <p class="text-sm font-bold leading-tight text-gray-800">${nomComplet}</p>
+                            ${telHtml}
+                            ${emailHtml}
+                        </div>
                     </div>
-                    <span class="text-[9px] font-black uppercase tracking-widest px-2 py-1 rounded border border-black/5 bg-white/60 shadow-sm">${badge}</span>
+                    <span class="text-[9px] font-black uppercase tracking-widest px-2 py-1 rounded border border-black/5 bg-white/60 shadow-sm self-start shrink-0">${badge}</span>
                 </div>`;
             }).join('');
 
@@ -281,6 +295,18 @@ document.addEventListener('DOMContentLoaded', function() {
         }
 
         const recupContainer = document.getElementById('recup-options-container');
+
+        const checkboxHtml = `
+            <label id="recup-checkbox-wrapper" class="flex items-center gap-4 cursor-pointer group bg-gray-50 p-4 sm:p-5 rounded-2xl border border-gray-200 hover:border-gray-300 transition-colors">
+                <div class="relative shrink-0">
+                    <input type="checkbox" id="cb-recup" onchange="onEnfantFormChange()" class="peer w-6 h-6 rounded border-2 border-gray-300 accent-[#083325] cursor-pointer">
+                </div>
+                <span id="cb-recup-label" class="text-base sm:text-lg font-semibold text-gray-700 leading-snug group-hover:text-gray-900 transition-colors">
+                    Je certifie avoir récupéré l'enfant
+                </span>
+            </label>
+        `;
+
         if (canGoHomeAlone) {
             recupContainer.innerHTML = `
                 <label class="block text-xs font-black text-gray-400 uppercase tracking-widest mb-3">Mode de sortie</label>
@@ -294,26 +320,10 @@ document.addEventListener('DOMContentLoaded', function() {
                         <span class="text-sm font-bold text-gray-700">Rentre seul(e)</span>
                     </label>
                 </div>
-                <label class="flex items-center gap-4 cursor-pointer group bg-gray-50 p-4 sm:p-5 rounded-2xl border border-gray-200 hover:border-gray-300 transition-colors">
-                    <div class="relative shrink-0">
-                        <input type="checkbox" id="cb-recup" onchange="onEnfantFormChange()" class="peer w-6 h-6 rounded border-2 border-gray-300 accent-[#083325] cursor-pointer">
-                    </div>
-                    <span id="cb-recup-label" class="text-base sm:text-lg font-semibold text-gray-700 leading-snug group-hover:text-gray-900 transition-colors">
-                        Je certifie avoir récupéré l'enfant
-                    </span>
-                </label>
+                ${checkboxHtml}
             `;
         } else {
-            recupContainer.innerHTML = `
-                <label class="flex items-center gap-4 cursor-pointer group bg-gray-50 p-4 sm:p-5 rounded-2xl border border-gray-200 hover:border-gray-300 transition-colors">
-                    <div class="relative shrink-0">
-                        <input type="checkbox" id="cb-recup" onchange="onEnfantFormChange()" class="peer w-6 h-6 rounded border-2 border-gray-300 accent-[#083325] cursor-pointer">
-                    </div>
-                    <span id="cb-recup-label" class="text-base sm:text-lg font-semibold text-gray-700 leading-snug group-hover:text-gray-900 transition-colors">
-                        Je certifie avoir récupéré l'enfant
-                    </span>
-                </label>
-            `;
+            recupContainer.innerHTML = checkboxHtml;
         }
 
         updateSortieUI();
@@ -337,15 +347,24 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
 
-        const cbLabel = document.getElementById('cb-recup-label');
+        const recupWrapper = document.getElementById('recup-checkbox-wrapper');
         const sigLabel = document.getElementById('label-signature');
+        const sigCanvas = document.getElementById('canvas-fin');
+        const sigContainer = sigCanvas ? (sigCanvas.closest('.border') || sigCanvas.parentElement) : null;
+        const sigClearBtn = document.querySelector('button[onclick="clearSigFin()"]');
+        const sigWarning = document.getElementById('sig-warning');
 
         if (mode === 'seul') {
-            if (cbLabel) cbLabel.textContent = "Je certifie quitter l'activité seul(e)";
-            if (sigLabel) sigLabel.innerHTML = '✍️ Signature du jeune <span class="text-rose-500">*</span>';
+            if (recupWrapper) recupWrapper.classList.add('hidden');
+            if (sigContainer) sigContainer.classList.add('hidden');
+            if (sigLabel) sigLabel.classList.add('hidden');
+            if (sigClearBtn) sigClearBtn.classList.add('hidden');
+            if (sigWarning) sigWarning.classList.add('hidden');
         } else {
-            if (cbLabel) cbLabel.textContent = "Je certifie avoir récupéré l'enfant";
-            if (sigLabel) sigLabel.innerHTML = '✍️ Signature du responsable <span class="text-rose-500">*</span>';
+            if (recupWrapper) recupWrapper.classList.remove('hidden');
+            if (sigContainer) sigContainer.classList.remove('hidden');
+            if (sigLabel) sigLabel.classList.remove('hidden');
+            if (sigClearBtn) sigClearBtn.classList.remove('hidden');
         }
 
         onEnfantFormChange();
@@ -360,7 +379,6 @@ document.addEventListener('DOMContentLoaded', function() {
         const canvas = document.getElementById('canvas-fin');
         if (!canvas) return;
 
-        // Si signature pad n'est pas chargé (ex: perte de connexion)
         if (typeof SignaturePad === 'undefined') return;
 
         if (!sigPadInited) {
@@ -388,16 +406,27 @@ document.addEventListener('DOMContentLoaded', function() {
     };
 
     window.onEnfantFormChange = function () {
-        const checked = document.getElementById('cb-recup').checked;
-        const signed  = sigPad && !sigPad.isEmpty();
+        const modeRadio = document.querySelector('input[name="mode_sortie"]:checked');
+        const mode = modeRadio ? modeRadio.value : 'responsable';
         const btn = document.getElementById('btn-valider-enfant');
 
-        if (checked && signed) {
+        let isValid = false;
+
+        if (mode === 'seul') {
+            isValid = true;
+        } else {
+            const cb = document.getElementById('cb-recup');
+            const checked = cb ? cb.checked : false;
+            const signed  = sigPad && !sigPad.isEmpty();
+            isValid = checked && signed;
+        }
+
+        if (isValid) {
             btn.disabled = false;
-            btn.className = 'w-full bg-[#083325] hover:bg-[#16A37A] text-white font-grotesk font-bold py-3.5 rounded-xl transition-all duration-300 shadow-md hover:shadow-lg text-sm flex items-center justify-center gap-2';
+            btn.className = 'w-full bg-[#083325] hover:bg-[#16A37A] text-white font-grotesk font-bold py-3.5 rounded-xl transition-all duration-300 shadow-md hover:shadow-lg text-sm flex items-center justify-center gap-2 mt-4';
             btn.innerHTML = `<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/>
-            </svg> Valider`;
+            </svg> Valider le départ`;
         } else {
             resetBtnEnfant();
         }
@@ -407,21 +436,27 @@ document.addEventListener('DOMContentLoaded', function() {
         const btn = document.getElementById('btn-valider-enfant');
         if(!btn) return;
         btn.disabled = true;
-        btn.className = 'w-full bg-gray-100 text-gray-400 font-grotesk font-bold py-3.5 rounded-xl cursor-not-allowed text-sm flex items-center justify-center gap-2 transition-all duration-300';
+        btn.className = 'w-full bg-gray-100 text-gray-400 font-grotesk font-bold py-3.5 rounded-xl cursor-not-allowed text-sm flex items-center justify-center gap-2 transition-all duration-300 mt-4';
         btn.innerHTML = `<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/>
-        </svg> Valider`;
+        </svg> Valider le départ`;
     }
 
     window.validerEnfant = function () {
-        const checked = document.getElementById('cb-recup').checked;
-        const signed  = sigPad && !sigPad.isEmpty();
+        const modeRadio = document.querySelector('input[name="mode_sortie"]:checked');
+        const mode = modeRadio ? modeRadio.value : 'responsable';
 
-        if (!signed) {
-            document.getElementById('sig-warning').classList.remove('hidden');
-            return;
+        if (mode !== 'seul') {
+            const cb = document.getElementById('cb-recup');
+            const checked = cb ? cb.checked : false;
+            const signed  = sigPad && !sigPad.isEmpty();
+
+            if (!signed) {
+                document.getElementById('sig-warning').classList.remove('hidden');
+                return;
+            }
+            if (!checked) return;
         }
-        if (!checked) return;
 
         enfantsState[currentEnfantId].valide = true;
         hideOverlay('overlay-enfant');
@@ -436,7 +471,6 @@ document.addEventListener('DOMContentLoaded', function() {
         return String(str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
     }
 
-    // Gestion de la fermeture des overlays au clic à l'extérieur
     ['overlay-appel','overlay-fin','overlay-enfant'].forEach(id => {
         const el = document.getElementById(id);
         if (!el) return;
