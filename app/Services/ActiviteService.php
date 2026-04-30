@@ -8,9 +8,62 @@ use App\Models\Saison;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Log;
 
 class ActiviteService
 {
+    private function getVacancesStrasbourg(): array
+    {
+        // On garde le résultat en mémoire pendant 30 jours
+        return Cache::remember('vacances_scolaires_strasbourg', now()->addDays(30), function () {
+            $url = 'https://data.education.gouv.fr/api/explore/v2.1/catalog/datasets/fr-en-calendrier-scolaire/records';
+
+            try {
+                $response = Http::get($url, [
+                    'where' => "location='Strasbourg' AND population!='Enseignants'",
+                    'order_by' => 'start_date DESC',
+                    'limit' => 100,
+                ]);
+
+                if ($response->successful()) {
+                    $vacances = [];
+                    foreach ($response->json('results', []) as $record) {
+                        if (isset($record['start_date']) && isset($record['end_date'])) {
+                            $vacances[] = [
+                                'start' => substr($record['start_date'], 0, 10),
+                                'end'   => substr($record['end_date'], 0, 10),
+                            ];
+                        }
+                    }
+                    return $vacances;
+                }
+            } catch (\Exception $e) {
+                Log::error("Erreur API Vacances: " . $e->getMessage());
+            }
+
+            return [];
+        });
+    }
+
+    /**
+     * Vérifie si une date tombe pendant les vacances
+     */
+    private function isJourDeVacances(Carbon $date): bool
+    {
+        $vacances = $this->getVacancesStrasbourg();
+        $dateString = $date->format('Y-m-d');
+
+        foreach ($vacances as $periode) {
+            if ($dateString >= $periode['start'] && $dateString < $periode['end']) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     public function preparerDonneesActivite(Request $request): array
     {
         $validated = $request->validated();
@@ -151,13 +204,17 @@ class ActiviteService
                 }
 
                 while ($dateCourante->lte($finGeneration)) {
-                    foreach ($plages as $plage) {
-                        $heureDebut = trim(explode('-', $plage)[0]);
-                        $nouvellesSeances[] = [
-                            'id_activite' => $activite->id,
-                            'date'        => $dateCourante->format('Y-m-d') . ' ' . $heureDebut . ':00',
-                        ];
+
+                    if (!$this->isJourDeVacances($dateCourante)) {
+                        foreach ($plages as $plage) {
+                            $heureDebut = trim(explode('-', $plage)[0]);
+                            $nouvellesSeances[] = [
+                                'id_activite' => $activite->id,
+                                'date'        => $dateCourante->format('Y-m-d') . ' ' . $heureDebut . ':00',
+                            ];
+                        }
                     }
+
                     $dateCourante->addWeek();
                 }
             }
