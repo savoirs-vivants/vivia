@@ -18,6 +18,7 @@ use App\Http\Requests\AjouterVersementRequest;
 use App\Http\Requests\UpdateFicheAdherentRequest;
 use App\Models\Seance;
 use Barryvdh\DomPDF\Facade\Pdf;
+use Illuminate\Support\Facades\Storage;
 
 class AdherentController extends Controller
 {
@@ -213,12 +214,12 @@ class AdherentController extends Controller
             'nouveaux_fichiers.*' => 'file|max:5120',
         ]);
 
-        $fichiersExistants = $adherent->fichiers ?? [];
+        $fichiersExistants = $adherent->commentaire ?? [];
 
         if ($request->hasFile('nouveaux_fichiers')) {
             foreach ($request->file('nouveaux_fichiers') as $fichier) {
 
-                $chemin = $fichier->store('adherents/documents', 'public');
+                $chemin = $fichier->store('adherents/documents', 'local');
 
                 $fichiersExistants[] = [
                     'chemin' => $chemin,
@@ -232,9 +233,26 @@ class AdherentController extends Controller
         $adherent->commentaire = $fichiersExistants;
         $adherent->save();
 
-        return back()->with('success', 'Fichiers ajoutés avec succès.');
+        return back()->with('success', 'Fichiers ajoutés en toute sécurité.');
     }
 
+
+    public function voirFichier(Adherent $adherent, $index)
+    {
+        $fichiers = $adherent->commentaire ?? [];
+
+        if (!isset($fichiers[$index])) {
+            abort(404, "Fichier introuvable.");
+        }
+
+        $chemin = $fichiers[$index]['chemin'];
+
+        if (!Storage::disk('local')->exists($chemin)) {
+            abort(404, "Le fichier n'existe plus sur le serveur.");
+        }
+
+        return response()->file(storage_path('app/' . $chemin));
+    }
     /* Les paiements touchent plusieurs tables critiques. On utilise DB::transaction
          * pour garantir que si l'envoi du mail échoue, on ne sauvegarde pas l'état "Payé"
          * en base de données. C'est le principe de l'atomicité.

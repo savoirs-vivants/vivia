@@ -398,7 +398,7 @@
 
                         @if ($adherent->carnet)
                             <div class="sm:col-span-2 pt-2" x-show="!editMode">
-                                <a href="{{ asset('storage/' . $adherent->carnet) }}" target="_blank"
+                                <a href="{{ route('adherents.carnet.voir', $adherent) }}" target="_blank"
                                     class="inline-flex items-center gap-2 px-4 py-2.5 bg-teal-50 text-teal-700 text-sm font-bold rounded-xl border border-teal-100 hover:bg-teal-100 transition-colors">
                                     <span class="text-lg">📷</span> Consulter la copie des vaccins
                                 </a>
@@ -808,8 +808,10 @@
                             </div>
                             <div class="flex flex-col gap-2">
                                 @foreach ($adherent->commentaire as $fichier)
-                                    <a href="{{ Storage::url($fichier['chemin']) }}" target="_blank"
+                                    <a href="{{ route('adherents.fichier.voir', ['adherent' => $adherent->id, 'index' => $loop->index]) }}"
+                                        target="_blank"
                                         class="flex items-center gap-2 p-2 bg-white rounded-lg border border-gray-100 hover:border-[#16987C]/40 transition-colors group">
+
                                         <svg class="w-4 h-4 text-gray-400 group-hover:text-[#16987C]" fill="none"
                                             stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"

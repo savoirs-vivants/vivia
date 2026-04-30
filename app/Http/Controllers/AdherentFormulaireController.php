@@ -790,8 +790,9 @@ class AdherentFormulaireController extends Controller
             $request->validate([
                 'carnet_sante' => 'file|mimes:pdf,jpg,jpeg,png|max:5120',
             ]);
-            Storage::disk('public')->makeDirectory('carnets');
-            $filePath = $request->file('carnet_sante')->store('carnets', 'public');
+
+            $filePath = $request->file('carnet_sante')->store('carnets', 'local');
+
             if ($filePath) {
                 $formData['carnet_sante_path'] = $filePath;
             } else {
@@ -852,5 +853,19 @@ class AdherentFormulaireController extends Controller
         $request->session()->put("adhesion_{$token}", $formData);
 
         return back();
+    }
+
+
+    public function voirCarnet(Adherent $adherent)
+    {
+        if (empty($adherent->carnet)) {
+            abort(404, "Aucun carnet de santé enregistré pour cet adhérent.");
+        }
+
+        if (!Storage::disk('local')->exists($adherent->carnet)) {
+            abort(404, "Le fichier du carnet de santé n'existe plus sur le serveur.");
+        }
+
+        return response()->file(storage_path('app/' . $adherent->carnet));
     }
 }

@@ -34,6 +34,7 @@ Route::get('/adhesion', [AdherentFormulaireController::class, 'index'])->name('a
 Route::post('/adhesion/recup-numero', [AdherentFormulaireController::class, 'envoyerCodeRecup'])->name('adhesion.recup');
 Route::get('/adhesion/{token}',  [AdherentFormulaireController::class, 'show'])->name('adhesion.show');
 Route::post('/adhesion/{token}', [AdherentFormulaireController::class, 'next'])->name('adhesion.next');
+Route::get('/adherents/{adherent}/carnet', [AdherentController::class, 'voirCarnet'])->name('adherents.carnet.voir');
 Route::post('/adhesion/{token}/choix-saison', [AdherentFormulaireController::class, 'setSaisonCible'])->name('adhesion.setSaison');
 Route::post('/adhesion/{token}/notifier-activite', [AdherentFormulaireController::class, 'notifierActivitePleine'])->name('adhesion.notifier.activite');
 
@@ -74,6 +75,7 @@ Route::middleware('auth')->group(function () {
 
     Route::get('/adherents', [AdherentController::class, 'index'])->name('adherents.index');
     Route::get('/adherents/{adherent}', [AdherentController::class, 'show'])->name('adherents.show');
+    Route::get('/adherents/{adherent}/fichiers/{index}', [AdherentController::class, 'voirFichier'])->name('adherents.fichier.voir');
     Route::post('/adherents/{adherent}/fichiers', [AdherentController::class, 'uploaderFichiers'])->name('adherents.fichiers');
     Route::post('/adherents/{adherent}/valider', [AdherentController::class, 'valider'])->name('adherents.valider');
     Route::post('/adherents/{adherent}/versement', [AdherentController::class, 'ajouterVersement'])->name('adherents.versement');
