@@ -373,7 +373,7 @@ class AdherentFormulaireController extends Controller
 
                     if ($entity) {
                         Mail::send('emails.admin_nouvelle_inscription', $dataMail, function ($message) {
-                            $message->to('stantrebes@gmail.com')->subject('🎉 Nouvelle inscription - Savoirs Vivants');
+                            $message->to('direction@savoirsvivants.fr')->subject('🎉 Nouvelle inscription - Savoirs Vivants');
                         });
                     }
 
@@ -830,7 +830,7 @@ class AdherentFormulaireController extends Controller
                 'nom'      => $nom,
                 'mail'     => $mail,
             ], function ($message) use ($activite) {
-                $message->to('stantrebes@gmail.com')
+                $message->to('direction@savoirsvivants.fr')
                     ->subject("⏳ Demande de pré-inscription — {$activite->nom}");
             });
         } catch (\Exception $e) {
