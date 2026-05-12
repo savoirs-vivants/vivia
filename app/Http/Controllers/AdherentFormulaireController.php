@@ -48,22 +48,35 @@ class AdherentFormulaireController extends Controller
         }
     }
 
+    private function getTypesActivite(array $formData): array
+    {
+        if (!empty($formData['types_activite'])) {
+            return array_values(array_filter((array) $formData['types_activite']));
+        }
+        $single = $formData['type_activite'] ?? '';
+        return $single ? [$single] : [];
+    }
+
     private function getUserPath(array $formData): array
     {
         if (!empty($formData['_pre_inscription_id']) && empty($formData['_pre_inscription_handled'])) {
             return [1, 16];
         }
 
-        $isAdherent    = ($formData['is_adherent']  ?? 'non') === 'oui';
-        $activite      = $formData['type_activite'] ?? '';
-        $isMineur      = $this->isMineur($formData['date_naiss'] ?? null);
-        $isClubMaker   = ($activite === 'club_maker');
-        $isRecherche   = ($activite === 'recherche');
-        $needsActivite = in_array($activite, ['atelier', 'stage', 'ressourcerie']);
+        $isAdherent = ($formData['is_adherent'] ?? 'non') === 'oui';
+        $types      = $this->getTypesActivite($formData);
+        $isMineur   = $this->isMineur($formData['date_naiss'] ?? null);
+
+        $hasRessourcerie   = in_array('ressourcerie', $types);
+        $hasRecherche      = in_array('recherche', $types);
+        $isClubMakerOnly   = $types === ['club_maker'] || (count($types) === 1 && in_array('club_maker', $types));
+        $needsActiviteStep = !empty(array_intersect($types, ['atelier', 'stage', 'ressourcerie', 'club_maker']));
+        $needsBenevole     = !empty(array_intersect($types, ['atelier', 'stage', 'ressourcerie']));
+        $needsPaiement     = !$isClubMakerOnly;
 
         if ($this->isStructure($formData)) {
             $path = $isAdherent ? [1, 2] : [1, 12, 2];
-            if ($activite === 'ressourcerie') $path[] = 6;
+            if ($hasRessourcerie) $path[] = 6;
             return array_merge($path, [13, 14, 9, 10, 11]);
         }
 
@@ -73,14 +86,14 @@ class AdherentFormulaireController extends Controller
 
         $path[] = 5;
 
-        if ($needsActivite || $isClubMaker) $path[] = 6;
-        if ($isRecherche) $path[] = 17;
-        if (!$isClubMaker && !$isRecherche) $path[] = 7;
+        if ($needsActiviteStep) $path[] = 6;
+        if ($hasRecherche) $path[] = 17;
+        if ($needsBenevole) $path[] = 7;
         if ($isMineur) $path[] = 8;
 
         $path[] = 9;
 
-        if (!$isClubMaker) $path[] = 10;
+        if ($needsPaiement) $path[] = 10;
 
         $path[] = 11;
 
@@ -122,7 +135,8 @@ class AdherentFormulaireController extends Controller
     {
         $classesEligibles = $this->classesEligiblesDepuisOccupation($formData);
         $isMineur = $this->isMineur($formData['date_naiss'] ?? null);
-        $typeActivite = $formData['type_activite'] ?? '';
+        $types = $this->getTypesActivite($formData);
+        $typeActivite = in_array('atelier', $types) ? 'atelier' : ($formData['type_activite'] ?? '');
 
         return function ($activite) use ($classesEligibles, $isMineur, $typeActivite) {
 
@@ -341,7 +355,7 @@ class AdherentFormulaireController extends Controller
         $ressourcerieSelectionnees       = null;
         $totalRessourcerieStructure      = null;
 
-        if ($isStructure && ($formData['type_activite'] ?? '') === 'ressourcerie' && empty($formData['_ressourcerie_paid'])) {
+        if ($isStructure && in_array('ressourcerie', $this->getTypesActivite($formData)) && empty($formData['_ressourcerie_paid'])) {
             $ids = $formData['ressourcerie_selectionnees'] ?? [];
             $ressourcerieSelectionnees  = Ressourcerie::whereIn('id', $ids)->get();
             $totalRessourcerieStructure = $ressourcerieSelectionnees->sum('prix');
@@ -385,15 +399,12 @@ class AdherentFormulaireController extends Controller
             }
         }
 
-        $clubMakerActivites = collect();
-        if (($formData['type_activite'] ?? '') !== 'atelier') {
-            $clubMakerActivites = $activites
-                ->filter(function ($a) use ($activitesDejaInscritesIds) {
-                    return Str::contains(strtolower($a->nom), 'maker')
-                        && !in_array($a->id, $activitesDejaInscritesIds);
-                })
-                ->values();
-        }
+        $clubMakerActivites = $activites
+            ->filter(function ($a) use ($activitesDejaInscritesIds) {
+                return Str::contains(strtolower($a->nom), 'maker')
+                    && !in_array($a->id, $activitesDejaInscritesIds);
+            })
+            ->values();
 
         $ticket = null;
         if ($step === 11 && ($formData['mode_paiement'] ?? '') === 'interne' && !$isStructure) {
@@ -725,7 +736,8 @@ class AdherentFormulaireController extends Controller
             }
             if (!empty($ressourcerieIds)) $totalActiviteEuros += Ressourcerie::whereIn('id', $ressourcerieIds)->sum('prix');
 
-            $isSinglePayment = in_array($formData['type_activite'] ?? '', ['soutien', 'recherche']);
+            $typesForPayment = $this->getTypesActivite($formData);
+            $isSinglePayment = !empty($typesForPayment) && empty(array_intersect($typesForPayment, ['atelier', 'stage', 'ressourcerie', 'club_maker']));
             if ($isSinglePayment && $totalActiviteEuros == 0) {
                 if (!$estNouvelAdherent) {
                     $formData['_paiement2_cree'] = true;
@@ -753,7 +765,7 @@ class AdherentFormulaireController extends Controller
             $payerInfo = ['prenom' => $payerPrenom, 'nom' => $payerNom, 'mail' => $payerMail];
 
             if ($totalActiviteEuros > 0) {
-                $itemLabel = ($formData['type_activite'] ?? '') === 'ressourcerie'
+                $itemLabel = in_array('ressourcerie', $this->getTypesActivite($formData))
                     ? 'Ressourcerie - Savoirs Vivants' : 'Inscription Activité - Savoirs Vivants';
                 try {
                     $urlPaiement = $service->createCheckout((int) round($totalActiviteEuros * 100), $payerInfo, $token, 'adhesion.helloasso.return', $itemLabel);
@@ -804,6 +816,12 @@ class AdherentFormulaireController extends Controller
         $newData  = $request->except($exclude);
         $formData = array_merge($formData, $newData);
         $formData['_last_completed'] = max((int) ($formData['_last_completed'] ?? 0), $step);
+
+        if ($step === 2 && !empty($formData['types_activite'])) {
+            $typesStep2 = array_values(array_filter((array) $formData['types_activite']));
+            $priority = ['atelier', 'stage', 'ressourcerie', 'club_maker', 'recherche', 'soutien'];
+            $formData['type_activite'] = collect($priority)->first(fn($t) => in_array($t, $typesStep2)) ?? ($typesStep2[0] ?? '');
+        }
 
         $request->session()->put("adhesion_{$token}", $formData);
         $next = $this->getNextStep($step, $formData);

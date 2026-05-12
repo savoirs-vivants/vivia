@@ -127,7 +127,7 @@
                             </template>
                         </div>
                         <div class="mt-3 pt-2 border-t border-gray-50 flex justify-end"
-                            x-show="!adherent.isStructure && !adherent.isReinscription && !adherent.activites.some(a => a.nom.toLowerCase().includes('club maker'))">
+                            x-show="!adherent.isStructure && !adherent.isReinscription && adherent.showCotisation !== false">
                             <p class="text-xs text-gray-400">+ Adhésion annuelle : <span class="font-semibold"
                                     x-text="adherent.montantAdhesion || '10,00 €'"></span></p>
                         </div>

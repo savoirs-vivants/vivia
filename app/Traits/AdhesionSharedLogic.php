@@ -22,16 +22,30 @@ trait AdhesionSharedLogic
         return in_array($formData['statut_juridique'] ?? '', ['tpe_asso', 'esr_pme']);
     }
 
+    protected function getTypesActiviteFromFormData(array $formData): array
+    {
+        if (!empty($formData['types_activite'])) {
+            return array_values(array_filter((array) $formData['types_activite']));
+        }
+        $single = $formData['type_activite'] ?? '';
+        return $single ? [$single] : [];
+    }
+
     protected function isPreInscription(array $formData): bool
     {
         $moisActuel = now()->month;
-        return ($moisActuel === 7 || $moisActuel === 8) && ($formData['type_activite'] ?? '') === 'atelier';
+        if ($moisActuel !== 7 && $moisActuel !== 8) return false;
+        $types = $this->getTypesActiviteFromFormData($formData);
+        return in_array('atelier', $types);
     }
 
     protected function getMontantCotisation(array $formData): int
     {
         if (($formData['is_adherent'] ?? 'non') === 'oui') return 0;
-        if (($formData['type_activite'] ?? '') === 'club_maker') return 0;
+
+        $types = $this->getTypesActiviteFromFormData($formData);
+        // Club Maker seul = pas de cotisation
+        if (count($types) === 1 && in_array('club_maker', $types)) return 0;
 
         $activiteIds = array_filter((array) ($formData['activites_selectionnees'] ?? []));
         if (empty($activiteIds)) return 10;
@@ -118,8 +132,9 @@ trait AdhesionSharedLogic
          * si une erreur survient au milieu du processus.
          */
         return DB::transaction(function () use ($formData) {
-            $isAdherent      = ($formData['is_adherent'] ?? 'non') === 'oui';
-            $typeActivite    = $formData['type_activite'] ?? '';
+            $isAdherent   = ($formData['is_adherent'] ?? 'non') === 'oui';
+            $types        = $this->getTypesActiviteFromFormData($formData);
+            $typeActivite = $types[0] ?? ($formData['type_activite'] ?? '');
             $activiteIds     = array_filter((array) ($formData['activites_selectionnees'] ?? []));
             $ressourcerieIds = array_filter((array) ($formData['ressourcerie_selectionnees'] ?? []));
             $saison          = Saison::current();
