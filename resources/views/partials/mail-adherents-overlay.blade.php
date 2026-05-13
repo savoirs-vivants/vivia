@@ -27,24 +27,46 @@
                     <label class="block text-xs font-black text-gray-400 uppercase tracking-widest mb-3">
                         🏷️ Type de communication <span class="text-rose-500">*</span>
                     </label>
-                    <div class="grid grid-cols-2 gap-3">
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
                         <label class="relative cursor-pointer">
                             <input type="radio" name="type_mail" value="info" class="peer sr-only" checked>
                             <div
-                                class="p-4 rounded-xl border-2 border-gray-100 bg-gray-50 peer-checked:border-[#16A37A] peer-checked:bg-teal-50 transition-all text-center">
+                                class="p-4 rounded-xl border-2 border-gray-100 bg-gray-50 peer-checked:border-[#16A37A] peer-checked:bg-teal-50 transition-all text-center h-full flex flex-col justify-center">
                                 <span class="block text-sm font-bold text-gray-900 mb-1">Information</span>
-                                <span class="block text-xs text-gray-500">Info générale</span>
+                                <span class="block text-xs text-gray-500">Générale</span>
                             </div>
                         </label>
                         <label class="relative cursor-pointer">
                             <input type="radio" name="type_mail" value="ag" class="peer sr-only">
                             <div
-                                class="p-4 rounded-xl border-2 border-gray-100 bg-gray-50 peer-checked:border-[#222A60] peer-checked:bg-[#222A60]/5 transition-all text-center">
+                                class="p-4 rounded-xl border-2 border-gray-100 bg-gray-50 peer-checked:border-[#222A60] peer-checked:bg-[#222A60]/5 transition-all text-center h-full flex flex-col justify-center">
                                 <span class="block text-sm font-bold text-gray-900 mb-1">Convocation AG</span>
                                 <span class="block text-xs text-gray-500">Assemblée Générale</span>
                             </div>
                         </label>
+                        <label class="relative cursor-pointer">
+                            <input type="radio" name="type_mail" value="bulletin" class="peer sr-only">
+                            <div
+                                class="p-4 rounded-xl border-2 border-gray-100 bg-gray-50 peer-checked:border-indigo-500 peer-checked:bg-indigo-50 transition-all text-center h-full flex flex-col justify-center">
+                                <span class="block text-sm font-bold text-gray-900 mb-1">Bulletin</span>
+                                <span class="block text-xs text-gray-500">Ciblé par thème</span>
+                            </div>
+                        </label>
                     </div>
+                </div>
+
+                <div id="bloc-cible-bulletin"
+                    class="hidden bg-indigo-50/50 border border-indigo-100 rounded-xl p-4 mt-4">
+                    <label for="cible_bulletin"
+                        class="block text-xs font-black text-indigo-800 uppercase tracking-widest mb-2">
+                        🎯 Quel thème envoyer ? <span class="text-rose-500">*</span>
+                    </label>
+                    <select name="cible_bulletin" id="cible_bulletin"
+                        class="w-full bg-white border border-indigo-200 text-gray-900 text-sm rounded-xl focus:ring-indigo-500 focus:border-indigo-500 block p-3 outline-none">
+                        <option value="general">Association (Infos générales)</option>
+                        <option value="creabot">Créabot</option>
+                        <option value="schlouk_sciences">Schlouk de sciences</option>
+                    </select>
                 </div>
 
                 <div>

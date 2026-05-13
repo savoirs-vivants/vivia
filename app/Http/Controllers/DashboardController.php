@@ -234,7 +234,8 @@ class DashboardController extends Controller
         abort_if(in_array(Auth::user()->role, ['coordinateur', 'animateur']), 403);
 
         $request->validate([
-            'type_mail'        => 'required|in:ag,info',
+            'type_mail'        => 'required|in:ag,info,bulletin',
+            'cible_bulletin'   => 'required_if:type_mail,bulletin|in:general,creabot,schlouk_sciences',
             'objet'            => 'required|string|max:255',
             'message'          => 'required|string',
             'pieces_jointes'   => 'nullable|array|max:5',
@@ -242,35 +243,48 @@ class DashboardController extends Controller
         ]);
 
         $saison = Saison::current();
+        $typeMail = $request->input('type_mail');
+        $themeCible = $request->input('cible_bulletin');
 
-        $emailsAdherents = DB::table('adherents')
+        $queryAdherents = DB::table('adherents')
             ->join('inscriptions', 'adherents.id', '=', 'inscriptions.id_adherent')
             ->where('inscriptions.saison', $saison)
             ->whereIn('inscriptions.a_paye', ['oui', 'Payé'])
             ->whereNotNull('adherents.mail')
             ->where('adherents.mail', '!=', '')
-            ->distinct()
-            ->pluck('adherents.mail')
-            ->toArray();
+            ->select('adherents.mail')
+            ->distinct();
 
-        $emailsStructures = DB::table('adherents_structure')
+        $queryStructures = DB::table('adherents_structure')
             ->join('inscriptions', 'adherents_structure.id', '=', 'inscriptions.id_structure')
             ->where('inscriptions.saison', $saison)
             ->whereIn('inscriptions.a_paye', ['oui', 'Payé'])
             ->whereNotNull('adherents_structure.mail')
             ->where('adherents_structure.mail', '!=', '')
-            ->distinct()
-            ->pluck('adherents_structure.mail')
-            ->toArray();
+            ->select('adherents_structure.mail')
+            ->distinct();
+
+        if ($typeMail === 'bulletin') {
+            $queryAdherents->whereJsonContains('adherents.bulletin', $themeCible);
+            $queryStructures->whereJsonContains('adherents_structure.bulletin', $themeCible);
+        }
+
+        $emailsAdherents  = $queryAdherents->pluck('mail')->toArray();
+        $emailsStructures = $queryStructures->pluck('mail')->toArray();
 
         $tousLesEmails = array_unique(array_merge($emailsAdherents, $emailsStructures));
 
         if (empty($tousLesEmails)) {
-            return back()->withErrors(['mail' => 'Aucun email trouvé pour les adhérents de cette saison.']);
+            return back()->withErrors(['mail' => "Aucun adhérent ne correspond à ce critère de filtre pour cette saison."]);
         }
 
-        $prefixe = $request->input('type_mail') === 'ag' ? '[Assemblée Générale]' : '[Information]';
-        $sujet = $prefixe . ' ' . $request->input('objet');
+        $prefixe = match ($typeMail) {
+            'ag'       => '[Assemblée Générale]',
+            'bulletin' => '[Newsletter]',
+            default    => '[Information]',
+        };
+
+        $sujet = trim($prefixe . ' ' . str_replace('[Newsletter]', '', $request->input('objet')));
         $contenuText = $request->input('message');
 
         $attachments = [];
@@ -309,7 +323,7 @@ class DashboardController extends Controller
             }
         }
 
-        return back()->with('success', 'Votre email a été envoyé personnellement à ' . $mailsEnvoyes . ' contacts avec succès.');
+        return back()->with('success', 'Votre email a été envoyé avec succès à ' . $mailsEnvoyes . ' contacts intéressés.');
     }
 
     /* ==============================================================================

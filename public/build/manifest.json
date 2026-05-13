@@ -1,6 +1,6 @@
 {
   "resources/css/app.css": {
-    "file": "assets/app-HZ9Mp66z.css",
+    "file": "assets/app-Bqkzpn3o.css",
     "name": "app",
     "names": [
       "app.css"
@@ -43,7 +43,7 @@
     "isEntry": true
   },
   "resources/js/mail-overlay.js": {
-    "file": "assets/mail-overlay-BRYv52fA.js",
+    "file": "assets/mail-overlay-hYJqTn67.js",
     "name": "mail-overlay",
     "src": "resources/js/mail-overlay.js",
     "isEntry": true

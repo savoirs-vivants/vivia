@@ -2,34 +2,33 @@ document.addEventListener('DOMContentLoaded', function() {
     const radios = document.querySelectorAll('input[name="type_mail"]');
     const inputObjet = document.getElementById('objet');
     const textareaMessage = document.getElementById('message');
+    const blocCibleBulletin = document.getElementById('bloc-cible-bulletin'); // Le nouveau bloc
 
     const templateAgObjet = "Invitation à l'Assemblée Générale de l’Association Savoirs Vivants";
-    const templateAgMessage = `L’association Savoirs Vivants organise son Assemblée Générale qui se tiendra le [DATE ET LIEU].
-
-Votre présence est nécessaire pour permettre le bon fonctionnement démocratique de l’association mais aussi pour participer à définir les orientations futures de l’association.
-
-Voici l’ordre du jour qui sera proposé lors de notre Assemblée :
-- Validation du compte rendu de l’Assemblée Générale précédente
-- Vote du rapport moral
-- Vote du rapport du trésorier
-- Présentation du rapport d’activités
-- Verre de l’amitié
-
-Vous pouvez [ajouter ici un lien vers un formulaire de procuration par exemple].
-
-Je reste à votre disposition pour préparer ce moment important dans la vie de l’association.`;
+    const templateAgMessage = `L’association Savoirs Vivants organise son Assemblée Générale qui se tiendra le [DATE ET LIEU].\n\nVotre présence est nécessaire pour permettre le bon fonctionnement démocratique de l’association mais aussi pour participer à définir les orientations futures de l’association.\n\nVoici l’ordre du jour qui sera proposé lors de notre Assemblée :\n[ORDRE DU JOUR]\n\nJe reste à votre disposition pour préparer ce moment important dans la vie de l’association.`;
 
     radios.forEach(radio => {
         radio.addEventListener('change', function() {
+            if (this.value === 'bulletin') {
+                blocCibleBulletin.classList.remove('hidden');
+            } else {
+                blocCibleBulletin.classList.add('hidden');
+            }
+
             if (this.value === 'ag') {
                 inputObjet.value = templateAgObjet;
                 textareaMessage.value = templateAgMessage;
             } else if (this.value === 'info') {
                 inputObjet.value = "";
                 textareaMessage.value = "";
+            } else if (this.value === 'bulletin') {
+                inputObjet.value = "[Newsletter] ";
+                textareaMessage.value = "";
             }
         });
     });
+
+    // ... [Garde tout ton code actuel concernant dataTransfer et les pièces jointes ici] ...
 
     const fileInput = document.getElementById('pieces_jointes_input');
     const fileListDisplay = document.getElementById('file-list-display');
