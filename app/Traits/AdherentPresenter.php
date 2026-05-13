@@ -20,6 +20,32 @@ trait AdherentPresenter
             return stripos($a->nom, 'drusenheim') !== false || stripos($a->ville, 'drusenheim') !== false;
         });
 
+        // Ressourceries sauvegardées sur l'inscription
+        $ressourcerieItems = [];
+        $ressourcerieIds = $this->inscription?->ressourceries_ids;
+        if (!empty($ressourcerieIds)) {
+            $ressourcerieItems = \App\Models\Ressourcerie::whereIn('id', $ressourcerieIds)->get()
+                ->map(fn($r) => [
+                    'nom'   => $r->nom,
+                    'info'  => 'Ressourcerie',
+                    'tarif' => number_format((float) $r->prix, 2, ',', ' ') . ' €',
+                ])->toArray();
+        }
+
+        $lignesActivites = array_merge(
+            $activites->map(fn($a) => [
+                'nom'   => $a->nom,
+                'info'  => collect($a->horaires_list)->first() ?? '',
+                'tarif' => number_format((float) $a->tarif, 2, ',', ' ') . ' €',
+            ])->toArray(),
+            $ressourcerieItems
+        );
+
+        $typesActifs = $this->inscription?->types_activite ?? [];
+        $showCotisation = !in_array('club_maker', $typesActifs)
+            || count($typesActifs) > 1
+            || ($this->inscription?->type_adhesion ?? '') !== 'club_maker';
+
         return [
             'actionUrl'       => "/adherents/{$this->id}/valider",
             'versementUrl'    => "/adherents/{$this->id}/versement",
@@ -41,13 +67,9 @@ trait AdherentPresenter
             'dejaVerseBrut'   => $verseModal,
             'resteDu'         => number_format($resteModal, 2, ',', ' ') . ' €',
             'resteDuBrut'     => $resteModal,
-            'activites'       => $activites->map(fn($a) => [
-                'nom'   => $a->nom,
-                'info'  => collect($a->horaires_list)->first() ?? '',
-                'tarif' => number_format((float) $a->tarif, 2, ',', ' ') . ' €',
-            ])->toArray(),
+            'activites'       => $lignesActivites,
             'montantAdhesion' => $isDrusenheim ? '17,00 €' : '10,00 €',
-            'showCotisation'  => ($this->inscription?->type_adhesion ?? '') !== 'club_maker',
+            'showCotisation'  => $showCotisation,
             'type_adhesion_attente' => $this->inscriptions()->where('a_paye', 'En attente')->latest()->value('type_adhesion') ?? '',
         ];
     }

@@ -166,56 +166,52 @@
                                 style="display: none;">
                                 <div class="bg-white rounded-2xl shadow-xl w-full max-w-md p-6" @click.outside="false">
                                     @php
-                                        $typeAct = $formData['type_activite'] ?? '';
+                                        $typesAct = (array) ($formData['types_activite'] ?? [$formData['type_activite'] ?? '']);
+                                        $typeAct  = $formData['type_activite'] ?? ($typesAct[0] ?? '');
 
-                                        // --- VÉRIFICATION DRUSENHEIM ---
                                         $isDrusenheim = false;
-                                        $activiteIds = array_filter(
-                                            (array) ($formData['activites_selectionnees'] ?? []),
-                                        );
+                                        $activiteIds = array_filter((array) ($formData['activites_selectionnees'] ?? []));
                                         if (!empty($activiteIds)) {
                                             $isDrusenheim = \App\Models\Activite::whereIn('id', $activiteIds)
                                                 ->where(function ($q) {
-                                                    $q->where('nom', 'like', '%drusenheim%')->orWhere(
-                                                        'ville',
-                                                        'like',
-                                                        '%drusenheim%',
-                                                    );
-                                                })
-                                                ->exists();
+                                                    $q->where('nom', 'like', '%drusenheim%')->orWhere('ville', 'like', '%drusenheim%');
+                                                })->exists();
                                         }
 
-                                        $nomOnglet = $isDrusenheim
-                                            ? 'Adhésion club Drusenheim (17 €)'
-                                            : 'Adhésion simple (10 €)';
-                                        // -------------------------------
+                                        $nomOnglet = $isDrusenheim ? 'Adhésion club Drusenheim (17 €)' : 'Adhésion simple (10 €)';
 
-                                        $modalIcon = match ($typeAct) {
-                                            'soutien' => '🤝',
-                                            'recherche' => '🔬',
-                                            'ressourcerie' => '🤖',
-                                            'stage' => '📚',
-                                            default => '✅',
-                                        };
-                                        $modalTitre = match ($typeAct) {
-                                            'soutien' => 'Adhésion par soutien',
-                                            'recherche' => 'Recherche participative',
-                                            'ressourcerie' => 'Ressourcerie enregistrée !',
-                                            'stage' => 'Stage enregistré !',
-                                            default => 'Activité enregistrée !',
-                                        };
-                                        $modalSous = match ($typeAct) {
-                                            'soutien' => 'Merci pour votre soutien à l\'association.',
-                                            'recherche'
-                                                => 'Votre participation au programme de recherche est enregistrée.',
-                                            'ressourcerie' => 'Votre accès à la ressourcerie est bien enregistré.',
-                                            'stage' => 'Votre inscription au stage est bien enregistrée.',
-                                            default => 'Votre inscription à l\'atelier est bien enregistrée.',
-                                        };
+                                        $labelsTypes = array_values(array_filter(array_map(fn($t) => match($t) {
+                                            'atelier'      => 'Atelier',
+                                            'stage'        => 'Stage',
+                                            'ressourcerie' => 'Ressourcerie',
+                                            'club_maker'   => 'Club Maker',
+                                            'recherche'    => 'Recherche participative',
+                                            'soutien'      => 'Soutien',
+                                            default        => null,
+                                        }, $typesAct)));
 
-                                        $modalMessage = in_array($typeAct, ['soutien', 'recherche'])
-                                            ? "Pour finaliser votre adhésion, réglez la <strong>cotisation annuelle</strong> en choisissant l'onglet <strong>{$nomOnglet}</strong> sur la page officielle HelloAsso."
-                                            : "Pour être pleinement membre de l'association, réglez également la <strong>cotisation annuelle</strong> en choisissant l'onglet <strong>{$nomOnglet}</strong> sur HelloAsso.";
+                                        $modalIcon = count($typesAct) > 1 ? '🎯' : match ($typeAct) {
+                                            'soutien' => '🤝', 'recherche' => '🔬', 'ressourcerie' => '🤖', 'stage' => '📚', default => '✅',
+                                        };
+                                        $modalTitre = count($typesAct) > 1
+                                            ? implode(' + ', $labelsTypes) . ' enregistrés !'
+                                            : match ($typeAct) {
+                                                'soutien'      => 'Adhésion par soutien',
+                                                'recherche'    => 'Recherche participative',
+                                                'ressourcerie' => 'Ressourcerie enregistrée !',
+                                                'stage'        => 'Stage enregistré !',
+                                                default        => 'Activité enregistrée !',
+                                            };
+                                        $modalSous = count($typesAct) > 1
+                                            ? 'Vos inscriptions sont bien enregistrées.'
+                                            : match ($typeAct) {
+                                                'soutien'      => 'Merci pour votre soutien à l\'association.',
+                                                'recherche'    => 'Votre participation au programme de recherche est enregistrée.',
+                                                'ressourcerie' => 'Votre accès à la ressourcerie est bien enregistré.',
+                                                'stage'        => 'Votre inscription au stage est bien enregistrée.',
+                                                default        => 'Votre inscription à l\'atelier est bien enregistrée.',
+                                            };
+                                        $modalMessage = "Pour être pleinement membre de l'association, réglez également la <strong>cotisation annuelle</strong> en choisissant l'onglet <strong>{$nomOnglet}</strong> sur HelloAsso.";
                                     @endphp
                                     <div class="text-center mb-5">
                                         <div

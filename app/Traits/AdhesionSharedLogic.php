@@ -280,6 +280,8 @@ trait AdhesionSharedLogic
                 'saison'           => $saison,
                 'date_inscription' => now()->toDateString(),
                 'type_adhesion'    => $typeActivite,
+                'types_activite'   => $types,
+                'ressourceries_ids' => !empty($ressourcerieIds) ? array_values($ressourcerieIds) : null,
                 'a_paye'           => $aPaye,
                 'montant'          => $montantTotalReel,
                 'renouvellement'   => $isAdherent,

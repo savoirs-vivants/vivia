@@ -15,6 +15,8 @@ class Inscription extends Model
         'saison',
         'date_inscription',
         'type_adhesion',
+        'types_activite',
+        'ressourceries_ids',
         'a_paye',
         'montant',
         'renouvellement',
@@ -24,6 +26,8 @@ class Inscription extends Model
         'date_inscription' => 'date',
         'renouvellement'   => 'boolean',
         'montant'          => 'float',
+        'ressourceries_ids' => 'array',
+        'types_activite'    => 'array',
     ];
 
     /**
