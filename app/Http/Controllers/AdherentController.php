@@ -482,7 +482,7 @@ class AdherentController extends Controller
         $validated = $request->validated();
 
         $validated['communication'] = $request->boolean('communication');
-        $validated['bulletin']      = $request->boolean('bulletin');
+        $validated['bulletin']      = $request->input('bulletin', []);
         $validated['manif']         = $request->boolean('manif');
 
         $adherent->update($validated);

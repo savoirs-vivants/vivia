@@ -637,23 +637,72 @@
                                     accordé</span>
                             </div>
 
-                            <div class="flex items-center gap-3">
+                            @php
+                                $bulletinsAdh = is_array($adherent->bulletin)
+                                    ? $adherent->bulletin
+                                    : ($adherent->bulletin
+                                        ? ['general']
+                                        : []);
+                                $labels = [
+                                    'general' => 'Association',
+                                    'creabot' => 'Créabot',
+                                    'schlouk_sciences' => 'Schlouk de sciences',
+                                ];
+                            @endphp
+
+                            <div class="flex items-start gap-3">
                                 <span x-show="!editMode"
-                                    class="w-6 h-6 flex items-center justify-center rounded-full shrink-0 text-sm {{ $adherent->bulletin ? 'bg-emerald-100 text-emerald-600' : 'bg-gray-100 text-gray-400' }}">
-                                    @if ($adherent->bulletin)
-                                        ✓
-                                    @else
-                                        -
-                                    @endif
+                                    class="w-6 h-6 flex mt-0.5 items-center justify-center rounded-full shrink-0 text-sm {{ !empty($bulletinsAdh) ? 'bg-emerald-100 text-emerald-600' : 'bg-gray-100 text-gray-400' }}">
+                                    {{ !empty($bulletinsAdh) ? '✓' : '—' }}
                                 </span>
-                                <div x-show="editMode" x-cloak class="flex items-center h-6 shrink-0">
-                                    <input type="hidden" name="bulletin" value="0" form="form-update-adherent">
-                                    <input type="checkbox" name="bulletin" value="1" form="form-update-adherent"
-                                        {{ $adherent->bulletin ? 'checked' : '' }}
-                                        class="w-5 h-5 rounded border-gray-300 text-[#16987C] focus:ring-[#16987C] transition-all cursor-pointer">
+
+                                <div class="flex flex-col w-full">
+                                    <span class="text-sm text-[#0F143A] font-medium leading-tight mt-1">Bulletins
+                                        d'information</span>
+
+                                    <div x-show="!editMode" class="mt-2">
+                                        @if (!empty($bulletinsAdh))
+                                            <div class="flex flex-wrap gap-1.5">
+                                                @foreach ($bulletinsAdh as $b)
+                                                    <span
+                                                        class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-[#16987C]/10 text-[#16987C] uppercase tracking-wider">
+                                                        {{ $labels[$b] ?? $b }}
+                                                    </span>
+                                                @endforeach
+                                            </div>
+                                        @else
+                                            <span class="text-xs text-gray-400 font-medium">Aucun abonnement</span>
+                                        @endif
+                                    </div>
+
+                                    <div x-show="editMode" x-cloak
+                                        class="mt-3 space-y-2.5 bg-gray-50 p-3 rounded-xl border border-gray-100">
+                                        <input type="hidden" name="bulletin" value=""
+                                            form="form-update-adherent">
+
+                                        <label class="flex items-center gap-2.5 cursor-pointer">
+                                            <input type="checkbox" name="bulletin[]" value="general"
+                                                form="form-update-adherent"
+                                                {{ in_array('general', $bulletinsAdh) ? 'checked' : '' }}
+                                                class="w-4 h-4 rounded border-gray-300 text-[#16987C] focus:ring-[#16987C] transition-all">
+                                            <span class="text-xs font-semibold text-gray-700">Association</span>
+                                        </label>
+                                        <label class="flex items-center gap-2.5 cursor-pointer">
+                                            <input type="checkbox" name="bulletin[]" value="creabot"
+                                                form="form-update-adherent"
+                                                {{ in_array('creabot', $bulletinsAdh) ? 'checked' : '' }}
+                                                class="w-4 h-4 rounded border-gray-300 text-[#16987C] focus:ring-[#16987C] transition-all">
+                                            <span class="text-xs font-semibold text-gray-700">Créabot</span>
+                                        </label>
+                                        <label class="flex items-center gap-2.5 cursor-pointer">
+                                            <input type="checkbox" name="bulletin[]" value="schlouk_sciences"
+                                                form="form-update-adherent"
+                                                {{ in_array('schlouk_sciences', $bulletinsAdh) ? 'checked' : '' }}
+                                                class="w-4 h-4 rounded border-gray-300 text-[#16987C] focus:ring-[#16987C] transition-all">
+                                            <span class="text-xs font-semibold text-gray-700">Schlouk de sciences</span>
+                                        </label>
+                                    </div>
                                 </div>
-                                <span class="text-sm text-[#0F143A] font-medium leading-tight">Abonné au bulletin
-                                    d'information</span>
                             </div>
 
                             <div class="flex items-center gap-3">
