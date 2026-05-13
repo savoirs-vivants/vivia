@@ -206,7 +206,7 @@ class AdherentFormulaireController extends Controller
             $adherentExistant = Adherent::where('numero_adherent', $formData['numero_adherent'])->first();
 
             if ($adherentExistant) {
-                $champsAdherent = ['nom', 'prenom', 'genre', 'adresse', 'code_postal', 'ville', 'tel', 'mail', 'regime_social', 'occupation', 'etablissement', 'problemes_sante', 'allergies', 'conduite_a_tenir', 'restrictions_alimentaires', 'bulletin', 'communication'];
+                $champsAdherent = ['nom', 'prenom', 'genre', 'adresse', 'code_postal', 'ville', 'tel', 'mail', 'regime_social', 'occupation', 'etablissement', 'problemes_sante', 'allergies', 'conduite_a_tenir', 'restrictions_alimentaires', 'communication'];
 
                 foreach ($champsAdherent as $champ) {
                     if (!array_key_exists($champ, $formData) && $adherentExistant->$champ !== null) {
@@ -222,6 +222,12 @@ class AdherentFormulaireController extends Controller
                 }
                 if (!array_key_exists('participation_manif', $formData)) $formData['participation_manif'] = $adherentExistant->manif ? '1' : '0';
                 if (!array_key_exists('signature_adherent', $formData) && !empty($adherentExistant->signature)) $formData['signature_adherent'] = $adherentExistant->signature;
+                if (!array_key_exists('bulletin', $formData) && $adherentExistant->bulletin !== null) {
+                    $val = $adherentExistant->bulletin;
+                    $formData['bulletin'] = is_array($val)
+                        ? $val
+                        : (is_string($val) && is_array(json_decode($val, true)) ? json_decode($val, true) : ($val ? ['general'] : []));
+                }
 
                 if (!array_key_exists('tuteurs', $formData)) {
                     $tuteurs = $adherentExistant->tousLesTuteurs()->get();
@@ -275,9 +281,15 @@ class AdherentFormulaireController extends Controller
                     if (!array_key_exists('date_creation_structure', $formData) && $structureExistante->date_creation) {
                         $formData['date_creation_structure'] = $structureExistante->date_creation->format('Y-m-d');
                     }
-                    foreach (['bulletin', 'autorisation_photo', 'communication'] as $champ) {
+                    foreach (['autorisation_photo', 'communication'] as $champ) {
                         if (!array_key_exists($champ, $formData) && $structureExistante->$champ !== null) {
                             $formData[$champ] = $structureExistante->$champ;
+                        }
+                        if (!array_key_exists('bulletin', $formData) && $structureExistante->bulletin !== null) {
+                            $val = $structureExistante->bulletin;
+                            $formData['bulletin'] = is_array($val)
+                                ? $val
+                                : (is_string($val) && is_array(json_decode($val, true)) ? json_decode($val, true) : ($val ? ['general'] : []));
                         }
                     }
                     if (!array_key_exists('signature_adherent', $formData) && !empty($structureExistante->signature)) {

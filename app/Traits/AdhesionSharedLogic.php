@@ -198,7 +198,7 @@ trait AdhesionSharedLogic
                     $updateData['longitude'] = $coords ? $coords['lng'] : $adherent->longitude;
                 }
 
-                $updateData['bulletin']      = !empty($formData['bulletin'] ?? false);
+                $updateData['bulletin']      = $formData['bulletin'] ?? [];
                 $updateData['communication'] = !empty($formData['communication'] ?? false);
                 $updateData['manif']         = ($formData['participation_manif'] ?? '0') === '1';
 
@@ -251,7 +251,7 @@ trait AdhesionSharedLogic
                     'allergies'                 => $formData['allergies'] ?? null,
                     'conduite_a_tenir'          => $formData['conduite_a_tenir'] ?? null,
                     'restrictions_alimentaires' => $formData['restrictions_alimentaires'] ?? null,
-                    'bulletin'                  => !empty($formData['bulletin']),
+                    'bulletin'                  => $formData['bulletin'] ?? [],
                     'communication'             => !empty($formData['communication']),
                     'manif'                     => ($formData['participation_manif'] ?? '0') === '1',
                     'actions'                   => json_encode($formData['actions_benevoles'] ?? []),
@@ -375,7 +375,7 @@ trait AdhesionSharedLogic
                 'site_web'           => $formData['site_web'] ?? null,
                 'nom_correspondant'  => $formData['nom_correspondant'] ?? null,
                 'tel_correspondant'  => $formData['tel_correspondant'] ?? null,
-                'bulletin'           => (bool) ($formData['bulletin'] ?? false),
+                'bulletin'           => $formData['bulletin'] ?? [],
                 'autorisation_photo' => (bool) ($formData['autorisation_photo'] ?? false),
                 'signature'          => $formData['signature_adherent'] ?? null,
                 'statut'             => $statutActivite,

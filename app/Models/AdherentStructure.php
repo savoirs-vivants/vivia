@@ -36,7 +36,7 @@ class AdherentStructure extends Model
 
     protected $casts = [
         'date_creation'      => 'date',
-        'bulletin'           => 'boolean',
+        'bulletin'           => 'array',
         'communication'      => 'boolean',
         'autorisation_photo' => 'boolean',
     ];

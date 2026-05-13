@@ -54,7 +54,7 @@ class Adherent extends Model
         'date_naiss'    => 'date',
         'manif'         => 'boolean',
         'communication' => 'boolean',
-        'bulletin'      => 'boolean',
+        'bulletin'      => 'array',
         'commentaire'    => 'array',
     ];
 

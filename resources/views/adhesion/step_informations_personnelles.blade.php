@@ -1,7 +1,8 @@
                     <div class="p-5 md:p-6">
                         <div class="mb-5">
                             <h2 class="text-xl font-bold text-gray-900">Informations personnelles de l'adhérent 📋</h2>
-                            <p class="text-gray-400 mt-1 text-sm">Renseignez vos coordonnées et informations d'adhésion</p>
+                            <p class="text-gray-400 mt-1 text-sm">Renseignez vos coordonnées et informations d'adhésion
+                            </p>
                         </div>
 
                         <form action="{{ route('adhesion.next', $token) }}" method="POST">
@@ -19,7 +20,8 @@
                                             <div
                                                 class="border-2 rounded-lg p-3 text-center peer-checked:border-teal-500 peer-checked:bg-teal-50 peer-checked:ring-2 ring-teal-500/20 border-gray-200 group-hover:border-teal-400 transition-all">
                                                 <div class="text-2xl mb-1">{{ $icon }}</div>
-                                                <span class="text-xs font-bold text-slate-700">{{ $val }}</span>
+                                                <span
+                                                    class="text-xs font-bold text-slate-700">{{ $val }}</span>
                                             </div>
                                         </label>
                                     @endforeach
@@ -91,21 +93,58 @@
 
                             <div class="p-4 bg-gray-50 rounded-xl border border-gray-200 mb-5 space-y-3">
                                 <p class="text-sm font-bold text-slate-900 mb-1">Autorisations & communications</p>
-                                <label class="flex items-start gap-3 cursor-pointer group">
-                                    <input type="checkbox" name="bulletin" value="1"
-                                        {{ !empty($formData['bulletin'] ?? '') ? 'checked' : '' }}
-                                        class="{{ $check }} mt-0.5">
-                                    <span class="text-sm text-gray-700 leading-relaxed">
-                                        <strong class="text-slate-900">Mail d'information</strong> — J'accepte de
-                                        recevoir des mails d'information de l'association par email.
-                                    </span>
-                                </label>
-                                <label class="flex items-start gap-3 cursor-pointer group">
+
+                                <!-- Choix multiples pour le bulletin d'information -->
+                                <div class="space-y-2 mb-4">
+                                    <p class="text-sm text-gray-700 font-semibold">Quelles actualités souhaitez-vous
+                                        recevoir ?</p>
+
+                                    <!-- Astuce : Champ caché pour envoyer un tableau vide si rien n'est coché -->
+                                    <input type="hidden" name="bulletin" value="">
+
+                                    <!-- Option Général (anciennement le booléen) -->
+                                    <label class="flex items-start gap-3 cursor-pointer group">
+                                        <input type="checkbox" name="bulletin[]" value="general"
+                                            {{ in_array('general', (array) ($formData['bulletin'] ?? [])) ? 'checked' : '' }}
+                                            class="{{ $check }} mt-0.5">
+                                        <span class="text-sm text-gray-700 leading-relaxed">
+                                            <strong class="text-slate-900">Association</strong> — Informations générales
+                                            et vie de l'association.
+                                        </span>
+                                    </label>
+
+                                    <!-- Option Créabot -->
+                                    <label class="flex items-start gap-3 cursor-pointer group">
+                                        <input type="checkbox" name="bulletin[]" value="creabot"
+                                            {{ in_array('creabot', (array) ($formData['bulletin'] ?? [])) ? 'checked' : '' }}
+                                            class="{{ $check }} mt-0.5">
+                                        <span class="text-sm text-gray-700 leading-relaxed">
+                                            <strong class="text-slate-900">Créabot</strong> — L'actualité et les
+                                            ateliers Créabot.
+                                        </span>
+                                    </label>
+
+                                    <!-- Option Schlouk de sciences -->
+                                    <label class="flex items-start gap-3 cursor-pointer group">
+                                        <input type="checkbox" name="bulletin[]" value="schlouk_sciences"
+                                            {{ in_array('schlouk_sciences', (array) ($formData['bulletin'] ?? [])) ? 'checked' : '' }}
+                                            class="{{ $check }} mt-0.5">
+                                        <span class="text-sm text-gray-700 leading-relaxed">
+                                            <strong class="text-slate-900">Schlouk de sciences</strong> — Évènements et
+                                            rencontres scientifiques.
+                                        </span>
+                                    </label>
+                                </div>
+
+                                <!-- Droit à l'image (inchangé) -->
+                                <label
+                                    class="flex items-start gap-3 cursor-pointer group border-t border-gray-200 pt-3">
                                     <input type="checkbox" name="communication" value="1"
                                         {{ !empty($formData['communication'] ?? '') ? 'checked' : '' }}
                                         class="{{ $check }} mt-0.5">
                                     <span class="text-sm text-gray-700 leading-relaxed">
-                                        <strong class="text-slate-900">Droit à l'image</strong> — J'autorise l'association
+                                        <strong class="text-slate-900">Droit à l'image</strong> — J'autorise
+                                        l'association
                                         à photographier l'adhérent·e et à diffuser ces images.
                                     </span>
                                 </label>
@@ -115,7 +154,8 @@
                                 @if ($hasPrev)
                                     <a href="{{ route('adhesion.show', ['token' => $token, 'step' => $prevStep]) }}"
                                         class="{{ $btnBack }}">
-                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <svg class="w-5 h-5" fill="none" stroke="currentColor"
+                                            viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
                                                 d="M15 19l-7-7 7-7" />
                                         </svg>
