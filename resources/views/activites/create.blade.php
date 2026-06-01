@@ -152,7 +152,7 @@
 
                         <div>
                             <label class="block text-xs font-black text-gray-400 uppercase tracking-widest mb-2">
-                                Nombre max d'élèves
+                                Nombre maximal de participants
                                 <span class="text-gray-300 font-normal normal-case tracking-normal ml-1">(optionnel)</span>
                             </label>
                             <input type="number" min="1" name="max_eleves"
