@@ -202,12 +202,6 @@
                         </div>
                     @endforeach
                 </div>
-                @if ($users->hasPages())
-                    <div class="px-4 sm:px-6 py-4 border-t border-gray-100 bg-gray-50/50 overflow-x-auto">
-                        {{ $users->links('components.pagination-fr') }}
-                    </div>
-                @endif
-
             @else
                 <div class="flex-1 flex flex-col items-center justify-center p-8 sm:p-12 text-center">
                     <div class="w-20 h-20 rounded-3xl bg-gray-50 border border-gray-100 flex items-center justify-center mb-5 shadow-inner">
