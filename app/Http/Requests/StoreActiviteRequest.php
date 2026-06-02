@@ -30,6 +30,7 @@ class StoreActiviteRequest extends FormRequest
             'dossier_action'    => 'nullable|in:none,existing,new',
             'id_dossier'        => 'nullable|exists:dossiers_activite,id',
             'nouveau_dossier'   => 'nullable|string|max:255',
+            'sans_horaires'     => 'nullable|boolean',
         ];
     }
 

@@ -177,10 +177,27 @@
                                 class="w-full px-4 py-3 bg-gray-50 border border-gray-100 rounded-xl text-sm text-gray-700 placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-[#16987C]/30 focus:border-[#16987C]/40 transition-all">
                         </div>
 
-                        <div x-show="typeActivite === 'activite'" x-cloak
+                        <div x-show="typeActivite === 'activite'" x-cloak x-data="{ sansHoraires: false }"
                             class="md:col-span-2 p-5 bg-gray-50/50 rounded-xl border border-gray-100">
-                            <h3 class="text-sm font-bold text-[#0F143A] mb-4">Créneaux horaires hebdomadaires</h3>
-                            <div id="horaires-container" class="space-y-3">
+                            <div class="flex items-center justify-between mb-4">
+                                <h3 class="text-sm font-bold text-[#0F143A]">Créneaux horaires hebdomadaires</h3>
+                                <label class="flex items-center gap-2.5 cursor-pointer select-none">
+                                    <span class="text-xs font-semibold text-gray-500">Pas d'horaires spécifiques</span>
+                                    <button type="button" @click="sansHoraires = !sansHoraires"
+                                        class="relative w-9 h-5 rounded-full transition-colors duration-200 focus:outline-none"
+                                        :class="sansHoraires ? 'bg-[#16987C]' : 'bg-gray-200'">
+                                        <span class="absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform duration-200"
+                                            :class="sansHoraires ? 'translate-x-4' : 'translate-x-0'"></span>
+                                    </button>
+                                </label>
+                            </div>
+                            <input type="hidden" name="sans_horaires" :value="sansHoraires ? '1' : '0'">
+                            <div x-show="sansHoraires" x-transition
+                                class="flex items-center gap-2 px-4 py-3 bg-teal-50 border border-teal-100 rounded-xl text-sm text-teal-700 font-medium">
+                                <span class="text-base">🕐</span>
+                                Cette activité sera accessible à tout moment, sans créneau fixe.
+                            </div>
+                            <div x-show="!sansHoraires" id="horaires-container" class="space-y-3">
                                 <div
                                     class="horaire-row flex flex-wrap sm:flex-nowrap items-center gap-3 bg-white p-3 rounded-lg border border-gray-200">
                                     <div class="w-full sm:w-1/3">
@@ -201,8 +218,7 @@
                                             class="flex-1 px-3 py-2 bg-gray-50 border border-gray-100 rounded-lg text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-[#16987C]/30 focus:border-[#16987C]/40">
                                         <button type="button"
                                             class="btn-remove-horaire invisible p-2 text-gray-300 hover:text-rose-500 hover:bg-rose-50 rounded-lg transition-colors">
-                                            <svg class="w-4 h-4" fill="none" stroke="currentColor"
-                                                viewBox="0 0 24 24">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                                     d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                                             </svg>

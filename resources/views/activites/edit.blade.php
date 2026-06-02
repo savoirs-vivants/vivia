@@ -179,9 +179,27 @@
                         </div>
 
                         <div x-show="typeActivite === 'activite'" x-cloak
+                            x-data="{ sansHoraires: {{ empty($activite->horaires) ? 'true' : 'false' }} }"
                             class="md:col-span-2 p-5 bg-gray-50/50 rounded-xl border border-gray-100">
-                            <h3 class="text-sm font-bold text-[#0F143A] mb-4">Créneaux horaires</h3>
-                            <div id="horaires-container" class="space-y-3">
+                            <div class="flex items-center justify-between mb-4">
+                                <h3 class="text-sm font-bold text-[#0F143A]">Créneaux horaires</h3>
+                                <label class="flex items-center gap-2.5 cursor-pointer select-none">
+                                    <span class="text-xs font-semibold text-gray-500">Pas d'horaires spécifiques</span>
+                                    <button type="button" @click="sansHoraires = !sansHoraires"
+                                        class="relative w-9 h-5 rounded-full transition-colors duration-200 focus:outline-none"
+                                        :class="sansHoraires ? 'bg-[#16987C]' : 'bg-gray-200'">
+                                        <span class="absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform duration-200"
+                                            :class="sansHoraires ? 'translate-x-4' : 'translate-x-0'"></span>
+                                    </button>
+                                </label>
+                            </div>
+                            <input type="hidden" name="sans_horaires" :value="sansHoraires ? '1' : '0'">
+                            <div x-show="sansHoraires" x-transition
+                                class="flex items-center gap-2 px-4 py-3 bg-teal-50 border border-teal-100 rounded-xl text-sm text-teal-700 font-medium">
+                                <span class="text-base">🕐</span>
+                                Cette activité sera accessible à tout moment, sans créneau fixe.
+                            </div>
+                            <div x-show="!sansHoraires" id="horaires-container" class="space-y-3">
                                 @forelse($activite->horaires_plats as $index => $horaire)
                                     <div
                                         class="horaire-row flex flex-wrap sm:flex-nowrap items-center gap-3 bg-white p-3 rounded-lg border border-gray-200">

@@ -69,7 +69,9 @@ class ActiviteService
         $validated = $request->validated();
         $horaires = [];
 
-        if ($validated['type'] === 'stage') {
+        if ($request->boolean('sans_horaires')) {
+            // Activité sans créneaux fixes — horaires null intentionnel
+        } elseif ($validated['type'] === 'stage') {
             $horaires['stage'] = [
                 'date_debut'  => $request->input('date_debut_stage'),
                 'date_fin'    => $request->input('date_fin_stage'),

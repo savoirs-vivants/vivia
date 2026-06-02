@@ -145,6 +145,16 @@ class ActiviteController extends Controller
     {
         abort_if($activite->type === 'recherche', 404);
 
+        if (empty($activite->horaires)) {
+            if (Auth::user()->role === 'animateur') {
+                abort_if(!$activite->gestionnaires()->where('users.id', Auth::id())->exists(), 403);
+            }
+            $activite->load(['gestionnaires']);
+            $saison = Saison::current();
+            $adherents = $activite->adherentsActifs()->wherePivot('saison', $saison)->get();
+            return view('activites.show_sans_horaires', compact('activite', 'adherents', 'saison'));
+        }
+
         Saison::syncActive();
 
         if (Auth::user()->role === 'animateur') {
