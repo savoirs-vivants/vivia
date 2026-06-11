@@ -261,6 +261,20 @@
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"/>
                                             </svg>
                                         </a>
+                                        @if (Auth::user()->role === 'admin')
+                                            <form method="POST" action="{{ route('adherents.destroy', $adherent) }}"
+                                                  onsubmit="return confirm('Supprimer définitivement {{ $adherent->prenom }} {{ $adherent->nom }} de la base de données ? Cette action est irréversible.');">
+                                                @csrf
+                                                @method('DELETE')
+                                                <button type="submit"
+                                                        class="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-red-50 hover:bg-red-100 text-red-600 rounded-lg text-xs font-bold transition-all duration-150">
+                                                    Supprimer
+                                                    <svg class="w-3 h-3 opacity-70" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M9.5 4h5a1 1 0 011 1v2h-7V5a1 1 0 011-1z"/>
+                                                    </svg>
+                                                </button>
+                                            </form>
+                                        @endif
                                     @endif
                                 </div>
                             </td>

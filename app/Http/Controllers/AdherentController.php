@@ -207,6 +207,15 @@ class AdherentController extends Controller
         ));
     }
 
+    public function destroy(Adherent $adherent)
+    {
+        $nom = "{$adherent->prenom} {$adherent->nom}";
+        $adherent->delete();
+
+        return redirect()->route('adherents.index')
+            ->with('success', "{$nom} a été supprimé(e) définitivement.");
+    }
+
     public function uploaderFichiers(Request $request, Adherent $adherent)
     {
         $request->validate([

@@ -44,4 +44,11 @@ class ProfileController extends Controller
 
         return view('profile.logs', compact('logs'));
     }
+
+    public function destroyLog(SyncLog $syncLog)
+    {
+        $syncLog->delete();
+
+        return back()->with('success', 'Le journal a été supprimé.');
+    }
 }

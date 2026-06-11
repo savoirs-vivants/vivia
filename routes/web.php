@@ -81,6 +81,7 @@ Route::middleware('auth')->group(function () {
     Route::post('/adherents/{adherent}/versement', [AdherentController::class, 'ajouterVersement'])->name('adherents.versement');
     Route::get('/adherents/{adherent}/pdf', [AdherentController::class, 'downloadPdf'])->name('adherents.pdf');
     Route::put('/adherents/{adherent}/update-fiche', [AdherentController::class, 'updateFiche'])->name('adherents.update-fiche');
+    Route::delete('/adherents/{adherent}', [AdherentController::class, 'destroy'])->middleware('role:admin')->name('adherents.destroy');
 
     Route::get('/structures/{structure}', [AdherentController::class, 'showStructure'])->name('structures.show');
     Route::post('/structures/{structure}/valider', [AdherentController::class, 'validerStructure'])->name('structures.valider');
@@ -120,6 +121,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/profil/modifier', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::put('/profil', [ProfileController::class, 'update'])->name('profile.update');
     Route::get('/profil/logs-synchronisation', [ProfileController::class, 'journalSync'])->middleware('role:admin')->name('profile.logs');
+    Route::delete('/profil/logs-synchronisation/{syncLog}', [ProfileController::class, 'destroyLog'])->middleware('role:admin')->name('profile.logs.destroy');
 
     Route::get('/parametres', [SettingController::class, 'index'])->name('settings.index');
     Route::post('/parametres', [SettingController::class, 'update'])->name('settings.update');

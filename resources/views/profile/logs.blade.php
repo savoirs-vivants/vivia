@@ -91,7 +91,7 @@
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                                     d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                                             </svg>
-                                            <div class="text-sm text-red-800">
+                                            <div class="text-sm text-red-800 flex-1">
                                                 <p class="font-semibold mb-1">Détails des erreurs :</p>
                                                 <ul class="list-disc pl-4 space-y-1 marker:text-red-300">
                                                     @foreach ($log->errors as $erreur)
@@ -100,6 +100,20 @@
                                                 </ul>
                                             </div>
                                         </div>
+
+                                        <form method="POST" action="{{ route('profile.logs.destroy', $log) }}"
+                                              onsubmit="return confirm('Marquer ce journal comme traité et le supprimer ?');"
+                                              class="mt-3 flex justify-end">
+                                            @csrf
+                                            @method('DELETE')
+                                            <button type="submit"
+                                                    class="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-white hover:bg-red-50 border border-red-200 text-red-600 rounded-lg text-xs font-bold transition-all duration-150">
+                                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/>
+                                                </svg>
+                                                J'ai bien vu l'erreur
+                                            </button>
+                                        </form>
                                     </div>
                                 @endif
 
