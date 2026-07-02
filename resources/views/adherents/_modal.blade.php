@@ -221,6 +221,12 @@
                             </div>
                         </template>
 
+                        <div class="flex items-center justify-between p-3 bg-gray-50 rounded-xl border border-gray-100"
+                            x-show="adherent.saison">
+                            <span class="text-sm font-semibold text-gray-600">Année scolaire</span>
+                            <span class="text-sm font-black text-[#0F143A]" x-text="adherent.saison"></span>
+                        </div>
+
                         <div x-show="!adherent.isPreInscrit"
                             class="flex items-center justify-between p-3 bg-rose-50 rounded-xl border border-rose-100">
                             <span class="text-sm font-semibold text-gray-600">Statut actuel</span>
