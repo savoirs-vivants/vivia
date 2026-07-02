@@ -21,9 +21,15 @@ class SendRentreeEmails extends Command
 
         $this->info("Recherche des pré-inscrits pour la saison {$saison}...");
 
-        $inscriptions = Inscription::with('adherent', 'adherent.tousLesTuteurs')
+        $inscriptions = Inscription::with('adherent', 'adherent.tousLesTuteurs', 'adherent.paiements')
             ->where('saison', $saison)
-            ->whereIn('a_paye', ['pre_inscrit', 'acompte_paye'])
+            ->where(function ($q) {
+                // La migration (00:01) a déjà passé les pre_inscrit en en_attente avant cet envoi (10:00)
+                $q->whereIn('a_paye', ['pre_inscrit', 'acompte_paye'])
+                  ->orWhere(function ($q2) {
+                      $q2->where('a_paye', 'En attente')->where('is_preinscription', true);
+                  });
+            })
             ->get();
 
         if ($inscriptions->isEmpty()) {
@@ -38,9 +44,11 @@ class SendRentreeEmails extends Command
 
             if ($adherent) {
                 $destinataire = $this->resoudreEmailContact($adherent);
+                $totalVerse   = (float) $adherent->paiements->sum('montant');
+                $resteAPayer  = max(0, (float) $inscription->montant - $totalVerse);
 
                 if ($destinataire) {
-                    Mail::to($destinataire)->send(new RentreePreInscrits($adherent, $inscription));
+                    Mail::to($destinataire)->send(new RentreePreInscrits($adherent, $inscription, $resteAPayer));
                     $count++;
                 }
             }

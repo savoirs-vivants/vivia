@@ -16,11 +16,13 @@ class RentreePreInscrits extends Mailable
 
     public $adherent;
     public $inscription;
+    public $resteAPayer;
 
-    public function __construct(Adherent $adherent, Inscription $inscription)
+    public function __construct(Adherent $adherent, Inscription $inscription, float $resteAPayer = 0)
     {
-        $this->adherent = $adherent;
+        $this->adherent    = $adherent;
         $this->inscription = $inscription;
+        $this->resteAPayer = $resteAPayer;
     }
 
     public function envelope(): Envelope

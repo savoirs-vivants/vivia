@@ -29,6 +29,13 @@
         <div style="text-align: center; background-color: #f8fafc; border: 2px dashed #e2e8f0; border-radius: 12px; padding: 24px 20px; margin-bottom: 24px;">
             <span style="display: block; font-size: 12px; text-transform: uppercase; color: #94a3b8; font-weight: 700; margin-bottom: 12px; letter-spacing: 1px;">Pour valider votre place</span>
 
+            @if ($resteAPayer > 0)
+            <div style="background-color: #fef3c7; border: 1px solid #fde68a; border-radius: 10px; padding: 14px 18px; margin-bottom: 16px; display: inline-block;">
+                <span style="font-size: 13px; color: #92400e; font-weight: 600;">Solde restant à régler</span><br>
+                <span style="font-size: 28px; font-weight: 700; color: #b45309; font-family: 'Space Mono', Courier, monospace;">{{ number_format($resteAPayer, 2, ',', ' ') }} €</span>
+            </div>
+            @endif
+
             <p style="font-size: 15px; color: #4b5563; margin-top: 0; margin-bottom: 20px; line-height: 1.5;">
                 Il ne vous reste plus qu'à régler le solde de votre adhésion. Rendez-vous sur notre portail, cliquez sur <strong style="color: #222A60;">"Déjà adhérent"</strong> et laissez-vous guider !
             </p>
