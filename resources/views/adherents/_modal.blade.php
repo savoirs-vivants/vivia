@@ -313,7 +313,7 @@
                 </button>
             </form>
 
-            <form x-show="!adherent.isPartiel" :action="actionUrl" method="POST">
+            <form x-show="!adherent.isPartiel && !adherent.isPreInscrit" :action="actionUrl" method="POST">
                 @csrf
                 <input type="hidden" name="plusieurs_versements" :value="plusieursVersements ? '1' : '0'">
                 <input type="hidden" name="montant_recu" :value="montantRecu">

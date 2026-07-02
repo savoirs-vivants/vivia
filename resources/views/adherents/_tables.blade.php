@@ -254,9 +254,17 @@
                                             </svg>
                                         </button>
                                     @elseif ($tab === 'pre_inscrits')
-                                        <span class="inline-flex px-3 py-1.5 bg-indigo-50 text-indigo-600 rounded-lg text-xs font-bold">
-                                            Acompte versé
-                                        </span>
+                                        <button @click="ouvrirModal({
+                                                    ...{{ json_encode($adherent->modalData($tab)) }},
+                                                    isPreInscrit: true,
+                                                    totalVerse: {{ (float) $adherent->paiements->sum('montant') }}
+                                                })"
+                                                class="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-600 rounded-lg text-xs font-bold transition-all duration-150">
+                                            Voir le détail
+                                            <svg class="w-3 h-3 opacity-70" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"/>
+                                            </svg>
+                                        </button>
                                     @else
                                         <a href="{{ route('adherents.show', $adherent) }}"
                                            class="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-[#222A60] hover:bg-[#1a2050] text-white rounded-lg text-xs font-bold transition-all duration-150 shadow-sm">
