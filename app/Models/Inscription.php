@@ -20,11 +20,13 @@ class Inscription extends Model
         'a_paye',
         'montant',
         'renouvellement',
+        'is_preinscription',
     ];
 
     protected $casts = [
         'date_inscription' => 'date',
         'renouvellement'   => 'boolean',
+        'is_preinscription' => 'boolean',
         'montant'          => 'float',
         'ressourceries_ids' => 'array',
         'types_activite'    => 'array',

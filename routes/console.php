@@ -8,5 +8,6 @@ Artisan::command('inspire', function () {
     $this->comment(Inspiring::quote());
 })->purpose('Display an inspiring quote');
 
+Schedule::command('inscriptions:migrer-preinscrits')->yearlyOn(9, 1, '00:01');
 Schedule::command('email:rentree-pre-inscrits')->yearlyOn(9, 1, '10:00');
 Schedule::command('seances:generate-season')->yearlyOn(9, 1, '02:00'); 

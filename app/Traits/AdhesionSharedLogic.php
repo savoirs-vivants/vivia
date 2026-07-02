@@ -137,7 +137,6 @@ trait AdhesionSharedLogic
             $typeActivite = $types[0] ?? ($formData['type_activite'] ?? '');
             $activiteIds     = array_filter((array) ($formData['activites_selectionnees'] ?? []));
             $ressourcerieIds = array_filter((array) ($formData['ressourcerie_selectionnees'] ?? []));
-            $saison          = Saison::current();
             $aPaye           = Inscription::EN_ATTENTE;
 
             $autresTouteurs = [];
@@ -270,21 +269,26 @@ trait AdhesionSharedLogic
             $isPreInscription    = $this->isPreInscription($formData);
             $aPaye               = $isPreInscription ? 'pre_inscrit' : 'En attente';
 
+            // Soutien ou autre inscription hors-atelier en juillet/août → saison suivante, statut en_attente
+            $mois   = now()->month;
+            $saison = ($mois === 7 || $mois === 8) ? Saison::preinscriptions() : Saison::current();
+
             $montantReelActivites = $this->calculerMontantActivites($activiteIds);
             $montantRessourcerie  = !empty($ressourcerieIds) ? Ressourcerie::whereIn('id', $ressourcerieIds)->sum('prix') : 0;
             $cotisation           = $this->getMontantCotisation($formData);
             $montantTotalReel     = (float) ($montantReelActivites + $montantRessourcerie + $cotisation);
 
             Inscription::create([
-                'id_adherent'      => $adherent->id,
-                'saison'           => $saison,
-                'date_inscription' => now()->toDateString(),
-                'type_adhesion'    => $typeActivite,
-                'types_activite'   => $types,
+                'id_adherent'       => $adherent->id,
+                'saison'            => $saison,
+                'date_inscription'  => now()->toDateString(),
+                'type_adhesion'     => $typeActivite,
+                'types_activite'    => $types,
                 'ressourceries_ids' => !empty($ressourcerieIds) ? array_values($ressourcerieIds) : null,
-                'a_paye'           => $aPaye,
-                'montant'          => $montantTotalReel,
-                'renouvellement'   => $isAdherent,
+                'a_paye'            => $aPaye,
+                'montant'           => $montantTotalReel,
+                'renouvellement'    => $isAdherent,
+                'is_preinscription' => $isPreInscription,
             ]);
 
             /* Bulk Insert pour éviter de multiplier les requêtes SQL (N+1)

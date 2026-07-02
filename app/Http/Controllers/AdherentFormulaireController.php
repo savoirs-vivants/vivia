@@ -600,9 +600,23 @@ class AdherentFormulaireController extends Controller
             }
 
             if ($adherentExistant) {
+                // En juillet/août, les pré-inscriptions sont enregistrées sur la saison suivante.
+                // En septembre+, current() = saison suivante → même valeur.
+                $moisDetection = now()->month;
+                $saisonRecherche = ($moisDetection === 7 || $moisDetection === 8)
+                    ? Saison::preinscriptions()
+                    : Saison::current();
+
                 $preInscriptionDb = $adherentExistant->inscriptions()
-                    ->where('saison', Saison::current())
-                    ->whereIn('a_paye', ['acompte_paye', 'pre_inscrit'])
+                    ->where('saison', $saisonRecherche)
+                    ->where(function ($q) {
+                        $q->whereIn('a_paye', ['acompte_paye', 'pre_inscrit'])
+                          ->orWhere(function ($q2) {
+                              // Après migration du 1er septembre : statut devient en_attente
+                              $q2->where('a_paye', \App\Models\Inscription::EN_ATTENTE)
+                                 ->where('is_preinscription', true);
+                          });
+                    })
                     ->latest()
                     ->first();
 
