@@ -135,7 +135,7 @@
 
                     <template x-if="adherent.isPreInscrit">
                         <div x-data="{
-                            acompteVerse: adherent.paiements ? adherent.paiements.reduce((total, p) => total + parseFloat(p.montant), 0) : 60,
+                            acompteVerse: adherent.totalVerse ?? 50,
                             montantTotal: parseFloat(adherent.montant.toString().replace(',', '.').replace(' €', ''))
                         }" class="p-4 bg-indigo-50 border border-indigo-100 rounded-xl">
 

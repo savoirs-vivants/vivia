@@ -61,10 +61,13 @@ class AdherentController extends Controller
                 fn($q2) => $q2->whereIn('activites_adherents.id_activite', $mesActivitesIds)
             ));
 
+        $mois = now()->month;
+        $saisonPreinscriptions = ($mois === 7 || $mois === 8) ? Saison::preinscriptions() : $saison;
+
         $queryPayes       = (clone $base)->whereHas('inscriptions', fn($q) => $q->where('a_paye', Inscription::PAYE)->where('saison', $saison));
-        $queryAttente     = (clone $base)->whereHas('inscriptions', fn($q) => $q->where('a_paye', Inscription::EN_ATTENTE)->where('saison', $saison));
+        $queryAttente     = (clone $base)->whereHas('inscriptions', fn($q) => $q->where('a_paye', Inscription::EN_ATTENTE)->whereIn('saison', array_unique([$saison, $saisonPreinscriptions])));
         $queryPartiel     = (clone $base)->whereHas('inscriptions', fn($q) => $q->where('a_paye', Inscription::PARTIEL)->where('saison', $saison));
-        $queryPreInscrits = (clone $base)->whereHas('inscriptions', fn($q) => $q->where('a_paye', 'pre_inscrit')->where('saison', $saison));
+        $queryPreInscrits = (clone $base)->whereHas('inscriptions', fn($q) => $q->where('a_paye', 'pre_inscrit')->where('saison', $saisonPreinscriptions));
 
         $countPayes       = (clone $queryPayes)->count();
         $countAttente     = $canVoirTousStatuts ? (clone $queryAttente)->count() : 0;
