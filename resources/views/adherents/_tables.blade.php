@@ -148,100 +148,150 @@
 
     @else
         {{-- Mobile card view --}}
-        <div class="md:hidden divide-y divide-gray-50">
+        <div class="md:hidden">
             @forelse ($items as $adherent)
                 @php
-                    $totalVerseMob = (float) $adherent->paiements->sum('montant');
-                    $showMontant   = in_array($tab, ['attente', 'partiel', 'pre_inscrits']);
+                    $tvMob       = (float) $adherent->paiements->sum('montant');
+                    $showExtra   = in_array($tab, ['attente', 'partiel', 'pre_inscrits']);
+                    $isChequeAtt = ($tab === 'pre_inscrits' && $tvMob === 0.0 && $adherent->sourceLabel === 'Interne');
                 @endphp
-                <div class="px-4 py-3 flex items-start gap-3">
-                    <div class="w-9 h-9 rounded-full flex items-center justify-center text-white text-xs font-black shrink-0 mt-0.5"
-                         style="background-color: {{ $adherent->couleur_avatar }}">
-                        {{ $adherent->initiales }}
-                    </div>
-                    <div class="flex-1 min-w-0">
-                        <div class="flex items-center justify-between gap-2 flex-wrap">
-                            <p class="font-bold text-sm text-[#0F143A] truncate">{{ $adherent->prenom }} {{ $adherent->nom }}</p>
-                            @if ($showMontant)
-                                <span class="inline-flex px-2 py-0.5 rounded-md text-xs font-bold {{ $adherent->sourceClass }}">{{ $adherent->sourceLabel }}</span>
-                            @endif
+                <div class="mx-3 my-2 bg-white border border-gray-100 rounded-2xl shadow-sm overflow-hidden">
+
+                    {{-- Header carte --}}
+                    <div class="flex items-center gap-3 px-4 pt-4 pb-3">
+                        <div class="w-10 h-10 rounded-xl flex items-center justify-center text-white text-sm font-black shrink-0"
+                             style="background-color: {{ $adherent->couleur_avatar }}">
+                            {{ $adherent->initiales }}
                         </div>
-                        <div class="flex flex-wrap gap-1 mt-1.5">
+                        <div class="flex-1 min-w-0">
+                            <p class="font-bold text-sm text-[#0F143A] leading-tight">{{ $adherent->prenom }} {{ $adherent->nom }}</p>
                             @if ($adherent->tranche_age)
-                                <span class="inline-flex px-2 py-0.5 rounded-md text-xs font-semibold {{ $adherent->trancheAgeClass }}">{{ $adherent->tranche_age }}</span>
+                                <span class="inline-flex mt-0.5 px-2 py-0.5 rounded-md text-[10px] font-bold {{ $adherent->trancheAgeClass }}">{{ $adherent->tranche_age }}</span>
                             @endif
-                            @forelse ($adherent->activitesActives as $activite)
-                                <span class="inline-flex px-2 py-0.5 bg-gray-100 text-gray-600 rounded-md text-xs font-semibold">{{ $activite->nom }}</span>
-                            @empty
-                                <span class="text-xs text-gray-300">Aucune activité</span>
-                            @endforelse
                         </div>
-                        @if ($showMontant)
-                            <div class="mt-1.5 flex items-center gap-3">
-                                @if ($tab === 'partiel')
-                                    @php
-                                        $totalMob = (float) ($adherent->inscription?->montant ?? 0);
-                                        $resteMob = max(0, $totalMob - $totalVerseMob);
-                                    @endphp
-                                    <span class="text-xs font-bold text-emerald-600">{{ number_format($totalVerseMob, 2, ',', ' ') }} €</span>
-                                    <span class="text-xs text-gray-400">/ {{ number_format($totalMob, 2, ',', ' ') }} €</span>
-                                    <span class="text-xs text-amber-500 font-bold">reste {{ number_format($resteMob, 2, ',', ' ') }} €</span>
-                                @elseif ($tab === 'pre_inscrits')
-                                    @if ($totalVerseMob === 0.0 && $adherent->sourceLabel === 'Interne')
-                                        <span class="text-xs font-bold text-amber-600">Chèque à recevoir</span>
-                                    @else
-                                        <span class="text-xs font-bold text-[#0F143A]">{{ number_format((float) $adherent->inscription?->montant, 2, ',', ' ') }} €</span>
-                                    @endif
-                                @else
-                                    <span class="text-xs font-bold text-[#0F143A]">{{ number_format((float) $adherent->inscription?->montant, 2, ',', ' ') }} €</span>
-                                    @if ($adherent->inscription?->date_inscription)
-                                        <span class="text-xs text-gray-400">{{ $adherent->inscription->date_inscription->isoFormat('D MMM YYYY') }}</span>
-                                    @endif
-                                @endif
-                            </div>
+                        @if ($showExtra)
+                            <span class="shrink-0 inline-flex px-2.5 py-1 rounded-lg text-[10px] font-bold {{ $isChequeAtt ? 'bg-amber-50 text-amber-600' : $adherent->sourceClass }}">
+                                {{ $isChequeAtt ? 'Chèque att.' : $adherent->sourceLabel }}
+                            </span>
                         @endif
                     </div>
-                    <div class="shrink-0 flex flex-col gap-1.5 items-end">
+
+                    {{-- Activités --}}
+                    @if ($adherent->activitesActives->isNotEmpty())
+                        <div class="px-4 pb-3 flex flex-wrap gap-1.5">
+                            @foreach ($adherent->activitesActives as $activite)
+                                <span class="inline-flex px-2.5 py-1 bg-gray-100 text-gray-600 rounded-lg text-xs font-semibold">{{ $activite->nom }}</span>
+                            @endforeach
+                        </div>
+                    @endif
+
+                    {{-- Infos financières --}}
+                    @if ($showExtra)
+                        <div class="mx-4 mb-3 px-3 py-2.5 bg-gray-50 rounded-xl flex items-center justify-between">
+                            @if ($tab === 'partiel')
+                                @php
+                                    $totalMob = (float) ($adherent->inscription?->montant ?? 0);
+                                    $resteMob = max(0, $totalMob - $tvMob);
+                                    $pctMob   = $totalMob > 0 ? min(100, round($tvMob / $totalMob * 100)) : 0;
+                                @endphp
+                                <div class="flex-1">
+                                    <div class="flex items-center justify-between mb-1.5">
+                                        <span class="text-xs font-bold text-emerald-600">{{ number_format($tvMob, 2, ',', ' ') }} €</span>
+                                        <span class="text-xs text-gray-400">/ {{ number_format($totalMob, 2, ',', ' ') }} €</span>
+                                        <span class="text-xs font-bold text-amber-500">reste {{ number_format($resteMob, 2, ',', ' ') }} €</span>
+                                    </div>
+                                    <div class="w-full bg-gray-200 rounded-full h-1">
+                                        <div class="bg-[#16987C] h-1 rounded-full" style="width: {{ $pctMob }}%"></div>
+                                    </div>
+                                </div>
+                            @elseif ($tab === 'pre_inscrits')
+                                <span class="text-xs text-gray-500">Total inscription</span>
+                                @if ($isChequeAtt)
+                                    <span class="text-xs font-bold text-amber-600">Chèque à recevoir</span>
+                                @else
+                                    <span class="text-sm font-black text-[#0F143A]">{{ number_format((float) $adherent->inscription?->montant, 2, ',', ' ') }} €</span>
+                                @endif
+                            @else
+                                <span class="text-xs text-gray-500">Montant</span>
+                                <div class="text-right">
+                                    <span class="text-sm font-black text-[#0F143A]">{{ number_format((float) $adherent->inscription?->montant, 2, ',', ' ') }} €</span>
+                                    @if ($adherent->inscription?->date_inscription)
+                                        <p class="text-[10px] text-gray-400 mt-0.5">{{ $adherent->inscription->date_inscription->isoFormat('D MMM YYYY') }}</p>
+                                    @endif
+                                </div>
+                            @endif
+                        </div>
+                    @endif
+
+                    {{-- Action --}}
+                    <div class="px-4 pb-4">
                         @if (in_array($tab, ['attente', 'partiel']))
                             <button @click="ouvrirModal({
                                         ...{{ json_encode($adherent->modalData($tab)) }},
                                         isPreInscrit: false,
-                                        totalVerse: {{ (float) $adherent->paiements->sum('montant') }}
+                                        totalVerse: {{ $tvMob }}
                                     })"
-                                    class="px-3 py-1.5 bg-[#16987C] hover:bg-[#138a6f] text-white rounded-lg text-xs font-bold transition-all shadow-sm">
-                                {{ $adherent->isReinscription ? 'Valider (ré-insc.)' : 'Valider' }}
+                                    class="w-full flex items-center justify-center gap-2 py-2.5 bg-[#16987C] hover:bg-[#138a6f] text-white rounded-xl text-sm font-bold transition-all shadow-sm">
+                                {{ $adherent->isReinscription ? 'Valider (ré-inscription)' : 'Valider l\'adhésion' }}
+                                <svg class="w-4 h-4 opacity-80" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"/>
+                                </svg>
                             </button>
                         @elseif ($tab === 'pre_inscrits')
-                            @php $tvMobPre = (float) $adherent->paiements->sum('montant'); @endphp
                             <button @click="ouvrirModal({
                                         ...{{ json_encode($adherent->modalData($tab)) }},
                                         isPreInscrit: true,
-                                        totalVerse: {{ $tvMobPre }},
+                                        totalVerse: {{ $tvMob }},
                                         validerChequeUrl: '{{ route('adherents.valider-cheque', $adherent) }}'
                                     })"
-                                    class="px-3 py-1.5 {{ $tvMobPre === 0.0 && $adherent->sourceLabel === 'Interne' ? 'bg-amber-50 text-amber-600 hover:bg-amber-100' : 'bg-indigo-50 text-indigo-600 hover:bg-indigo-100' }} rounded-lg text-xs font-bold transition-all">
-                                Détail
+                                    class="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-bold transition-all
+                                        {{ $isChequeAtt ? 'bg-amber-50 text-amber-700 border border-amber-200' : 'bg-indigo-50 text-indigo-700 border border-indigo-100' }}">
+                                @if ($isChequeAtt)
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                                    </svg>
+                                    Valider le chèque d'acompte
+                                @else
+                                    Voir le détail
+                                    <svg class="w-4 h-4 opacity-70" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"/>
+                                    </svg>
+                                @endif
                             </button>
                         @else
-                            <a href="{{ route('adherents.show', $adherent) }}"
-                               class="px-3 py-1.5 bg-[#222A60] hover:bg-[#1a2050] text-white rounded-lg text-xs font-bold transition-all shadow-sm">
-                                Détails
-                            </a>
-                            @if (Auth::user()->role === 'admin')
-                                <form method="POST" action="{{ route('adherents.destroy', $adherent) }}"
-                                      onsubmit="return confirm('Supprimer {{ $adherent->prenom }} {{ $adherent->nom }} ?');">
-                                    @csrf
-                                    @method('DELETE')
-                                    <button type="submit" class="px-3 py-1.5 bg-red-50 hover:bg-red-100 text-red-600 rounded-lg text-xs font-bold transition-all">
-                                        Suppr.
-                                    </button>
-                                </form>
-                            @endif
+                            <div class="flex gap-2">
+                                <a href="{{ route('adherents.show', $adherent) }}"
+                                   class="flex-1 flex items-center justify-center gap-2 py-2.5 bg-[#222A60] hover:bg-[#1a2050] text-white rounded-xl text-sm font-bold transition-all shadow-sm">
+                                    Voir la fiche
+                                    <svg class="w-4 h-4 opacity-60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"/>
+                                    </svg>
+                                </a>
+                                @if (Auth::user()->role === 'admin')
+                                    <form method="POST" action="{{ route('adherents.destroy', $adherent) }}"
+                                          onsubmit="return confirm('Supprimer définitivement {{ $adherent->prenom }} {{ $adherent->nom }} ?');">
+                                        @csrf
+                                        @method('DELETE')
+                                        <button type="submit"
+                                                class="flex items-center justify-center w-11 h-full bg-red-50 hover:bg-red-100 text-red-500 rounded-xl transition-all">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M9.5 4h5a1 1 0 011 1v2h-7V5a1 1 0 011-1z"/>
+                                            </svg>
+                                        </button>
+                                    </form>
+                                @endif
+                            </div>
                         @endif
                     </div>
+
                 </div>
             @empty
                 <div class="px-6 py-16 text-center">
+                    <div class="w-14 h-14 rounded-2xl bg-gray-100 flex items-center justify-center mx-auto mb-3">
+                        <svg class="w-7 h-7 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/>
+                        </svg>
+                    </div>
                     <p class="font-bold text-gray-400">Aucun adhérent trouvé</p>
                 </div>
             @endforelse

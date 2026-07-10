@@ -147,9 +147,7 @@
                             <div class="pl-3 border-l-2 border-indigo-200 space-y-1">
                                 <div class="flex items-center justify-between">
                                     <span class="text-xs text-indigo-600">Acompte activité(s)</span>
-                                    <span class="text-xs font-semibold text-indigo-600"
-                                        x-text="'- ' + ((adherent.totalVerse > 0) ? (adherent.totalVerse - parseFloat((adherent.montantAdhesion || '10,00 €').replace(',', '.').replace(/[^0-9.]/g, ''))) : 50).toFixed(2).replace('.', ',') + ' €'">
-                                    </span>
+                                    <span class="text-xs font-semibold text-indigo-600">- 50,00 €</span>
                                 </div>
                                 <div class="flex items-center justify-between">
                                     <span class="text-xs text-indigo-600">Adhésion annuelle</span>
@@ -165,9 +163,8 @@
                                 <span class="text-sm font-black text-indigo-900">Reste à régler</span>
                                 <span class="text-lg font-black text-indigo-600" x-text="(function() {
                                     var cot = parseFloat((adherent.montantAdhesion || '10,00 €').replace(',', '.').replace(/[^0-9.]/g, ''));
-                                    var tv  = adherent.totalVerse || 0;
                                     var mt  = parseFloat((adherent.montant || '0').toString().replace(/\s/g,'').replace(',','.').replace('€',''));
-                                    return Math.max(0, mt - (tv > 0 ? tv : 50 + cot)).toFixed(2).replace('.', ',') + ' €';
+                                    return Math.max(0, mt - 50 - cot).toFixed(2).replace('.', ',') + ' €';
                                 })()">
                                 </span>
                             </div>
