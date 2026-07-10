@@ -178,7 +178,7 @@
                                                 })->exists();
                                         }
 
-                                        $nomOnglet = $isDrusenheim ? 'Adhésion club Drusenheim (17 €)' : 'Adhésion simple (10 €)';
+                                        $nomOnglet = $isDrusenheim ? 'Adhésion club Drusenheim (20 €)' : 'Adhésion simple (10 €)';
 
                                         $labelsTypes = array_values(array_filter(array_map(fn($t) => match($t) {
                                             'atelier'      => 'Atelier',

@@ -32,7 +32,7 @@
                 if ($saisonCible === 'actuelle' && in_array(now()->month, [7, 8])) {
                     $options[] = ['value' => 'stage', 'label' => 'Inscription à un stage d\'été', 'icon' => '🏕️', 'desc' => 'Stages d\'été (Saison ' . App\Models\Saison::current() . ')', 'combinable' => false];
                 } else {
-                    $options[] = ['value' => 'atelier', 'label' => 'Inscription à un atelier', 'icon' => '🔧', 'desc' => 'Ateliers robotiques', 'combinable' => true];
+                    $options[] = ['value' => 'atelier', 'label' => 'Inscription à un atelier robotique', 'icon' => '🔧', 'desc' => 'Ateliers robotiques', 'combinable' => true];
                     $options[] = ['value' => 'recherche', 'label' => 'Recherche participative', 'icon' => '🔬', 'desc' => 'Participer à un programme' . ($isDejaAdherent ? ' (gratuit)' : ''), 'combinable' => true];
                     if (!$isDejaAdherent) {
                         $options[] = ['value' => 'soutien', 'label' => 'Inscription par soutien', 'icon' => '🤝', 'desc' => 'Soutenir financièrement l\'association', 'combinable' => false];

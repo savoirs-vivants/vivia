@@ -56,7 +56,7 @@ trait AdhesionSharedLogic
                     ->orWhere('ville', 'like', '%drusenheim%');
             })->exists();
 
-        return $isDrusenheim ? 17 : 10;
+        return $isDrusenheim ? 20 : 10;
     }
 
     protected function montantStructure(array $formData): int

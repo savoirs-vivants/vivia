@@ -68,7 +68,7 @@ trait AdherentPresenter
             'resteDu'         => number_format($resteModal, 2, ',', ' ') . ' €',
             'resteDuBrut'     => $resteModal,
             'activites'       => $lignesActivites,
-            'montantAdhesion' => $isDrusenheim ? '17,00 €' : '10,00 €',
+            'montantAdhesion' => $isDrusenheim ? '20,00 €' : '10,00 €',
             'showCotisation'  => $showCotisation,
             'type_adhesion_attente' => $this->inscriptions()->where('a_paye', 'En attente')->latest()->value('type_adhesion') ?? '',
             'saison'          => $this->inscription?->saison ?? '',
