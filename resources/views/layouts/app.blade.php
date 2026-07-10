@@ -59,6 +59,11 @@
     @stack('modals')
 
     @livewireScripts
+    <script>
+        window.addEventListener('pageshow', function (e) {
+            if (e.persisted) window.location.reload();
+        });
+    </script>
 </body>
 
 </html>

@@ -134,11 +134,7 @@
                     </div>
 
                     <template x-if="adherent.isPreInscrit">
-                        <div x-data="{
-                            cotisation: parseFloat((adherent.montantAdhesion || '10,00 €').replace(',', '.').replace(/[^0-9.]/g, '')),
-                            totalVerseReel: adherent.totalVerse || 0,
-                            montantTotal: parseFloat(adherent.montant.toString().replace(/\s/g, '').replace(',', '.').replace('€', ''))
-                        }" class="p-4 bg-indigo-50 border border-indigo-100 rounded-xl space-y-2">
+                        <div class="p-4 bg-indigo-50 border border-indigo-100 rounded-xl space-y-2">
 
                             <p class="text-[10px] font-black text-indigo-400 uppercase tracking-widest">Validation
                                 de la rentrée</p>
@@ -152,12 +148,14 @@
                                 <div class="flex items-center justify-between">
                                     <span class="text-xs text-indigo-600">Acompte activité(s)</span>
                                     <span class="text-xs font-semibold text-indigo-600"
-                                        x-text="'- ' + (totalVerseReel > 0 ? totalVerseReel - cotisation : 50).toFixed(2).replace('.', ',') + ' €'"></span>
+                                        x-text="'- ' + ((adherent.totalVerse > 0) ? (adherent.totalVerse - parseFloat((adherent.montantAdhesion || '10,00 €').replace(',', '.').replace(/[^0-9.]/g, ''))) : 50).toFixed(2).replace('.', ',') + ' €'">
+                                    </span>
                                 </div>
                                 <div class="flex items-center justify-between">
                                     <span class="text-xs text-indigo-600">Adhésion annuelle</span>
                                     <span class="text-xs font-semibold text-indigo-600"
-                                        x-text="'- ' + cotisation.toFixed(2).replace('.', ',') + ' €'"></span>
+                                        x-text="'- ' + parseFloat((adherent.montantAdhesion || '10,00 €').replace(',', '.').replace(/[^0-9.]/g, '')).toFixed(2).replace('.', ',') + ' €'">
+                                    </span>
                                 </div>
                             </div>
 
@@ -165,24 +163,28 @@
 
                             <div class="flex items-center justify-between">
                                 <span class="text-sm font-black text-indigo-900">Reste à régler</span>
-                                <span class="text-lg font-black text-indigo-600"
-                                    x-text="Math.max(0, montantTotal - (totalVerseReel > 0 ? totalVerseReel : 50 + cotisation)).toFixed(2).replace('.', ',') + ' €'">
+                                <span class="text-lg font-black text-indigo-600" x-text="(function() {
+                                    var cot = parseFloat((adherent.montantAdhesion || '10,00 €').replace(',', '.').replace(/[^0-9.]/g, ''));
+                                    var tv  = adherent.totalVerse || 0;
+                                    var mt  = parseFloat((adherent.montant || '0').toString().replace(/\s/g,'').replace(',','.').replace('€',''));
+                                    return Math.max(0, mt - (tv > 0 ? tv : 50 + cot)).toFixed(2).replace('.', ',') + ' €';
+                                })()">
                                 </span>
                             </div>
 
-                            <template x-if="adherent.source === 'Interne' && totalVerseReel === 0 && adherent.validerChequeUrl">
+                            <template x-if="adherent.source === 'Interne' && !(adherent.totalVerse > 0) && adherent.validerChequeUrl">
                                 <div class="pt-2 border-t border-indigo-200/60">
                                     <form :action="adherent.validerChequeUrl" method="POST">
                                         @csrf
                                         <button type="submit"
-                                            class="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-sm font-bold transition-all">
-                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            style="width:100%;display:flex;align-items:center;justify-content:center;gap:8px;padding:10px 16px;background:#4f46e5;color:#fff;border-radius:12px;font-size:14px;font-weight:700;border:none;cursor:pointer;">
+                                            <svg style="width:16px;height:16px;flex-shrink:0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/>
                                             </svg>
                                             Valider la réception du chèque
                                         </button>
                                     </form>
-                                    <p class="text-[11px] text-indigo-500 text-center mt-1.5">
+                                    <p style="font-size:11px;color:#6366f1;text-align:center;margin-top:6px;">
                                         Confirme que l'acompte + adhésion ont bien été remis en chèque.
                                     </p>
                                 </div>
