@@ -219,6 +219,48 @@ class AdherentController extends Controller
             ->with('success', "{$nom} a été supprimé(e) définitivement.");
     }
 
+    public function validerChequeAcompte(Adherent $adherent)
+    {
+        $inscription = $adherent->inscriptions()
+            ->where('a_paye', 'pre_inscrit')
+            ->latest()
+            ->first();
+
+        if (!$inscription) {
+            return back()->with('error', 'Aucune pré-inscription active trouvée.');
+        }
+
+        if ($adherent->paiements()->exists()) {
+            return back()->with('error', 'Un paiement a déjà été enregistré pour cet adhérent.');
+        }
+
+        $activites = $adherent->activitesActives;
+        $nbAteliers = $activites->count();
+        $acompte    = $nbAteliers > 0 ? $nbAteliers * 50.0 : 50.0;
+
+        $isDrusenheim = $activites->contains(fn($a) =>
+            str_contains(strtolower($a->nom ?? ''), 'drusenheim') ||
+            str_contains(strtolower($a->ville ?? ''), 'drusenheim')
+        );
+        $cotisation = $isDrusenheim ? 20.0 : 10.0;
+
+        \App\Models\Paiement::create([
+            'id_adherent'   => $adherent->id,
+            'montant'       => $acompte,
+            'source'        => 'Chèque',
+            'date_paiement' => now(),
+        ]);
+
+        \App\Models\Paiement::create([
+            'id_adherent'   => $adherent->id,
+            'montant'       => $cotisation,
+            'source'        => 'Chèque',
+            'date_paiement' => now(),
+        ]);
+
+        return back()->with('success', "Chèque d'acompte de {$adherent->prenom} {$adherent->nom} validé (" . number_format($acompte + $cotisation, 2, ',', ' ') . " €).");
+    }
+
     public function uploaderFichiers(Request $request, Adherent $adherent)
     {
         $request->validate([

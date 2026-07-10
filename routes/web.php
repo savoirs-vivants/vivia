@@ -82,6 +82,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/adherents/{adherent}/pdf', [AdherentController::class, 'downloadPdf'])->name('adherents.pdf');
     Route::put('/adherents/{adherent}/update-fiche', [AdherentController::class, 'updateFiche'])->name('adherents.update-fiche');
     Route::delete('/adherents/{adherent}', [AdherentController::class, 'destroy'])->middleware('role:admin')->name('adherents.destroy');
+    Route::post('/adherents/{adherent}/valider-cheque-acompte', [AdherentController::class, 'validerChequeAcompte'])->name('adherents.valider-cheque');
 
     Route::get('/structures/{structure}', [AdherentController::class, 'showStructure'])->name('structures.show');
     Route::post('/structures/{structure}/valider', [AdherentController::class, 'validerStructure'])->name('structures.valider');
