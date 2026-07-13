@@ -15,7 +15,7 @@
 
         <div class="w-px h-5 bg-gray-200 hidden sm:block"></div>
 
-        @if ($tab === 'attente')
+        @if (in_array($tab, ['attente', 'pre_inscrits']))
             <div class="flex items-center gap-2 flex-wrap">
                 <span class="text-xs font-bold text-gray-400 uppercase tracking-widest mr-1">Source</span>
                 @foreach (['Tous', 'HelloAsso', 'Interne'] as $src)
@@ -154,7 +154,7 @@
                         <th class="px-6 py-3 text-left text-[10px] font-black text-gray-400 uppercase tracking-widest">Adhérent</th>
                         <th class="px-4 py-3 text-left text-[10px] font-black text-gray-400 uppercase tracking-widest">Âge</th>
                         <th class="px-4 py-3 text-left text-[10px] font-black text-gray-400 uppercase tracking-widest">Activités</th>
-                        @if (in_array($tab, ['attente', 'partiel']))
+                        @if (in_array($tab, ['attente', 'partiel', 'pre_inscrits']))
                             <th class="px-4 py-3 text-left text-[10px] font-black text-gray-400 uppercase tracking-widest">Source</th>
                             <th class="px-4 py-3 text-right text-[10px] font-black text-gray-400 uppercase tracking-widest">
                                 {{ $tab === 'partiel' ? 'Versé / Total' : 'Montant' }}
@@ -200,7 +200,7 @@
                                 </div>
                             </td>
 
-                            @if (in_array($tab, ['attente', 'partiel']))
+                            @if (in_array($tab, ['attente', 'partiel', 'pre_inscrits']))
                                 <td class="px-4 py-4">
                                     <span class="inline-flex px-2.5 py-1 rounded-lg text-xs font-bold {{ $adherent->sourceClass }}">
                                         {{ $adherent->sourceLabel }}
@@ -241,8 +241,12 @@
 
                             <td class="px-6 py-4">
                                 <div class="flex items-center justify-end gap-2">
-                                    @if (in_array($tab, ['attente', 'partiel']))
-                                        <button @click="ouvrirModal({{ json_encode($adherent->modalData($tab)) }})"
+                                    @if (in_array($tab, ['attente', 'partiel', 'pre_inscrits']))
+                                        <button @click="ouvrirModal({
+                                                    ...{{ json_encode($adherent->modalData($tab)) }},
+                                                    isPreInscrit: {{ $tab === 'pre_inscrits' ? 'true' : 'false' }},
+                                                    totalVerse: {{ (float) $adherent->paiements->sum('montant') }}
+                                                })"
                                                 class="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-[#16987C] hover:bg-[#138a6f] text-white rounded-lg text-xs font-bold transition-all duration-150 shadow-sm">
                                             {{ $adherent->isReinscription ? 'Valider (ré-inscription)' : 'Valider' }}
                                             <svg class="w-3 h-3 opacity-80" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -263,7 +267,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="{{ in_array($tab, ['attente', 'partiel']) ? 7 : 4 }}" class="px-6 py-20 text-center">
+                            <td colspan="{{ in_array($tab, ['attente', 'partiel', 'pre_inscrits']) ? 7 : 4 }}" class="px-6 py-20 text-center">
                                 <div class="flex flex-col items-center gap-3">
                                     <div class="w-14 h-14 rounded-2xl bg-gray-100 flex items-center justify-center">
                                         <svg class="w-7 h-7 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">

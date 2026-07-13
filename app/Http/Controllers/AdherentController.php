@@ -38,9 +38,6 @@ class AdherentController extends Controller
             ? DB::table('activites_gestionnaire')->where('id_users', $user->id)->pluck('id_activite')
             : null;
 
-        /* On construit une requête de base réutilisable avec toutes les jointures nécessaires
-         * pour éviter de répéter la logique de recherche/filtrage pour chaque onglet (Payés, En Attente, etc.)
-         */
         $base = Adherent::with(['inscriptions', 'inscription', 'activitesActives', 'paiements'])
             ->when($search, fn($q) => $q->where(function ($query) use ($search) {
                 $query->where('prenom', 'like', "%{$search}%")
@@ -62,18 +59,20 @@ class AdherentController extends Controller
                 fn($q2) => $q2->whereIn('activites_adherents.id_activite', $mesActivitesIds)
             ));
 
-        // Clonage de la requête de base pour séparer les comptages et les paginations
-        $queryPayes   = (clone $base)->whereHas('inscriptions', fn($q) => $q->where('a_paye', Inscription::PAYE)->where('saison', $saison));
-        $queryAttente = (clone $base)->whereHas('inscriptions', fn($q) => $q->where('a_paye', Inscription::EN_ATTENTE)->where('saison', $saison));
-        $queryPartiel = (clone $base)->whereHas('inscriptions', fn($q) => $q->where('a_paye', Inscription::PARTIEL)->where('saison', $saison));
+        $queryPayes       = (clone $base)->whereHas('inscriptions', fn($q) => $q->where('a_paye', Inscription::PAYE)->where('saison', $saison));
+        $queryAttente     = (clone $base)->whereHas('inscriptions', fn($q) => $q->where('a_paye', Inscription::EN_ATTENTE)->where('saison', $saison));
+        $queryPartiel     = (clone $base)->whereHas('inscriptions', fn($q) => $q->where('a_paye', Inscription::PARTIEL)->where('saison', $saison));
+        $queryPreInscrits = (clone $base)->whereHas('inscriptions', fn($q) => $q->where('a_paye', 'pre_inscrit')->where('saison', $saison));
 
-        $countPayes   = (clone $queryPayes)->count();
-        $countAttente = $canVoirTousStatuts ? (clone $queryAttente)->count() : 0;
-        $countPartiel = $canVoirTousStatuts ? (clone $queryPartiel)->count() : 0;
+        $countPayes       = (clone $queryPayes)->count();
+        $countAttente     = $canVoirTousStatuts ? (clone $queryAttente)->count() : 0;
+        $countPartiel     = $canVoirTousStatuts ? (clone $queryPartiel)->count() : 0;
+        $countPreInscrits = $canVoirTousStatuts ? (clone $queryPreInscrits)->count() : 0;
 
-        $adherentsPayes     = $queryPayes->orderBy('nom')->paginate(25)->withQueryString();
-        $adherentsEnAttente = $canVoirTousStatuts ? $queryAttente->orderBy('nom')->paginate(25)->withQueryString() : collect();
-        $adherentsPartiel   = $canVoirTousStatuts ? $queryPartiel->orderBy('nom')->paginate(25)->withQueryString() : collect();
+        $adherentsPayes       = $queryPayes->orderBy('nom')->paginate(25)->withQueryString();
+        $adherentsEnAttente   = $canVoirTousStatuts ? $queryAttente->orderBy('nom')->paginate(25)->withQueryString() : collect();
+        $adherentsPartiel     = $canVoirTousStatuts ? $queryPartiel->orderBy('nom')->paginate(25)->withQueryString() : collect();
+        $adherentsPreInscrits = $canVoirTousStatuts ? $queryPreInscrits->orderBy('nom')->paginate(25)->withQueryString() : collect();
 
         $baseStructures = AdherentStructure::with(['inscription', 'paiements'])
             ->when($search, fn($q) => $q->where(function ($query) use ($search) {
@@ -96,17 +95,17 @@ class AdherentController extends Controller
         }
         $countPayes += $structuresPayees->count();
 
-
-        $filterType    = $request->get('type', 'tous');
+        $filterType = $request->get('type', 'tous');
         $structuresList = match ($tab) {
             'payes'   => $structuresPayees,
             'attente' => $structuresEnAttente,
             default   => collect(),
         };
         $items = match ($tab) {
-            'payes'   => $adherentsPayes,
-            'partiel' => $adherentsPartiel,
-            default   => $adherentsEnAttente,
+            'payes'        => $adherentsPayes,
+            'partiel'      => $adherentsPartiel,
+            'pre_inscrits' => $adherentsPreInscrits,
+            default        => $adherentsEnAttente,
         };
 
         return view('adherents.index', compact(
@@ -119,9 +118,11 @@ class AdherentController extends Controller
             'adherentsPayes',
             'adherentsEnAttente',
             'adherentsPartiel',
+            'adherentsPreInscrits',
             'countPayes',
             'countAttente',
             'countPartiel',
+            'countPreInscrits',
             'structuresEnAttente',
             'structuresPayees',
             'canVoirTousStatuts'
@@ -202,25 +203,26 @@ class AdherentController extends Controller
         return redirect()->route('adherents.show', $adherent)->with('success', 'Note enregistrée.');
     }
 
-    public function valider(Request $request, Adherent $adherent)
-    {
-        /* Les paiements touchent plusieurs tables critiques. On utilise DB::transaction
+    /* Les paiements touchent plusieurs tables critiques. On utilise DB::transaction
          * pour garantir que si l'envoi du mail échoue, on ne sauvegarde pas l'état "Payé"
          * en base de données. C'est le principe de l'atomicité.
          */
+    public function valider(Request $request, Adherent $adherent)
+    {
         return DB::transaction(function () use ($request, $adherent) {
             $saison = Saison::current();
             $statut = $request->boolean('plusieurs_versements') ? Inscription::PARTIEL : Inscription::PAYE;
 
+            // NOUVEAU : On cherche une inscription "en_attente" OU "pre_inscrit"
             $inscriptionEnAttente = $adherent->inscriptions()
                 ->where('saison', $saison)
-                ->where('a_paye', Inscription::EN_ATTENTE)
+                ->whereIn('a_paye', [Inscription::EN_ATTENTE, 'pre_inscrit'])
                 ->latest()
                 ->first();
 
             if (!$inscriptionEnAttente) {
                 return redirect()->route('adherents.index', ['tab' => 'attente'])
-                    ->with('error', 'Aucune inscription en attente trouvée.');
+                    ->with('error', 'Aucune inscription en attente ou pré-inscription trouvée.');
             }
 
             $inscriptionPayeeExistante = $adherent->inscriptions()
@@ -245,17 +247,22 @@ class AdherentController extends Controller
                         'source'        => 'Interne',
                         'date_paiement' => now()->toDateString(),
                         'commentaire'   => '1er versement (Partiel)',
-                        'id_structure'  => null,
                     ]);
                 }
 
                 if ($statut === Inscription::PAYE) {
-                     $adherent->paiements()->create([
-                        'montant'       => (float) $inscriptionEnAttente->montant,
-                        'source'        => 'Interne',
-                        'date_paiement' => now()->toDateString(),
-                        'commentaire'   => 'Paiement intégral',
-                    ]);
+                    // NOUVEAU : Calcul magique pour ne faire payer que le reste ! (Total - Déjà payé cet été)
+                    $totalDejaVerse = $adherent->paiements()->sum('montant');
+                    $resteAPayer = max(0, $inscriptionEnAttente->montant - $totalDejaVerse);
+
+                    if ($resteAPayer > 0) {
+                        $adherent->paiements()->create([
+                            'montant'       => $resteAPayer,
+                            'source'        => 'Interne',
+                            'date_paiement' => now()->toDateString(),
+                            'commentaire'   => $ancienStatut === 'pre_inscrit' ? 'Solde pré-inscription' : 'Paiement intégral',
+                        ]);
+                    }
                 }
             }
 
@@ -408,5 +415,4 @@ class AdherentController extends Controller
 
         return $adherent->mail;
     }
-
 }

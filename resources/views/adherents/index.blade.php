@@ -29,6 +29,12 @@
                         <span
                             class="px-2 py-0.5 rounded-full text-xs font-black {{ $tab === 'attente' ? 'bg-rose-100 text-rose-500' : 'bg-gray-200 text-gray-500' }}">{{ $countAttente }}</span>
                     </a>
+                    <a href="{{ route('adherents.index', ['tab' => 'pre_inscrits'] + request()->except('tab', 'page')) }}"
+                        class="flex items-center gap-2 px-5 py-2 rounded-lg text-sm font-bold transition-all duration-200 {{ $tab === 'pre_inscrits' ? 'bg-white text-[#222A60] shadow-sm' : 'text-gray-500 hover:text-gray-700' }}">
+                        Pré-inscrits
+                        <span
+                            class="px-2 py-0.5 rounded-full text-xs font-black {{ $tab === 'pre_inscrits' ? 'bg-indigo-100 text-indigo-500' : 'bg-gray-200 text-gray-500' }}">{{ $countPreInscrits }}</span>
+                    </a>
                 @endif
             </div>
         </div>
