@@ -131,12 +131,21 @@ class ActiviteController extends Controller
 
     public function show(Activite $activite)
     {
+        Saison::syncActive();
+
         if (Auth::user()->role === 'animateur') {
             abort_if(!$activite->gestionnaires()->where('users.id', Auth::id())->exists(), 403);
         }
 
         $saison = Saison::current();
         $saisonModel = Saison::where('nom', $saison)->first();
+
+        $derniereSeance = DB::table('seances')->where('id_activite', $activite->id)->max('date');
+        $finSaison = $saisonModel ? $saisonModel->date_fin : Carbon::create(now()->month >= 7 ? now()->year + 1 : now()->year, 6, 30)->toDateString();
+
+        if (!$derniereSeance || $derniereSeance < $finSaison) {
+            $this->genererSeancesAuto($activite);
+        }
 
         $dateDebutSaison = $saisonModel ? $saisonModel->date_debut : Carbon::create((int)explode('-', $saison)[0], 9, 1);
         $dateFinSaison   = $saisonModel ? $saisonModel->date_fin   : Carbon::create((int)explode('-', $saison)[1], 6, 30);
@@ -422,16 +431,38 @@ class ActiviteController extends Controller
             }
         } else {
             $joursMap = [
-                'Lundi' => Carbon::MONDAY, 'Mardi' => Carbon::TUESDAY, 'Mercredi' => Carbon::WEDNESDAY,
-                'Jeudi' => Carbon::THURSDAY, 'Vendredi' => Carbon::FRIDAY, 'Samedi' => Carbon::SATURDAY, 'Dimanche' => Carbon::SUNDAY,
+                'Lundi' => Carbon::MONDAY,
+                'Mardi' => Carbon::TUESDAY,
+                'Mercredi' => Carbon::WEDNESDAY,
+                'Jeudi' => Carbon::THURSDAY,
+                'Vendredi' => Carbon::FRIDAY,
+                'Samedi' => Carbon::SATURDAY,
+                'Dimanche' => Carbon::SUNDAY,
             ];
 
             $saisonActive = Saison::where('nom', Saison::current())->first();
+
             $finGeneration = $saisonActive
                 ? Carbon::parse($saisonActive->date_fin)
-                : Carbon::create(now()->month >= 6 ? now()->year + 1 : now()->year, 7, 31);
+                : Carbon::create(now()->month >= 7 ? now()->year + 1 : now()->year, 6, 30);
 
-            $baseDate = $depuisAujourdhui ? now()->startOfDay() : ($saisonActive ? Carbon::parse($saisonActive->date_debut)->startOfDay() : now()->startOfDay());
+            $debutSaison = $saisonActive
+                ? Carbon::parse($saisonActive->date_debut)->startOfDay()
+                : now()->startOfDay();
+
+            $rentree = clone $debutSaison;
+            if ($rentree->month === 7 || $rentree->month === 8) {
+                $rentree->month(9)->day(1);
+            }
+
+            if ($depuisAujourdhui) {
+                $baseDate = now()->startOfDay();
+                if ($baseDate->lessThan($rentree)) {
+                    $baseDate = clone $rentree;
+                }
+            } else {
+                $baseDate = clone $rentree;
+            }
 
             foreach ($horaires as $jour => $plagesStr) {
                 if (!isset($joursMap[$jour])) continue;
