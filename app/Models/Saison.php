@@ -28,7 +28,7 @@ class Saison extends Model
         }
 
         // Fallback: compute from current date
-        $year = now()->month >= 9 ? now()->year : now()->year - 1;
+        $year = now()->month >= 7 ? now()->year : now()->year - 1;
         return $year . '-' . ($year + 1);
     }
 
@@ -42,7 +42,7 @@ class Saison extends Model
             return $active;
         }
 
-        $year = now()->month >= 9 ? now()->year : now()->year - 1;
+        $year = now()->month >= 7 ? now()->year : now()->year - 1;
         $nom = $year . '-' . ($year + 1);
         return static::where('nom', $nom)->first();
     }
@@ -62,13 +62,13 @@ class Saison extends Model
      */
     public static function syncActive(): void
     {
-        $year = now()->month >= 9 ? now()->year : now()->year - 1;
+        $year = now()->month >= 7 ? now()->year : now()->year - 1;
         $nom  = $year . '-' . ($year + 1);
 
         $saison = static::firstOrCreate(
             ['nom' => $nom],
             [
-                'date_debut' => Carbon::create($year, 9, 1)->toDateString(),
+                'date_debut' => Carbon::create($year, 7, 1)->toDateString(),
                 'date_fin'   => Carbon::create($year + 1, 6, 30)->toDateString(),
                 'est_active' => true,
             ]
