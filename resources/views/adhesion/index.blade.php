@@ -18,11 +18,11 @@
         $radio = 'h-4 w-4 border-gray-300 text-teal-600 focus:ring-teal-500 cursor-pointer';
     @endphp
 
-    <div class="min-h-screen bg-gray-50 py-6 px-4" style="font-family: 'Space Grotesk', sans-serif;">
+    <div class="min-h-screen bg-gray-50 py-6 px-4 font-grotesk">
         <div class="max-w-xl mx-auto">
 
             <div class="text-center mb-5">
-                <h1 class="text-2xl font-bold text-gray-900">📝 Formulaire d'adhésion</h1>
+                <h1 class="text-2xl font-bold text-gray-900">📝 {{ $titreFormulaire }}</h1>
                 <p class="text-gray-500 mt-1 text-sm">Remplissez les informations étape par étape</p>
             </div>
 

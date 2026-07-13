@@ -432,6 +432,10 @@ class AdherentFormulaireController extends Controller
             ];
         }
 
+        $moisActuel = now()->month;
+        $isPreInscription = ($moisActuel === 7 || $moisActuel === 8);
+        $titreFormulaire = $isPreInscription ? 'Formulaire de pré-inscription' : "Formulaire d'adhésion";
+
         return view('adhesion.index', compact(
             'step',
             'formData',
@@ -455,7 +459,8 @@ class AdherentFormulaireController extends Controller
             'clubMakerActivites',
             'nbInscritsParActivite',
             'isStructure',
-            'ticket'
+            'ticket',
+            'titreFormulaire'
         ));
     }
 
@@ -735,7 +740,7 @@ class AdherentFormulaireController extends Controller
                     'montant'       => $montantActivite,
                     'source'        => 'HelloAsso',
                     'date_paiement' => now()->toDateString(),
-                    'commentaire'   => $commentaireDynamique, 
+                    'commentaire'   => $commentaireDynamique,
                 ]);
                 $formData['_paiement1_cree'] = true;
                 $request->session()->put("adhesion_{$token}", $formData);
