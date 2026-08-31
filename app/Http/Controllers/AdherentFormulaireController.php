@@ -654,12 +654,29 @@ class AdherentFormulaireController extends Controller
             $preInsc = Inscription::find($formData['_pre_inscription_id']);
 
             if ($action === 'pay_balance') {
-                $totalVerse = $adherentStep16->paiements()->sum('montant');
-                $resteAPayer = max(0, $preInsc->montant - $totalVerse);
+                // Pas de ligne "Cotisation annuelle via HelloAsso" enregistrée pour cet adhérent
+                // => elle n'a jamais été réellement validée, on la fait payer à part (formulaire
+                // HelloAsso "Adhésion", pas le checkout générique du solde).
+                $hasCotisationPaiement = $adherentStep16->paiements()
+                    ->where('commentaire', 'Cotisation annuelle via HelloAsso')
+                    ->exists();
+
+                $cotisationAPayer = 0.0;
+                if (!$hasCotisationPaiement) {
+                    $isDrusenheim = $adherentStep16->activitesActives->contains(fn($a) =>
+                        str_contains(strtolower($a->nom ?? ''), 'drusenheim') ||
+                        str_contains(strtolower($a->ville ?? ''), 'drusenheim')
+                    );
+                    $cotisationAPayer = $isDrusenheim ? 20.0 : 10.0;
+                }
+
+                $totalVerse  = $adherentStep16->paiements()->sum('montant');
+                $resteAPayer = max(0, $preInsc->montant - $totalVerse - $cotisationAPayer);
 
                 if ($resteAPayer > 0) {
-                    $formData['_is_paying_solde'] = true;
-                    $formData['_montant_solde']   = $resteAPayer;
+                    $formData['_is_paying_solde']    = true;
+                    $formData['_montant_solde']      = $resteAPayer;
+                    $formData['_cotisation_a_payer'] = $cotisationAPayer;
                     $request->session()->put("adhesion_{$token}", $formData);
 
                     $service = app(HelloAssoService::class);
@@ -671,13 +688,20 @@ class AdherentFormulaireController extends Controller
                     } catch (\Exception $e) {
                         return back()->withErrors(['helloasso' => 'Erreur de connexion au service de paiement : ' . $e->getMessage()]);
                     }
-                } else {
-                    $preInsc->update(['a_paye' => Inscription::EN_ATTENTE]);
-                    $formData['_helloasso_ok'] = true;
-                    $formData['_last_completed'] = 11;
-                    $request->session()->put("adhesion_{$token}", $formData);
-                    return redirect()->route('adhesion.show', ['token' => $token, 'step' => 11]);
                 }
+
+                if ($cotisationAPayer > 0) {
+                    $formData['_cotisation_a_payer'] = $cotisationAPayer;
+                    $request->session()->put("adhesion_{$token}", $formData);
+                    $request->session()->put("paiement1_done_{$token}", true);
+                    return redirect()->route('adhesion.show', ['token' => $token, 'step' => 10]);
+                }
+
+                $preInsc->update(['a_paye' => Inscription::EN_ATTENTE]);
+                $formData['_helloasso_ok'] = true;
+                $formData['_last_completed'] = 11;
+                $request->session()->put("adhesion_{$token}", $formData);
+                return redirect()->route('adhesion.show', ['token' => $token, 'step' => 11]);
             } elseif ($action === 'cancel') {
                 if ($preInsc) {
                     DB::table('activites_adherents')->where('id_adherent', $adherentStep16->id)->where('saison', Saison::current())->delete();

@@ -40,12 +40,26 @@ class HelloAssoController extends Controller
                     'date_paiement' => now()->toDateString(),
                     'commentaire'   => 'Restant de l\'acompte payé via HelloAsso',
                 ]);
+            }
+
+            unset($formData['_is_paying_solde'], $formData['_montant_solde']);
+
+            $cotisationAPayer = (float) ($formData['_cotisation_a_payer'] ?? 0);
+
+            if ($cotisationAPayer > 0) {
+                // Pas de ligne "Cotisation annuelle" existante : on la fait payer séparément,
+                // via le formulaire HelloAsso dédié à l'adhésion (pas le checkout générique du reste).
+                $request->session()->put("adhesion_{$token}", $formData);
+                $request->session()->put("paiement1_done_{$token}", true);
+                return redirect()->route('adhesion.show', ['token' => $token, 'step' => 10]);
+            }
+
+            if ($preInscSolde) {
                 $preInscSolde->update(['a_paye' => Inscription::EN_ATTENTE]);
             }
 
             $formData['_helloasso_ok'] = true;
             $formData['_last_completed'] = 11;
-            unset($formData['_is_paying_solde']);
             $request->session()->put("adhesion_{$token}", $formData);
 
             return redirect()->route('adhesion.show', ['token' => $token, 'step' => 11]);
@@ -164,13 +178,10 @@ class HelloAssoController extends Controller
         }
 
         $formData = $request->session()->get("adhesion_{$token}", []);
-        $formData['_helloasso_ok']   = true;
         $formData['_last_completed'] = 11;
-        $request->session()->put("adhesion_{$token}", $formData);
 
         if (!empty($formData['_adherent_id']) && empty($formData['_paiement2_cree'])) {
-            $typeActivite = $formData['type_activite'] ?? '';
-            $cotisation = $this->getMontantCotisation($formData);
+            $cotisation = (float) ($formData['_cotisation_a_payer'] ?? $this->getMontantCotisation($formData));
 
             if ($cotisation > 0) {
                 Paiement::create([
@@ -181,9 +192,16 @@ class HelloAssoController extends Controller
                     'commentaire'   => 'Cotisation annuelle via HelloAsso',
                 ]);
                 $formData['_paiement2_cree'] = true;
-                $request->session()->put("adhesion_{$token}", $formData);
+                unset($formData['_cotisation_a_payer']);
+
+                if (!empty($formData['_pre_inscription_id'])) {
+                    Inscription::whereKey($formData['_pre_inscription_id'])->update(['a_paye' => Inscription::EN_ATTENTE]);
+                }
             }
         }
+
+        $formData['_helloasso_ok'] = true;
+        $request->session()->put("adhesion_{$token}", $formData);
 
         return redirect()->route('adhesion.show', ['token' => $token, 'step' => 11]);
     }
@@ -230,9 +248,7 @@ class HelloAssoController extends Controller
             return redirect()->route('adhesion.show', ['token' => $token, 'step' => 10]);
         }
 
-        $typeActivite   = $formData['type_activite'] ?? '';
-        $isDejaAdherent = ($formData['is_adherent'] ?? 'non') === 'oui';
-        $cotisation = $this->getMontantCotisation($formData);
+        $cotisation = (float) ($formData['_cotisation_a_payer'] ?? $this->getMontantCotisation($formData));
 
         if ($cotisation > 0) {
             Paiement::create([
@@ -242,6 +258,12 @@ class HelloAssoController extends Controller
                 'date_paiement' => now()->toDateString(),
                 'commentaire'   => 'Cotisation annuelle via HelloAsso',
             ]);
+        }
+
+        unset($formData['_cotisation_a_payer']);
+
+        if (!empty($formData['_pre_inscription_id'])) {
+            Inscription::whereKey($formData['_pre_inscription_id'])->update(['a_paye' => Inscription::EN_ATTENTE]);
         }
 
         $formData['_paiement2_cree'] = true;
