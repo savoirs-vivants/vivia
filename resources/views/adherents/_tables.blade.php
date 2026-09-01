@@ -211,6 +211,17 @@
                                 @else
                                     <span class="text-sm font-black text-[#0F143A]">{{ number_format((float) $adherent->inscription?->montant, 2, ',', ' ') }} €</span>
                                 @endif
+                            @elseif ($tab === 'attente')
+                                @php
+                                    $resteMobAttente = max(0, (float) ($adherent->inscription?->montant ?? 0) - $tvMob);
+                                @endphp
+                                <span class="text-xs text-gray-500">Montant restant</span>
+                                <div class="text-right">
+                                    <span class="text-sm font-black text-[#0F143A]">{{ number_format($resteMobAttente, 2, ',', ' ') }} €</span>
+                                    @if ($adherent->inscription?->date_inscription)
+                                        <p class="text-[10px] text-gray-400 mt-0.5">{{ $adherent->inscription->date_inscription->isoFormat('D MMM YYYY') }}</p>
+                                    @endif
+                                </div>
                             @else
                                 <span class="text-xs text-gray-500">Montant</span>
                                 <div class="text-right">
@@ -308,7 +319,7 @@
                         @if (in_array($tab, ['attente', 'partiel', 'pre_inscrits']))
                             <th class="px-4 py-3 text-left text-[10px] font-black text-gray-400 uppercase tracking-widest">Source</th>
                             <th class="px-4 py-3 text-right text-[10px] font-black text-gray-400 uppercase tracking-widest">
-                                {{ $tab === 'partiel' ? 'Versé / Total' : 'Montant' }}
+                                {{ $tab === 'partiel' ? 'Versé / Total' : ($tab === 'attente' ? 'Montant restant' : 'Montant') }}
                             </th>
                             <th class="px-4 py-3 text-left text-[10px] font-black text-gray-400 uppercase tracking-widest">Inscrit le</th>
                         @endif
@@ -376,6 +387,14 @@
                                             </div>
                                             <span class="text-[10px] text-amber-500 font-bold">reste {{ number_format($reste, 2, ',', ' ') }} €</span>
                                         </div>
+                                    @elseif ($tab === 'attente')
+                                        @php
+                                            $verseAttente = (float) $adherent->paiements->sum('montant');
+                                            $resteAttente = max(0, (float) ($adherent->inscription?->montant ?? 0) - $verseAttente);
+                                        @endphp
+                                        <span class="font-black text-sm text-[#0F143A]">
+                                            {{ number_format($resteAttente, 2, ',', ' ') }} €
+                                        </span>
                                     @else
                                         <span class="font-black text-sm text-[#0F143A]">
                                             {{ number_format((float) $adherent->inscription?->montant, 2, ',', ' ') }} €
