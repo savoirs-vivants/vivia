@@ -231,6 +231,37 @@
                 </div>
             @endif
 
+            @if ($users->hasPages())
+                <div class="px-6 py-4 border-t border-gray-100 flex items-center justify-between">
+                    <p class="text-xs text-gray-400">
+                        Page <span class="font-bold text-gray-600">{{ $users->currentPage() }}</span>
+                        sur <span class="font-bold text-gray-600">{{ $users->lastPage() }}</span>
+                    </p>
+                    <div class="flex items-center gap-1">
+                        @if ($users->onFirstPage())
+                            <span class="px-3 py-1.5 rounded-lg text-xs font-bold text-gray-300 cursor-not-allowed bg-gray-50">← Précédent</span>
+                        @else
+                            <a href="{{ $users->previousPageUrl() }}"
+                               class="px-3 py-1.5 rounded-lg text-xs font-bold text-gray-500 hover:bg-gray-100 transition-colors">← Précédent</a>
+                        @endif
+
+                        @foreach ($users->getUrlRange(max(1, $users->currentPage() - 2), min($users->lastPage(), $users->currentPage() + 2)) as $page => $url)
+                            <a href="{{ $url }}"
+                               class="w-8 h-8 flex items-center justify-center rounded-lg text-xs font-bold transition-colors {{ $page === $users->currentPage() ? 'bg-[#222A60] text-white' : 'text-gray-500 hover:bg-gray-100' }}">
+                                {{ $page }}
+                            </a>
+                        @endforeach
+
+                        @if ($users->hasMorePages())
+                            <a href="{{ $users->nextPageUrl() }}"
+                               class="px-3 py-1.5 rounded-lg text-xs font-bold text-gray-500 hover:bg-gray-100 transition-colors">Suivant →</a>
+                        @else
+                            <span class="px-3 py-1.5 rounded-lg text-xs font-bold text-gray-300 cursor-not-allowed bg-gray-50">Suivant →</span>
+                        @endif
+                    </div>
+                </div>
+            @endif
+
         </div>
 
         <div x-show="confirmBulkDelete" x-cloak
