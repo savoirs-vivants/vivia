@@ -34,7 +34,7 @@
                     <div>
                         <span class="block text-xs font-black text-gray-400 uppercase tracking-widest mb-3">Type d'événement
                             <span class="text-rose-500">*</span></span>
-                        <div class="grid grid-cols-2 gap-4">
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
                             <label class="relative cursor-pointer group">
                                 <input type="radio" name="type" value="activite" class="peer sr-only"
                                     x-model="typeActivite">
@@ -70,6 +70,27 @@
                                         </div>
                                         <div>
                                             <p class="font-bold text-[#0F143A]">Stage ponctuel</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </label>
+
+                            <label class="relative cursor-pointer group">
+                                <input type="radio" name="type" value="club_maker" class="peer sr-only"
+                                    x-model="typeActivite">
+                                <div
+                                    class="p-4 rounded-xl border-2 border-gray-100 bg-white transition-all peer-checked:border-indigo-500 peer-checked:bg-indigo-50 hover:border-gray-200">
+                                    <div class="flex items-center gap-3">
+                                        <div
+                                            class="w-10 h-10 rounded-lg flex items-center justify-center transition-colors bg-gray-100 text-gray-400">
+                                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                    d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                            </svg>
+                                        </div>
+                                        <div>
+                                            <p class="font-bold text-[#0F143A]">Club Maker</p>
                                         </div>
                                     </div>
                                 </div>
@@ -178,7 +199,31 @@
                                 class="w-full px-4 py-3 bg-gray-50 border border-gray-100 rounded-xl text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-[#16987C]/30 focus:border-[#16987C]/40">
                         </div>
 
-                        <div x-show="typeActivite === 'activite'" x-cloak
+                        <div x-show="typeActivite === 'club_maker'" x-cloak
+                            class="md:col-span-2 p-5 bg-indigo-50/40 rounded-xl border border-indigo-100">
+                            <h3 class="text-sm font-bold text-[#0F143A] mb-4">Période du Club Maker</h3>
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <div>
+                                    <label
+                                        class="block text-xs font-black text-indigo-700 uppercase tracking-widest mb-1">Du
+                                        (Date de début)</label>
+                                    <input type="date" name="date_debut_club_maker"
+                                        value="{{ old('date_debut_club_maker', ($activite->horaires['_periode'] ?? [])['date_debut'] ?? '') }}"
+                                        class="w-full px-3 py-2 bg-white border border-indigo-200 rounded-lg text-sm text-gray-700 focus:outline-none focus:border-indigo-400 focus:ring-1 focus:ring-indigo-400">
+                                </div>
+                                <div>
+                                    <label
+                                        class="block text-xs font-black text-indigo-700 uppercase tracking-widest mb-1">Au
+                                        (Date de fin)</label>
+                                    <input type="date" name="date_fin_club_maker"
+                                        value="{{ old('date_fin_club_maker', ($activite->horaires['_periode'] ?? [])['date_fin'] ?? '') }}"
+                                        class="w-full px-3 py-2 bg-white border border-indigo-200 rounded-lg text-sm text-gray-700 focus:outline-none focus:border-indigo-400 focus:ring-1 focus:ring-indigo-400">
+                                </div>
+                            </div>
+                            <p class="text-[11px] text-indigo-600/70 mt-2">Les séances seront générées uniquement entre ces deux dates, selon les créneaux hebdomadaires ci-dessous.</p>
+                        </div>
+
+                        <div x-show="typeActivite === 'activite' || typeActivite === 'club_maker'" x-cloak
                             x-data="{ sansHoraires: {{ empty($activite->horaires) ? 'true' : 'false' }} }"
                             class="md:col-span-2 p-5 bg-gray-50/50 rounded-xl border border-gray-100">
                             <div class="flex items-center justify-between mb-4">

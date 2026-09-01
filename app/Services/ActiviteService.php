@@ -89,6 +89,13 @@ class ActiviteService
                     $horaires[$jour] = isset($horaires[$jour]) ? $horaires[$jour] . ', ' . $plage : $plage;
                 }
             }
+
+            if ($validated['type'] === 'club_maker' && $request->filled('date_debut_club_maker') && $request->filled('date_fin_club_maker')) {
+                $horaires['_periode'] = [
+                    'date_debut' => $request->input('date_debut_club_maker'),
+                    'date_fin'   => $request->input('date_fin_club_maker'),
+                ];
+            }
         }
 
         $idDossier = null;
@@ -171,19 +178,28 @@ class ActiviteService
                 'Dimanche' => Carbon::SUNDAY,
             ];
 
-            $saisonActive = Saison::where('nom', Saison::current())->first();
+            $periodeCustom = $horaires['_periode'] ?? null;
 
-            $finGeneration = $saisonActive
-                ? Carbon::parse($saisonActive->date_fin)
-                : Carbon::create(now()->month >= 7 ? now()->year + 1 : now()->year, 6, 30);
+            if ($periodeCustom && !empty($periodeCustom['date_debut']) && !empty($periodeCustom['date_fin'])) {
+                // Club Maker : période choisie par l'admin, pas de décalage de rentrée.
+                $debutSaison   = Carbon::parse($periodeCustom['date_debut'])->startOfDay();
+                $finGeneration = Carbon::parse($periodeCustom['date_fin'])->endOfDay();
+                $rentree       = clone $debutSaison;
+            } else {
+                $saisonActive = Saison::where('nom', Saison::current())->first();
 
-            $debutSaison = $saisonActive
-                ? Carbon::parse($saisonActive->date_debut)->startOfDay()
-                : now()->startOfDay();
+                $finGeneration = $saisonActive
+                    ? Carbon::parse($saisonActive->date_fin)
+                    : Carbon::create(now()->month >= 7 ? now()->year + 1 : now()->year, 6, 30);
 
-            $rentree = clone $debutSaison;
-            if ($rentree->month === 7 || $rentree->month === 8) {
-                $rentree->month(9)->day(1);
+                $debutSaison = $saisonActive
+                    ? Carbon::parse($saisonActive->date_debut)->startOfDay()
+                    : now()->startOfDay();
+
+                $rentree = clone $debutSaison;
+                if ($rentree->month === 7 || $rentree->month === 8) {
+                    $rentree->month(9)->day(1);
+                }
             }
 
             if ($depuisAujourdhui) {

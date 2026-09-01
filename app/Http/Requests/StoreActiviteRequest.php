@@ -14,7 +14,7 @@ class StoreActiviteRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'type'              => 'required|in:activite,stage',
+            'type'              => 'required|in:activite,stage,club_maker',
             'nom'               => 'required|string|max:255',
             'tarif'             => 'nullable|numeric|min:0',
             'adresse'           => 'nullable|string|max:255',
@@ -22,6 +22,8 @@ class StoreActiviteRequest extends FormRequest
             'jours.*'           => 'nullable|string',
             'debuts.*'          => 'nullable|date_format:H:i',
             'fins.*'            => 'nullable|date_format:H:i',
+            'date_debut_club_maker' => 'nullable|date',
+            'date_fin_club_maker'   => 'nullable|date|after_or_equal:date_debut_club_maker',
             'gestionnaires'     => 'nullable|array',
             'gestionnaires.*'   => 'exists:users,id',
             'max_eleves'        => 'nullable|integer|min:1',
@@ -38,7 +40,7 @@ class StoreActiviteRequest extends FormRequest
     {
         return [
             'type.required'           => 'Le type est obligatoire.',
-            'type.in'                 => 'Le type doit être "activite" ou "stage".',
+            'type.in'                 => 'Le type doit être "activite", "stage" ou "club_maker".',
             'nom.required'            => 'Le nom est obligatoire.',
             'nom.max'                 => 'Le nom ne peut pas dépasser 255 caractères.',
             'tarif.numeric'           => 'Le tarif doit être un nombre.',

@@ -119,7 +119,7 @@ class Activite extends Model
         $plats = [];
         if (is_array($this->horaires) && !$this->est_stage) {
             foreach ($this->horaires as $jour => $plagesStr) {
-                if ($jour === 'stage') continue;
+                if ($jour === 'stage' || $jour === '_periode') continue;
                 foreach (explode(', ', $plagesStr) as $p) {
                     $parts = explode('-', $p);
                     if (count($parts) === 2) {

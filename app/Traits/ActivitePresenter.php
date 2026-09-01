@@ -32,11 +32,22 @@ trait ActivitePresenter
             return ["Du {$dateDebut} au {$dateFin} ({$hDebut} - {$hFin})"];
         }
 
-        return array_map(
+        $periode = $horaires['_periode'] ?? null;
+        unset($horaires['_periode']);
+
+        $lignes = array_map(
             fn($jour, $plage) => "{$jour} {$plage}",
             array_keys($horaires),
             $horaires
         );
+
+        if ($periode && !empty($periode['date_debut']) && !empty($periode['date_fin'])) {
+            $dateDebut = Carbon::parse($periode['date_debut'])->format('d/m/Y');
+            $dateFin   = Carbon::parse($periode['date_fin'])->format('d/m/Y');
+            array_unshift($lignes, "Du {$dateDebut} au {$dateFin}");
+        }
+
+        return $lignes;
     }
 
     /**
