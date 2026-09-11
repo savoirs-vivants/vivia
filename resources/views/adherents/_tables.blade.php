@@ -28,6 +28,56 @@
             <div class="w-px h-5 bg-gray-200 hidden sm:block"></div>
         @endif
 
+        @if (isset($activitesToutes) && $activitesToutes->isNotEmpty())
+            <div class="relative" x-data="{ open: false }" @click.outside="open = false">
+                <button type="button" @click="open = !open"
+                        class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all duration-150 {{ !empty($filterActivites) ? 'bg-[#222A60] text-white shadow-sm' : 'bg-gray-100 text-gray-500 hover:bg-gray-200 hover:text-gray-700' }}">
+                    Activités
+                    @if (!empty($filterActivites))
+                        <span class="px-1.5 py-0.5 rounded bg-white/20 text-[10px]">{{ count($filterActivites) }}</span>
+                    @endif
+                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7"/>
+                    </svg>
+                </button>
+
+                <div x-show="open" x-cloak x-transition
+                     class="absolute z-30 mt-2 w-64 bg-white border border-gray-100 rounded-xl shadow-xl p-3">
+                    <form method="GET" action="{{ route('adherents.index') }}">
+                        <input type="hidden" name="tab" value="{{ $tab }}">
+                        @if ($search) <input type="hidden" name="q" value="{{ $search }}"> @endif
+                        @if ($filterSource && $filterSource !== 'Tous') <input type="hidden" name="source" value="{{ $filterSource }}"> @endif
+                        @if ($filterType && $filterType !== 'tous') <input type="hidden" name="type" value="{{ $filterType }}"> @endif
+
+                        <div class="max-h-56 overflow-y-auto space-y-1.5 mb-2">
+                            @foreach ($activitesToutes as $act)
+                                <label class="flex items-center gap-2 cursor-pointer text-sm text-gray-600 hover:text-gray-900">
+                                    <input type="checkbox" name="activites[]" value="{{ $act->id }}"
+                                           {{ in_array((string) $act->id, array_map('strval', $filterActivites ?? [])) ? 'checked' : '' }}
+                                           class="rounded border-gray-300 text-[#16987C] focus:ring-[#16987C]/30">
+                                    {{ $act->nom }}
+                                </label>
+                            @endforeach
+                        </div>
+
+                        <div class="flex items-center justify-between gap-2 pt-2 border-t border-gray-100">
+                            @if (!empty($filterActivites))
+                                <a href="{{ route('adherents.index', array_merge(request()->except('activites', 'page'), ['page' => 1])) }}"
+                                   class="text-xs font-bold text-gray-400 hover:text-gray-600">Réinitialiser</a>
+                            @else
+                                <span></span>
+                            @endif
+                            <button type="submit"
+                                    class="px-3 py-1.5 bg-[#16987C] hover:bg-[#138a6f] text-white rounded-lg text-xs font-bold transition-colors">
+                                Filtrer
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            <div class="w-px h-5 bg-gray-200 hidden sm:block"></div>
+        @endif
+
         <div class="flex-1 min-w-[220px] max-w-sm relative">
             <svg class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0"/>
@@ -232,6 +282,42 @@
                                 </div>
                             @endif
                         </div>
+                    @endif
+
+                    @if ($tab === 'attente' && Auth::user()->role === 'admin')
+                        @php $inscriptionsAttenteMob = $adherent->inscriptions->where('a_paye', \App\Models\Inscription::EN_ATTENTE); @endphp
+                        @if ($inscriptionsAttenteMob->count() > 1)
+                            <div class="mx-4 mb-3 px-3 py-2.5 bg-amber-50/70 border border-amber-100 rounded-xl">
+                                <p class="text-[10px] font-bold text-amber-700 uppercase tracking-wide mb-2">
+                                    ⚠️ {{ $inscriptionsAttenteMob->count() }} inscriptions en attente — supprimez le doublon
+                                </p>
+                                <div class="flex flex-col gap-1.5">
+                                    @foreach ($inscriptionsAttenteMob as $insc)
+                                        @php
+                                            $paiementProcheMob = $adherent->paiements->sortBy(fn($p) => abs(($p->created_at?->diffInSeconds($insc->created_at)) ?? PHP_INT_MAX))->first();
+                                        @endphp
+                                        <div class="flex items-center justify-between gap-2 bg-white border border-amber-200 rounded-lg px-2.5 py-1.5 text-xs">
+                                            <span class="text-gray-600 truncate">
+                                                #{{ $insc->id }} · {{ number_format((float) $insc->montant, 2, ',', ' ') }} €
+                                                @if ($paiementProcheMob)
+                                                    · {{ $paiementProcheMob->source ?? 'Interne' }}
+                                                @endif
+                                            </span>
+                                            <form method="POST" action="{{ route('inscriptions.destroy', $insc) }}"
+                                                  onsubmit="return confirm('Supprimer cette inscription en double (#{{ $insc->id }}) ? Cette action est irréversible.');">
+                                                @csrf
+                                                @method('DELETE')
+                                                <button type="submit" class="text-red-400 hover:text-red-600 shrink-0">
+                                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M9.5 4h5a1 1 0 011 1v2h-7V5a1 1 0 011-1z"/>
+                                                    </svg>
+                                                </button>
+                                            </form>
+                                        </div>
+                                    @endforeach
+                                </div>
+                            </div>
+                        @endif
                     @endif
 
                     {{-- Action --}}
@@ -470,6 +556,44 @@
                                 </div>
                             </td>
                         </tr>
+
+                        @if ($tab === 'attente' && Auth::user()->role === 'admin')
+                            @php $inscriptionsAttente = $adherent->inscriptions->where('a_paye', \App\Models\Inscription::EN_ATTENTE); @endphp
+                            @if ($inscriptionsAttente->count() > 1)
+                                <tr class="bg-amber-50/50">
+                                    <td colspan="7" class="px-6 py-3">
+                                        <p class="text-[11px] font-bold text-amber-700 uppercase tracking-wide mb-2">
+                                            ⚠️ {{ $inscriptionsAttente->count() }} inscriptions en attente pour cette personne — supprimez le doublon
+                                        </p>
+                                        <div class="flex flex-wrap gap-2">
+                                            @foreach ($inscriptionsAttente as $insc)
+                                                @php
+                                                    $paiementProche = $adherent->paiements->sortBy(fn($p) => abs(($p->created_at?->diffInSeconds($insc->created_at)) ?? PHP_INT_MAX))->first();
+                                                @endphp
+                                                <div class="inline-flex items-center gap-2 bg-white border border-amber-200 rounded-lg px-3 py-1.5 text-xs">
+                                                    <span class="font-bold text-gray-700">#{{ $insc->id }}</span>
+                                                    <span class="text-gray-400">{{ $insc->date_inscription?->isoFormat('D MMM YYYY') }}</span>
+                                                    <span class="font-semibold text-gray-700">{{ number_format((float) $insc->montant, 2, ',', ' ') }} €</span>
+                                                    @if ($paiementProche)
+                                                        <span class="px-1.5 py-0.5 rounded bg-gray-100 text-gray-500 font-bold">{{ $paiementProche->source ?? 'Interne' }}</span>
+                                                    @endif
+                                                    <form method="POST" action="{{ route('inscriptions.destroy', $insc) }}"
+                                                          onsubmit="return confirm('Supprimer cette inscription en double (#{{ $insc->id }}) ? Cette action est irréversible.');">
+                                                        @csrf
+                                                        @method('DELETE')
+                                                        <button type="submit" class="text-red-400 hover:text-red-600 transition-colors" title="Supprimer cette inscription">
+                                                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M9.5 4h5a1 1 0 011 1v2h-7V5a1 1 0 011-1z"/>
+                                                            </svg>
+                                                        </button>
+                                                    </form>
+                                                </div>
+                                            @endforeach
+                                        </div>
+                                    </td>
+                                </tr>
+                            @endif
+                        @endif
                     @empty
                         <tr>
                             <td colspan="{{ in_array($tab, ['attente', 'partiel', 'pre_inscrits']) ? 7 : 4 }}" class="px-6 py-20 text-center">

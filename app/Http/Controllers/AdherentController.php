@@ -24,12 +24,13 @@ class AdherentController extends Controller
 {
     public function index(Request $request)
     {
-        $user         = Auth::user();
-        $tab          = $request->get('tab', 'payes');
-        $search       = $request->get('q');
-        $filterSource = $request->get('source');
-        $filterStatut = $request->get('statut');
-        $saison       = Saison::current();
+        $user            = Auth::user();
+        $tab             = $request->get('tab', 'payes');
+        $search          = $request->get('q');
+        $filterSource    = $request->get('source');
+        $filterStatut    = $request->get('statut');
+        $filterActivites = array_filter((array) $request->get('activites', []));
+        $saison          = Saison::current();
 
         $canVoirTousStatuts = in_array($user->role, ['admin', 'comptable']);
         if (!$canVoirTousStatuts) {
@@ -59,6 +60,10 @@ class AdherentController extends Controller
             ->when($mesActivitesIds, fn($q) => $q->whereHas(
                 'activites',
                 fn($q2) => $q2->whereIn('activites_adherents.id_activite', $mesActivitesIds)
+            ))
+            ->when(!empty($filterActivites), fn($q) => $q->whereHas(
+                'activites',
+                fn($q2) => $q2->whereIn('activites_adherents.id_activite', $filterActivites)
             ));
 
         $mois = now()->month;
@@ -100,6 +105,8 @@ class AdherentController extends Controller
         }
         $countPayes += $structuresPayees->count();
 
+        $activitesToutes = \App\Models\Activite::where('is_archived', false)->orderBy('nom')->get(['id', 'nom']);
+
         $filterType = $request->get('type', 'tous');
         $structuresList = match ($tab) {
             'payes'   => $structuresPayees,
@@ -118,6 +125,8 @@ class AdherentController extends Controller
             'search',
             'filterSource',
             'filterType',
+            'filterActivites',
+            'activitesToutes',
             'items',
             'structuresList',
             'adherentsPayes',
@@ -217,6 +226,17 @@ class AdherentController extends Controller
 
         return redirect()->route('adherents.index')
             ->with('success', "{$nom} a été supprimé(e) définitivement.");
+    }
+
+    public function destroyInscription(Inscription $inscription)
+    {
+        abort_if($inscription->a_paye === Inscription::PAYE, 403, 'Impossible de supprimer une inscription déjà payée.');
+
+        $tab = $inscription->a_paye === 'pre_inscrit' ? 'pre_inscrits' : 'attente';
+        $inscription->delete();
+
+        return redirect()->route('adherents.index', ['tab' => $tab])
+            ->with('success', 'Inscription en double supprimée.');
     }
 
     public function validerChequeAcompte(Adherent $adherent)
