@@ -258,6 +258,15 @@
                     <td style="border: none; color: #666; font-weight: normal; padding-top: 5px;">Email : <strong
                             style="color: #333;">{{ $tuteur->mail ?? 'N/A' }}</strong></td>
                 </tr>
+                @if ($tuteur->type === 'parent_tuteur')
+                    <tr>
+                        <td colspan="2" style="border: none; color: #666; font-weight: normal; padding-top: 5px;">
+                            Rentre seul·e en fin d'activité : <strong style="color: {{ $tuteur->rentre_fin ? '#16987C' : '#c00' }};">{{ $tuteur->rentre_fin ? 'Oui' : 'Non' }}</strong>
+                            &nbsp;&nbsp;&nbsp;
+                            Rentre seul·e en cas d'annulation : <strong style="color: {{ $tuteur->rentre_annul ? '#16987C' : '#c00' }};">{{ $tuteur->rentre_annul ? 'Oui' : 'Non' }}</strong>
+                        </td>
+                    </tr>
+                @endif
                 @if ($tuteur->type === 'parent_tuteur' && $tuteur->signature)
                     <tr>
                         <td colspan="2" style="border: none; padding-top: 5px;">

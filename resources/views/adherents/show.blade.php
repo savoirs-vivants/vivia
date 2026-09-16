@@ -601,6 +601,17 @@
                                                     :</span> {{ $tuteur->mail }}</p>
                                         @endif
                                     </div>
+
+                                    @if ($tuteur->type === 'parent_tuteur')
+                                        <div class="mt-3 ml-12 flex flex-wrap gap-1.5">
+                                            <span class="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-[11px] font-bold {{ $tuteur->rentre_fin ? 'bg-emerald-50 text-emerald-600' : 'bg-gray-100 text-gray-400' }}">
+                                                {{ $tuteur->rentre_fin ? '✓' : '✕' }} Rentre seul·e en fin d'activité
+                                            </span>
+                                            <span class="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-[11px] font-bold {{ $tuteur->rentre_annul ? 'bg-emerald-50 text-emerald-600' : 'bg-gray-100 text-gray-400' }}">
+                                                {{ $tuteur->rentre_annul ? '✓' : '✕' }} Rentre seul·e en cas d'annulation
+                                            </span>
+                                        </div>
+                                    @endif
                                 </div>
                             @endforeach
                         </div>
