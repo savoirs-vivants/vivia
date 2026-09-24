@@ -45,6 +45,8 @@ Route::post('/adhesion/{token}/modifier/verifier', [AdherentAutoModificationCont
 Route::post('/adhesion/{token}/modifier/renvoyer-code', [AdherentAutoModificationController::class, 'renvoyerCode'])->name('adhesion.modifier.renvoyer-code');
 Route::get('/adhesion/{token}/modifier', [AdherentAutoModificationController::class, 'edit'])->name('adhesion.modifier.edit');
 Route::post('/adhesion/{token}/modifier', [AdherentAutoModificationController::class, 'update'])->name('adhesion.modifier.update');
+Route::get('/adhesion/{token}/payer-adhesion', [AdherentAutoModificationController::class, 'payerAdhesionForm'])->name('adhesion.payer-adhesion');
+Route::post('/adhesion/{token}/payer-adhesion/confirmer', [AdherentAutoModificationController::class, 'payerAdhesionConfirmer'])->name('adhesion.payer-adhesion.confirmer');
 Route::post('/adhesion/{token}/notifier-activite', [AdherentFormulaireController::class, 'notifierActivitePleine'])->name('adhesion.notifier.activite');
 
 Route::get('/adhesion/{token}/helloasso/{status}', [HelloAssoController::class, 'helloassoReturn'])->name('adhesion.helloasso.return');

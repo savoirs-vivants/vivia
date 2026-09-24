@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Mail\CodeModificationMail;
 use App\Models\Adherent;
+use App\Models\Paiement;
 use App\Models\Tuteur;
 use App\Http\Requests\UpdateFicheAdherentRequest;
 use Illuminate\Http\Request;
@@ -24,12 +25,29 @@ class AdherentAutoModificationController extends Controller
         return Adherent::find($formData['_adherent_id']);
     }
 
+    private function cotisationDejaPayee(Adherent $adherent): bool
+    {
+        return $adherent->paiements()->where('commentaire', 'like', '%cotisation%')->exists();
+    }
+
+    private function montantCotisation(Adherent $adherent): float
+    {
+        $isDrusenheim = $adherent->activitesActives->contains(fn($a) =>
+            str_contains(strtolower($a->nom ?? ''), 'drusenheim') ||
+            str_contains(strtolower($a->ville ?? ''), 'drusenheim')
+        );
+
+        return $isDrusenheim ? 20.0 : 10.0;
+    }
+
     public function choix(Request $request, string $token)
     {
         $adherent = $this->adherentDeSession($request, $token);
         abort_if(!$adherent, 403, 'Lien invalide ou expiré.');
 
-        return view('adhesion.choix', compact('token', 'adherent'));
+        $cotisationPayee = $this->cotisationDejaPayee($adherent);
+
+        return view('adhesion.choix', compact('token', 'adherent', 'cotisationPayee'));
     }
 
     public function choisir(Request $request, string $token)
@@ -52,7 +70,42 @@ class AdherentAutoModificationController extends Controller
             return redirect()->route('adhesion.modifier.verifier', ['token' => $token]);
         }
 
+        if ($choix === 'payer_adhesion') {
+            abort_if($this->cotisationDejaPayee($adherent), 403, 'La cotisation a déjà été payée.');
+
+            return redirect()->route('adhesion.payer-adhesion', ['token' => $token]);
+        }
+
         return redirect()->route('adhesion.show', ['token' => $token, 'step' => 2]);
+    }
+
+    public function payerAdhesionForm(Request $request, string $token)
+    {
+        $adherent = $this->adherentDeSession($request, $token);
+        abort_if(!$adherent, 403, 'Lien invalide ou expiré.');
+        abort_if($this->cotisationDejaPayee($adherent), 403, 'La cotisation a déjà été payée.');
+
+        $montantCotisation = $this->montantCotisation($adherent);
+
+        return view('adhesion.payer-adhesion', compact('token', 'adherent', 'montantCotisation'));
+    }
+
+    public function payerAdhesionConfirmer(Request $request, string $token)
+    {
+        $adherent = $this->adherentDeSession($request, $token);
+        abort_if(!$adherent, 403, 'Lien invalide ou expiré.');
+
+        if (!$this->cotisationDejaPayee($adherent)) {
+            Paiement::create([
+                'id_adherent'   => $adherent->id,
+                'montant'       => $this->montantCotisation($adherent),
+                'source'        => 'HelloAsso',
+                'date_paiement' => now()->toDateString(),
+                'commentaire'   => 'Cotisation annuelle via HelloAsso',
+            ]);
+        }
+
+        return redirect()->route('adhesion.choix', ['token' => $token])->with('cotisation_payee', true);
     }
 
     public function verifierForm(Request $request, string $token)
