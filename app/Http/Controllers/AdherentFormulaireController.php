@@ -646,6 +646,19 @@ class AdherentFormulaireController extends Controller
                     'statut_juridique' => 'personne_physique',
                 ]);
             }
+
+            // Adhérent existant, sans pré-inscription en attente de finalisation :
+            // on lui propose de choisir entre reprendre une inscription ou modifier sa fiche.
+            if ($adherentExistant && !$structureExistante && empty($preInscriptionDb)) {
+                $formData['is_adherent']     = 'oui';
+                $formData['numero_adherent'] = $adherentExistant->numero_adherent;
+                $formData['statut_juridique'] = 'personne_physique';
+                $formData['_adherent_id']    = $adherentExistant->id;
+                $formData['_last_completed'] = max((int) ($formData['_last_completed'] ?? 0), 1);
+                $request->session()->put("adhesion_{$token}", $formData);
+
+                return redirect()->route('adhesion.choix', ['token' => $token]);
+            }
         }
 
         if ($step === 16) {

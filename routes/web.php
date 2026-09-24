@@ -4,6 +4,7 @@ use App\Http\Controllers\ActiviteController;
 use App\Http\Controllers\AdherentController;
 use App\Http\Controllers\RessourcerieController;
 use App\Http\Controllers\AdherentFormulaireController;
+use App\Http\Controllers\AdherentAutoModificationController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\BackOfficeController;
 use App\Http\Controllers\DashboardController;
@@ -36,6 +37,14 @@ Route::get('/adhesion/{token}',  [AdherentFormulaireController::class, 'show'])-
 Route::post('/adhesion/{token}', [AdherentFormulaireController::class, 'next'])->name('adhesion.next');
 Route::get('/adherents/{adherent}/carnet', [AdherentController::class, 'voirCarnet'])->name('adherents.carnet.voir');
 Route::post('/adhesion/{token}/choix-saison', [AdherentFormulaireController::class, 'setSaisonCible'])->name('adhesion.setSaison');
+
+Route::get('/adhesion/{token}/choix', [AdherentAutoModificationController::class, 'choix'])->name('adhesion.choix');
+Route::post('/adhesion/{token}/choix', [AdherentAutoModificationController::class, 'choisir'])->name('adhesion.choisir');
+Route::get('/adhesion/{token}/modifier/verifier', [AdherentAutoModificationController::class, 'verifierForm'])->name('adhesion.modifier.verifier');
+Route::post('/adhesion/{token}/modifier/verifier', [AdherentAutoModificationController::class, 'verifier'])->name('adhesion.modifier.verifier.submit');
+Route::post('/adhesion/{token}/modifier/renvoyer-code', [AdherentAutoModificationController::class, 'renvoyerCode'])->name('adhesion.modifier.renvoyer-code');
+Route::get('/adhesion/{token}/modifier', [AdherentAutoModificationController::class, 'edit'])->name('adhesion.modifier.edit');
+Route::post('/adhesion/{token}/modifier', [AdherentAutoModificationController::class, 'update'])->name('adhesion.modifier.update');
 Route::post('/adhesion/{token}/notifier-activite', [AdherentFormulaireController::class, 'notifierActivitePleine'])->name('adhesion.notifier.activite');
 
 Route::get('/adhesion/{token}/helloasso/{status}', [HelloAssoController::class, 'helloassoReturn'])->name('adhesion.helloasso.return');
