@@ -60,7 +60,7 @@
                             </div>
 
                             <div class="min-w-0 w-full">
-                                <div class="font-grotesk text-2xl font-black text-[#0F143A] tracking-tight">
+                                <div class="font-grotesk text-2xl font-black text-[#0F143A] tracking-tight flex flex-wrap items-center gap-2">
                                     <span x-show="!editMode">{{ $adherent->prenom }} {{ $adherent->nom }}</span>
 
                                     <div x-show="editMode" x-cloak class="flex items-center gap-3 mb-2 w-full max-w-md">
@@ -71,6 +71,15 @@
                                             form="form-update-adherent" placeholder="Nom"
                                             class="w-1/2 bg-white border border-gray-200 rounded-lg text-lg px-3 py-1.5 focus:ring-2 focus:ring-[#222A60] outline-none transition-all">
                                     </div>
+
+                                    <span x-show="!editMode"
+                                        class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-black uppercase tracking-wider bg-[#222A60]/5 text-[#222A60] border border-[#222A60]/10"
+                                        x-data="{ copied: false }"
+                                        @click="navigator.clipboard.writeText('{{ $adherent->numero_adherent }}'); copied = true; setTimeout(() => copied = false, 1500)"
+                                        title="Copier le numéro" style="cursor: pointer;">
+                                        <span x-show="!copied">🎫 {{ $adherent->numero_adherent }}</span>
+                                        <span x-show="copied" x-cloak class="text-[#16987C]">✓ Copié !</span>
+                                    </span>
                                 </div>
 
                                 <div class="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1 text-sm text-gray-500">

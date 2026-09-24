@@ -46,6 +46,18 @@ trait AdherentPresenter
             || count($typesActifs) > 1
             || ($this->inscription?->type_adhesion ?? '') !== 'club_maker';
 
+        // Détail payé/non payé par catégorie, basé sur le libellé des paiements enregistrés
+        // (les paiements ne sont pas rattachés à une inscription précise en base).
+        $cotisationDue    = $showCotisation ? ($isDrusenheim ? 20.0 : 10.0) : 0.0;
+        $cotisationVersee = (float) $this->paiements
+            ->filter(fn($p) => str_contains(mb_strtolower($p->commentaire ?? ''), 'cotisation'))
+            ->sum('montant');
+        $acompteVerse = (float) $this->paiements
+            ->filter(fn($p) => str_contains(mb_strtolower($p->commentaire ?? ''), 'compte'))
+            ->sum('montant');
+        $activiteDue     = max(0, $totalModal - $cotisationDue);
+        $activiteVersee  = max(0, $verseModal - $cotisationVersee);
+
         return [
             'actionUrl'       => "/adherents/{$this->id}/valider",
             'versementUrl'    => "/adherents/{$this->id}/versement",
@@ -72,6 +84,11 @@ trait AdherentPresenter
             'showCotisation'  => $showCotisation,
             'type_adhesion_attente' => $this->inscriptions()->where('a_paye', 'En attente')->latest()->value('type_adhesion') ?? '',
             'saison'          => $this->inscription?->saison ?? '',
+            'pdfUrl'          => route('adherents.pdf', $this),
+            'activitePayee'   => $activiteVersee >= $activiteDue - 0.01,
+            'cotisationPayee' => $cotisationVersee >= $cotisationDue - 0.01,
+            'acompteVerse'    => $acompteVerse > 0,
+            'acompteMontant'  => number_format($acompteVerse, 2, ',', ' ') . ' €',
         ];
     }
 

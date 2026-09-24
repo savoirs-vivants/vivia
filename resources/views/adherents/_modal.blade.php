@@ -8,7 +8,7 @@
     x-transition:leave-start="opacity-100 scale-100" x-transition:leave-end="opacity-0 scale-95"
     class="fixed inset-0 z-50 flex items-center justify-center p-4 pointer-events-none" style="display:none">
 
-    <div class="bg-white rounded-2xl shadow-[0_20px_60px_rgba(0,0,0,0.15)] w-full max-w-md pointer-events-auto overflow-hidden"
+    <div class="bg-white rounded-2xl shadow-[0_20px_60px_rgba(0,0,0,0.15)] w-full max-w-lg pointer-events-auto overflow-hidden"
         @click.stop>
 
         <div class="flex items-center justify-between p-5 border-b border-gray-100">
@@ -25,6 +25,14 @@
             <div class="flex items-center gap-2">
                 <span class="px-2.5 py-1 rounded-lg text-xs font-bold" :class="adherent.sourceClass"
                     x-text="adherent.source"></span>
+                <a :href="adherent.pdfUrl" target="_blank" x-show="adherent.pdfUrl"
+                    class="w-7 h-7 flex items-center justify-center rounded-lg text-gray-400 hover:text-[#222A60] hover:bg-gray-100 transition-all"
+                    title="Télécharger la fiche PDF">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H8a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                </a>
                 <button @click="close()"
                     class="w-7 h-7 flex items-center justify-center rounded-lg text-gray-300 hover:text-gray-500 hover:bg-gray-100 transition-all">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -35,7 +43,7 @@
             </div>
         </div>
 
-        <div class="p-5 space-y-4 max-h-[60vh] overflow-y-auto">
+        <div class="p-5 space-y-4 max-h-[70vh] overflow-y-auto">
 
             <template x-if="adherent.isPartiel">
                 <div class="space-y-4">
@@ -107,6 +115,32 @@
 
             <template x-if="!adherent.isPartiel">
                 <div class="space-y-4">
+
+                    <div x-show="!adherent.isPreInscrit" class="grid grid-cols-2 gap-2">
+                        <div class="p-3 rounded-xl border" :class="adherent.activitePayee ? 'bg-emerald-50 border-emerald-100' : 'bg-rose-50 border-rose-100'">
+                            <p class="text-[10px] font-black uppercase tracking-widest mb-1" :class="adherent.activitePayee ? 'text-emerald-500' : 'text-rose-500'">Inscription</p>
+                            <p class="text-sm font-black flex items-center gap-1.5" :class="adherent.activitePayee ? 'text-emerald-700' : 'text-rose-600'">
+                                <span x-show="adherent.activitePayee">✓ Payée</span>
+                                <span x-show="!adherent.activitePayee">✕ Non payée</span>
+                            </p>
+                        </div>
+                        <template x-if="adherent.showCotisation !== false">
+                            <div class="p-3 rounded-xl border" :class="adherent.cotisationPayee ? 'bg-emerald-50 border-emerald-100' : 'bg-rose-50 border-rose-100'">
+                                <p class="text-[10px] font-black uppercase tracking-widest mb-1" :class="adherent.cotisationPayee ? 'text-emerald-500' : 'text-rose-500'">Adhésion</p>
+                                <p class="text-sm font-black flex items-center gap-1.5" :class="adherent.cotisationPayee ? 'text-emerald-700' : 'text-rose-600'">
+                                    <span x-show="adherent.cotisationPayee">✓ Payée</span>
+                                    <span x-show="!adherent.cotisationPayee">✕ Non payée</span>
+                                </p>
+                            </div>
+                        </template>
+                    </div>
+
+                    <template x-if="!adherent.isPreInscrit && adherent.acompteVerse">
+                        <div class="px-3 py-2 bg-teal-50 border border-teal-100 rounded-xl flex items-center gap-2">
+                            <span class="text-sm">💰</span>
+                            <p class="text-xs font-bold text-teal-700">Acompte déjà versé : <span x-text="adherent.acompteMontant"></span></p>
+                        </div>
+                    </template>
 
                     <div>
                         <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3">Détail
