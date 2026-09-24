@@ -14,7 +14,8 @@
         $bulletinsAdh = is_array($adherent->bulletin) ? $adherent->bulletin : [];
     @endphp
 
-    <div class="max-w-3xl mx-auto py-6 px-4">
+    <div class="min-h-screen bg-gray-50 py-6 px-4 font-grotesk">
+    <div class="max-w-3xl mx-auto">
         <div class="mb-6">
             <h1 class="text-2xl font-bold text-gray-900">Modifier ma fiche ✏️</h1>
             <p class="text-gray-400 mt-1 text-sm">Mettez à jour vos informations. Les changements sont enregistrés immédiatement.</p>
@@ -110,20 +111,37 @@
             {{-- Situation --}}
             <div class="{{ $card }}">
                 <h2 class="{{ $sectionTitle }}">💼 Situation actuelle</h2>
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-2">
-                    <div>
-                        <label class="{{ $label }}">Occupation</label>
-                        <input type="text" name="occupation" value="{{ old('occupation', $adherent->occupation) }}"
-                            placeholder="Ex : Collège, Étudiant, Salarié…" class="{{ $field }}">
+
+                @if ($isMineur)
+                    <div class="mb-4">
+                        <label class="{{ $label }}">📚 Niveau scolaire</label>
+                        <select name="occupation" class="{{ $field }}">
+                            <option value="">— Sélectionnez —</option>
+                            @foreach (['Maternelle', 'Primaire', 'Collège', 'Lycée', 'École à la maison'] as $o)
+                                <option value="{{ $o }}" {{ old('occupation', $adherent->occupation) === $o ? 'selected' : '' }}>{{ $o }}</option>
+                            @endforeach
+                        </select>
                     </div>
                     <div>
-                        <label class="{{ $label }}">Établissement (si scolarisé·e)</label>
-                        <input type="text" name="etablissement" value="{{ old('etablissement', $adherent->etablissement) }}" class="{{ $field }}">
+                        <label class="{{ $label }}">🏫 Établissement scolaire</label>
+                        <input type="text" name="etablissement" value="{{ old('etablissement', $adherent->etablissement) }}"
+                            placeholder="Nom de l'école / collège / lycée" class="{{ $field }}">
                     </div>
-                </div>
+                @else
+                    <div>
+                        <label class="{{ $label }}">Situation professionnelle</label>
+                        <select name="occupation" class="{{ $field }}">
+                            <option value="">— Sélectionnez —</option>
+                            @foreach (['Étudiant', 'Sans emploi', 'Chômeur', 'Retraité', 'Fonctionnaire', "Chef d'entreprise", 'Salarié', 'Cadre', 'Employé', 'Ouvrier', 'Profession libérale'] as $o)
+                                <option value="{{ $o }}" {{ old('occupation', $adherent->occupation) === $o ? 'selected' : '' }}>{{ $o }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                @endif
             </div>
 
-            {{-- Médical --}}
+            {{-- Médical (mineurs uniquement) --}}
+            @if ($isMineur)
             <div class="{{ $card }}">
                 <h2 class="{{ $sectionTitle }}">🏥 Informations médicales</h2>
 
@@ -152,8 +170,10 @@
                     <textarea name="restrictions_alimentaires" rows="2" class="{{ $field }}">{{ old('restrictions_alimentaires', $adherent->restrictions_alimentaires) }}</textarea>
                 </div>
             </div>
+            @endif
 
-            {{-- Orientation professionnelle --}}
+            {{-- Orientation professionnelle (mineurs uniquement) --}}
+            @if ($isMineur)
             <div class="{{ $card }}">
                 <h2 class="{{ $sectionTitle }}">🎓 Orientation professionnelle</h2>
                 <div class="mb-4">
@@ -165,6 +185,7 @@
                     <textarea name="decouverte_metier" rows="3" class="{{ $field }}">{{ old('decouverte_metier', $adherent->decouverte_metier) }}</textarea>
                 </div>
             </div>
+            @endif
 
             {{-- Autorisations & communication --}}
             <div class="{{ $card }}">
@@ -195,7 +216,8 @@
                 </label>
             </div>
 
-            {{-- Tuteurs --}}
+            {{-- Tuteurs (mineurs uniquement) --}}
+            @if ($isMineur)
             <div class="{{ $card }}" x-data="{
                 tuteurs: {{ \Illuminate\Support\Js::from($adherent->tousLesTuteurs->map(fn($t) => [
                     'id' => $t->id, 'type' => $t->type, 'nom' => $t->nom, 'prenom' => $t->prenom,
@@ -292,6 +314,7 @@
                 </div>
                 <p class="text-xs text-gray-400 mt-3">Retirer un tuteur ici le détache de cette fiche (il n'est pas supprimé s'il est aussi lié à un autre enfant de la famille).</p>
             </div>
+            @endif
 
             <div class="flex items-center justify-between pt-2">
                 <a href="{{ route('adhesion.choix', ['token' => $token]) }}" class="text-sm font-medium text-gray-500 hover:text-gray-700">Annuler</a>
@@ -303,6 +326,7 @@
                 </button>
             </div>
         </form>
+    </div>
     </div>
 
 @endsection

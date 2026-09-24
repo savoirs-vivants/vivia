@@ -4,43 +4,59 @@
 
 @section('content')
 
-    <div class="max-w-xl mx-auto py-10 px-4">
-        <div class="text-center mb-8">
-            <h1 class="text-2xl font-bold text-gray-900">Bonjour {{ $adherent->prenom }} 👋</h1>
-            <p class="text-gray-400 mt-2 text-sm">Que souhaitez-vous faire aujourd'hui ?</p>
-        </div>
+    <div class="min-h-screen bg-gray-50 py-10 px-4 font-grotesk">
+        <div class="max-w-xl mx-auto">
 
-        @if ($errors->any())
-            <div class="mb-5 p-4 bg-rose-50 border border-rose-200 rounded-xl text-sm text-rose-700 font-medium">
-                {{ $errors->first() }}
+            <div class="text-center mb-8">
+                <div class="w-16 h-16 rounded-2xl bg-teal-50 border border-teal-100 flex items-center justify-center text-3xl mx-auto mb-4">
+                    👋
+                </div>
+                <h1 class="text-2xl font-bold text-gray-900">Bonjour {{ $adherent->prenom }} !</h1>
+                <p class="text-gray-500 mt-1.5 text-sm">Que souhaitez-vous faire aujourd'hui ?</p>
             </div>
-        @endif
 
-        <form action="{{ route('adhesion.choisir', $token) }}" method="POST" class="space-y-4">
-            @csrf
-
-            <button type="submit" name="choix" value="inscription"
-                class="w-full text-left p-5 bg-white border-2 border-gray-100 rounded-2xl shadow-sm hover:border-teal-500 hover:bg-teal-50/40 transition-all group">
-                <div class="flex items-center gap-4">
-                    <div class="w-12 h-12 rounded-xl bg-teal-600/10 text-teal-700 flex items-center justify-center text-2xl shrink-0">🎯</div>
-                    <div>
-                        <p class="font-bold text-gray-900">Reprendre une inscription</p>
-                        <p class="text-sm text-gray-400 mt-0.5">S'inscrire à une activité, un stage ou finaliser un paiement.</p>
-                    </div>
+            @if ($errors->any())
+                <div class="mb-5 p-4 bg-rose-50 border border-rose-200 rounded-xl text-sm text-rose-700 font-medium text-center">
+                    {{ $errors->first() }}
                 </div>
-            </button>
+            @endif
 
-            <button type="submit" name="choix" value="modifier"
-                class="w-full text-left p-5 bg-white border-2 border-gray-100 rounded-2xl shadow-sm hover:border-indigo-500 hover:bg-indigo-50/40 transition-all group">
-                <div class="flex items-center gap-4">
-                    <div class="w-12 h-12 rounded-xl bg-indigo-600/10 text-indigo-700 flex items-center justify-center text-2xl shrink-0">✏️</div>
-                    <div>
-                        <p class="font-bold text-gray-900">Modifier mes informations</p>
-                        <p class="text-sm text-gray-400 mt-0.5">Mettre à jour mes coordonnées, informations médicales, tuteurs…</p>
+            <form action="{{ route('adhesion.choisir', $token) }}" method="POST" class="space-y-4">
+                @csrf
+
+                <button type="submit" name="choix" value="inscription"
+                    class="w-full group text-left bg-white border-2 border-gray-100 hover:border-teal-500 hover:bg-teal-50/50 rounded-2xl p-5 shadow-sm hover:shadow-md transition-all duration-200">
+                    <div class="flex items-center gap-4">
+                        <div class="w-12 h-12 rounded-xl bg-teal-50 group-hover:bg-teal-500 text-teal-600 group-hover:text-white flex items-center justify-center text-2xl shrink-0 transition-colors duration-200">
+                            🎯
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <h3 class="font-bold text-gray-900 text-base">Reprendre une inscription</h3>
+                            <p class="text-gray-400 text-sm mt-0.5">S'inscrire à une activité, un stage, ou finaliser un paiement en cours.</p>
+                        </div>
+                        <svg class="w-5 h-5 text-gray-300 group-hover:text-teal-500 group-hover:translate-x-1 transition-all shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7" />
+                        </svg>
                     </div>
-                </div>
-            </button>
-        </form>
+                </button>
+
+                <button type="submit" name="choix" value="modifier"
+                    class="w-full group text-left bg-white border-2 border-gray-100 hover:border-[#222A60] hover:bg-[#222A60]/[0.03] rounded-2xl p-5 shadow-sm hover:shadow-md transition-all duration-200">
+                    <div class="flex items-center gap-4">
+                        <div class="w-12 h-12 rounded-xl bg-[#222A60]/5 group-hover:bg-[#222A60] text-[#222A60] group-hover:text-white flex items-center justify-center text-2xl shrink-0 transition-colors duration-200">
+                            ✏️
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <h3 class="font-bold text-gray-900 text-base">Modifier mes informations</h3>
+                            <p class="text-gray-400 text-sm mt-0.5">Mettre à jour mes coordonnées, informations médicales, tuteurs…</p>
+                        </div>
+                        <svg class="w-5 h-5 text-gray-300 group-hover:text-[#222A60] group-hover:translate-x-1 transition-all shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7" />
+                        </svg>
+                    </div>
+                </button>
+            </form>
+        </div>
     </div>
 
 @endsection

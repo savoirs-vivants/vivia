@@ -10,7 +10,6 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
-use Illuminate\Support\Str;
 
 class AdherentAutoModificationController extends Controller
 {
@@ -107,8 +106,9 @@ class AdherentAutoModificationController extends Controller
         abort_unless($request->session()->get("modif_adherent_verifie_{$token}"), 403, 'Vérification requise.');
 
         $adherent->load('tousLesTuteurs');
+        $isMineur = $adherent->tranche_age !== 'Adulte';
 
-        return view('adhesion.modifier', compact('token', 'adherent'));
+        return view('adhesion.modifier', compact('token', 'adherent', 'isMineur'));
     }
 
     public function update(UpdateFicheAdherentRequest $request, string $token)
