@@ -30,6 +30,7 @@ class AdherentController extends Controller
         $filterSource    = $request->get('source');
         $filterStatut    = $request->get('statut');
         $filterActivites = array_filter((array) $request->get('activites', []));
+        $filterAutres    = array_filter((array) $request->get('autres', []));
         $saison          = Saison::current();
 
         $canVoirTousStatuts = in_array($user->role, ['admin', 'comptable']);
@@ -64,7 +65,9 @@ class AdherentController extends Controller
             ->when(!empty($filterActivites), fn($q) => $q->whereHas(
                 'activites',
                 fn($q2) => $q2->whereIn('activites_adherents.id_activite', $filterActivites)
-            ));
+            ))
+            ->when(in_array('communication', $filterAutres), fn($q) => $q->where('communication', true))
+            ->when(in_array('manif', $filterAutres), fn($q) => $q->where('manif', true));
 
         $mois = now()->month;
         $saisonPreinscriptions = ($mois === 7 || $mois === 8) ? Saison::preinscriptions() : $saison;
@@ -105,7 +108,7 @@ class AdherentController extends Controller
         }
         $countPayes += $structuresPayees->count();
 
-        $activitesToutes = \App\Models\Activite::where('is_archived', false)->orderBy('nom')->get(['id', 'nom']);
+        $activitesToutes = \App\Models\Activite::where('is_archived', false)->orderBy('nom')->get(['id', 'nom', 'type', 'horaires']);
 
         $filterType = $request->get('type', 'tous');
         $structuresList = match ($tab) {
@@ -127,6 +130,7 @@ class AdherentController extends Controller
             'filterType',
             'filterActivites',
             'activitesToutes',
+            'filterAutres',
             'items',
             'structuresList',
             'adherentsPayes',

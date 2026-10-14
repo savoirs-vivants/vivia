@@ -48,14 +48,22 @@
                         @if ($search) <input type="hidden" name="q" value="{{ $search }}"> @endif
                         @if ($filterSource && $filterSource !== 'Tous') <input type="hidden" name="source" value="{{ $filterSource }}"> @endif
                         @if ($filterType && $filterType !== 'tous') <input type="hidden" name="type" value="{{ $filterType }}"> @endif
+                        @foreach ($filterAutres ?? [] as $autreVal)
+                            <input type="hidden" name="autres[]" value="{{ $autreVal }}">
+                        @endforeach
 
                         <div class="max-h-56 overflow-y-auto space-y-1.5 mb-2">
                             @foreach ($activitesToutes as $act)
-                                <label class="flex items-center gap-2 cursor-pointer text-sm text-gray-600 hover:text-gray-900">
+                                <label class="flex items-start gap-2 cursor-pointer text-sm text-gray-600 hover:text-gray-900">
                                     <input type="checkbox" name="activites[]" value="{{ $act->id }}"
                                            {{ in_array((string) $act->id, array_map('strval', $filterActivites ?? [])) ? 'checked' : '' }}
-                                           class="rounded border-gray-300 text-[#16987C] focus:ring-[#16987C]/30">
-                                    {{ $act->nom }}
+                                           class="rounded border-gray-300 text-[#16987C] focus:ring-[#16987C]/30 mt-0.5">
+                                    <span>
+                                        {{ $act->nom }}
+                                        @if (!empty($act->horaires_list))
+                                            <span class="block text-[11px] text-gray-400 leading-tight">{{ implode(' · ', $act->horaires_list) }}</span>
+                                        @endif
+                                    </span>
                                 </label>
                             @endforeach
                         </div>
@@ -77,6 +85,61 @@
             </div>
             <div class="w-px h-5 bg-gray-200 hidden sm:block"></div>
         @endif
+
+        <div class="relative" x-data="{ open: false }" @click.outside="open = false">
+            <button type="button" @click="open = !open"
+                    class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all duration-150 {{ !empty($filterAutres) ? 'bg-[#222A60] text-white shadow-sm' : 'bg-gray-100 text-gray-500 hover:bg-gray-200 hover:text-gray-700' }}">
+                Autre
+                @if (!empty($filterAutres))
+                    <span class="px-1.5 py-0.5 rounded bg-white/20 text-[10px]">{{ count($filterAutres) }}</span>
+                @endif
+                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7"/>
+                </svg>
+            </button>
+
+            <div x-show="open" x-cloak x-transition
+                 class="absolute z-30 mt-2 w-64 bg-white border border-gray-100 rounded-xl shadow-xl p-3">
+                <form method="GET" action="{{ route('adherents.index') }}">
+                    <input type="hidden" name="tab" value="{{ $tab }}">
+                    @if ($search) <input type="hidden" name="q" value="{{ $search }}"> @endif
+                    @if ($filterSource && $filterSource !== 'Tous') <input type="hidden" name="source" value="{{ $filterSource }}"> @endif
+                    @if ($filterType && $filterType !== 'tous') <input type="hidden" name="type" value="{{ $filterType }}"> @endif
+                    @foreach ($filterActivites ?? [] as $idAct)
+                        <input type="hidden" name="activites[]" value="{{ $idAct }}">
+                    @endforeach
+
+                    <div class="space-y-1.5 mb-2">
+                        <label class="flex items-center gap-2 cursor-pointer text-sm text-gray-600 hover:text-gray-900">
+                            <input type="checkbox" name="autres[]" value="communication"
+                                   {{ in_array('communication', $filterAutres ?? []) ? 'checked' : '' }}
+                                   class="rounded border-gray-300 text-[#16987C] focus:ring-[#16987C]/30">
+                            Droit à l'image accordé
+                        </label>
+                        <label class="flex items-center gap-2 cursor-pointer text-sm text-gray-600 hover:text-gray-900">
+                            <input type="checkbox" name="autres[]" value="manif"
+                                   {{ in_array('manif', $filterAutres ?? []) ? 'checked' : '' }}
+                                   class="rounded border-gray-300 text-[#16987C] focus:ring-[#16987C]/30">
+                            Participation aux manifestations
+                        </label>
+                    </div>
+
+                    <div class="flex items-center justify-between gap-2 pt-2 border-t border-gray-100">
+                        @if (!empty($filterAutres))
+                            <a href="{{ route('adherents.index', array_merge(request()->except('autres', 'page'), ['page' => 1])) }}"
+                               class="text-xs font-bold text-gray-400 hover:text-gray-600">Réinitialiser</a>
+                        @else
+                            <span></span>
+                        @endif
+                        <button type="submit"
+                                class="px-3 py-1.5 bg-[#16987C] hover:bg-[#138a6f] text-white rounded-lg text-xs font-bold transition-colors">
+                            Filtrer
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        <div class="w-px h-5 bg-gray-200 hidden sm:block"></div>
 
         <div class="flex-1 min-w-[220px] max-w-sm relative">
             <svg class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
