@@ -80,6 +80,27 @@ class AdherentFormulaireController extends Controller
             return array_merge($path, [13, 14, 9, 10, 11]);
         }
 
+        // Pour un stage seul : on fait choisir le stage tout de suite après le type
+        // d'activité, avant de demander les informations personnelles.
+        if ($types === ['stage']) {
+            $path = $isAdherent ? [1, 2, 6, 3] : [1, 12, 2, 6, 3];
+            if (!$isAdherent && $isMineur) $path[] = 15;
+            if ($isMineur) $path[] = 4;
+
+            $path[] = 5;
+
+            if ($needsBenevole) $path[] = 7;
+            if ($isMineur) $path[] = 8;
+
+            $path[] = 9;
+
+            if ($needsPaiement) $path[] = 10;
+
+            $path[] = 11;
+
+            return $path;
+        }
+
         $path = $isAdherent ? [1, 2, 3] : [1, 12, 2, 3];
         if (!$isAdherent && $isMineur) $path[] = 15;
         if ($isMineur) $path[] = 4;
@@ -320,7 +341,6 @@ class AdherentFormulaireController extends Controller
             ->values();
 
         $stages = $activites->where('type', 'stage')->values()
-            ->filter($filtre)
             ->filter(fn($a) => !in_array($a->id, $activitesDejaInscritesIds))
             ->filter(function ($stage) {
                 $horaires = is_string($stage->horaires)
