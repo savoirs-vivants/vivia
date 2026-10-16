@@ -85,6 +85,7 @@ Route::middleware('auth')->group(function () {
     });
 
     Route::get('/adherents', [AdherentController::class, 'index'])->name('adherents.index');
+    Route::get('/adherents/export', [AdherentController::class, 'exportFiltre'])->name('adherents.export');
     Route::get('/adherents/{adherent}', [AdherentController::class, 'show'])->name('adherents.show');
     Route::get('/adherents/{adherent}/fichiers/{index}', [AdherentController::class, 'voirFichier'])->name('adherents.fichier.voir');
     Route::post('/adherents/{adherent}/fichiers', [AdherentController::class, 'uploaderFichiers'])->name('adherents.fichiers');

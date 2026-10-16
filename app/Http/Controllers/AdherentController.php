@@ -19,30 +19,24 @@ use App\Http\Requests\UpdateFicheAdherentRequest;
 use App\Models\Seance;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Support\Facades\Storage;
+use PhpOffice\PhpSpreadsheet\Spreadsheet;
+use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 
 class AdherentController extends Controller
 {
-    public function index(Request $request)
+    private function baseAdherentsQuery(Request $request)
     {
         $user            = Auth::user();
-        $tab             = $request->get('tab', 'payes');
         $search          = $request->get('q');
         $filterSource    = $request->get('source');
-        $filterStatut    = $request->get('statut');
         $filterActivites = array_filter((array) $request->get('activites', []));
         $filterAutres    = array_filter((array) $request->get('autres', []));
-        $saison          = Saison::current();
-
-        $canVoirTousStatuts = in_array($user->role, ['admin', 'comptable']);
-        if (!$canVoirTousStatuts) {
-            $tab = 'payes';
-        }
 
         $mesActivitesIds = $user->role === 'animateur'
             ? DB::table('activites_gestionnaire')->where('id_users', $user->id)->pluck('id_activite')
             : null;
 
-        $base = Adherent::with(['inscriptions', 'inscription', 'activitesActives', 'paiements'])
+        return Adherent::with(['inscriptions', 'inscription', 'activitesActives', 'paiements'])
             ->when($search, fn($q) => $q->where(function ($query) use ($search) {
                 $query->where('prenom', 'like', "%{$search}%")
                     ->orWhere('nom',  'like', "%{$search}%")
@@ -68,6 +62,69 @@ class AdherentController extends Controller
             ))
             ->when(in_array('communication', $filterAutres), fn($q) => $q->where('communication', true))
             ->when(in_array('manif', $filterAutres), fn($q) => $q->where('manif', true));
+    }
+
+    public function exportFiltre(Request $request)
+    {
+        $tab    = $request->get('tab', 'payes');
+        $saison = Saison::current();
+        $mois   = now()->month;
+        $saisonPreinscriptions = ($mois === 7 || $mois === 8) ? Saison::preinscriptions() : $saison;
+
+        $base = $this->baseAdherentsQuery($request);
+
+        $query = match ($tab) {
+            'attente'      => $base->whereHas('inscriptions', fn($q) => $q->where('a_paye', Inscription::EN_ATTENTE)->whereIn('saison', array_unique([$saison, $saisonPreinscriptions]))),
+            'partiel'      => $base->whereHas('inscriptions', fn($q) => $q->where('a_paye', Inscription::PARTIEL)->where('saison', $saison)),
+            'pre_inscrits' => $base->whereHas('inscriptions', fn($q) => $q->where('a_paye', 'pre_inscrit')->where('saison', $saisonPreinscriptions)),
+            default        => $base->whereHas('inscriptions', fn($q) => $q->where('a_paye', Inscription::PAYE)->where('saison', $saison)),
+        };
+
+        $adherents = $query->orderBy('nom')->get();
+
+        $spreadsheet = new Spreadsheet();
+        $sheet = $spreadsheet->getActiveSheet();
+        $sheet->setTitle('Export adhérents');
+        $sheet->fromArray(['Nom', 'Prénom', 'Email', 'Téléphone'], null, 'A1');
+        $sheet->getStyle('A1:D1')->getFont()->setBold(true);
+
+        $row = 2;
+        foreach ($adherents as $a) {
+            $sheet->fromArray([$a->nom, $a->prenom, $a->mail, $a->tel], null, "A{$row}");
+            $row++;
+        }
+
+        foreach (['A', 'B', 'C', 'D'] as $col) {
+            $sheet->getColumnDimension($col)->setAutoSize(true);
+        }
+
+        $filename = 'export_adherents_' . now()->format('Ymd_Hi') . '.xlsx';
+
+        return response()->streamDownload(function () use ($spreadsheet) {
+            (new Xlsx($spreadsheet))->save('php://output');
+        }, $filename, [
+            'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            'Content-Disposition' => 'attachment; filename="' . $filename . '"',
+        ]);
+    }
+
+    public function index(Request $request)
+    {
+        $user            = Auth::user();
+        $tab             = $request->get('tab', 'payes');
+        $search          = $request->get('q');
+        $filterSource    = $request->get('source');
+        $filterStatut    = $request->get('statut');
+        $filterActivites = array_filter((array) $request->get('activites', []));
+        $filterAutres    = array_filter((array) $request->get('autres', []));
+        $saison          = Saison::current();
+
+        $canVoirTousStatuts = in_array($user->role, ['admin', 'comptable']);
+        if (!$canVoirTousStatuts) {
+            $tab = 'payes';
+        }
+
+        $base = $this->baseAdherentsQuery($request);
 
         $mois = now()->month;
         $saisonPreinscriptions = ($mois === 7 || $mois === 8) ? Saison::preinscriptions() : $saison;
