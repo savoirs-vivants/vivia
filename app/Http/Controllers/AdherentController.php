@@ -44,12 +44,14 @@ class AdherentController extends Controller
             }))
             ->when($filterSource && $filterSource !== 'Tous', function ($q) use ($filterSource) {
                 if ($filterSource === 'Interne') {
-                    $q->where(function ($sub) {
-                        $sub->whereHas('paiements', fn($p) => $p->where('source', 'Interne')->orWhereNull('source'))
+                    // "Interne" ne matche que les vrais paiements enregistrés comme tels —
+                    // l'absence de paiement est désormais rattachée à HelloAsso (cf. Adherent::sourceLabel).
+                    $q->whereHas('paiements', fn($p) => $p->where('source', 'Interne'));
+                } else {
+                    $q->where(function ($sub) use ($filterSource) {
+                        $sub->whereHas('paiements', fn($p) => $p->where('source', $filterSource))
                             ->orWhereDoesntHave('paiements');
                     });
-                } else {
-                    $q->whereHas('paiements', fn($p) => $p->where('source', $filterSource));
                 }
             })
             ->when($mesActivitesIds, fn($q) => $q->whereHas(

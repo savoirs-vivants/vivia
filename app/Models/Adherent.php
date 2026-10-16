@@ -149,10 +149,13 @@ class Adherent extends Model
 
     public function getSourceLabelAttribute(): string
     {
+        // Par défaut HelloAsso (et non "Interne") quand aucun paiement n'est enregistré :
+        // en pratique, la majorité des gens dans ce cas ont payé en ligne via HelloAsso
+        // mais ont quitté avant de cliquer sur "j'ai payé, vérifier et continuer".
         if ($this->relationLoaded('paiements')) {
-            return $this->paiements->first()?->source ?: 'Interne';
+            return $this->paiements->first()?->source ?: 'HelloAsso';
         }
-        return $this->paiements()->value('source') ?: 'Interne';
+        return $this->paiements()->value('source') ?: 'HelloAsso';
     }
 
     public function getIsReinscriptionAttribute(): bool

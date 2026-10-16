@@ -203,7 +203,7 @@
                                 </span>
                             </div>
 
-                            <template x-if="adherent.source === 'Interne' && !(adherent.totalVerse > 0) && adherent.validerChequeUrl">
+                            <template x-if="!(adherent.totalVerse > 0) && adherent.validerChequeUrl">
                                 <div class="pt-2 border-t border-indigo-200/60">
                                     <form :action="adherent.validerChequeUrl" method="POST">
                                         @csrf
@@ -251,15 +251,15 @@
                     <div class="space-y-3">
                         <div class="flex items-center justify-between p-3 rounded-xl border"
                             x-show="!adherent.isPreInscrit"
-                            :class="adherent.source === 'HelloAsso' ?
+                            :class="adherent.dejaVerseBrut >= adherent.montantBrut ?
                                 'bg-[#16987C]/8 border-[#16987C]/15' :
                                 'bg-amber-50 border-amber-100'">
                             <span class="text-sm font-bold"
-                                :class="adherent.source === 'HelloAsso' ? 'text-[#16987C]' : 'text-amber-600'"
-                                x-text="adherent.source === 'HelloAsso' ? 'Total réglé sur HelloAsso' : 'Total à régler'">
+                                :class="adherent.dejaVerseBrut >= adherent.montantBrut ? 'text-[#16987C]' : 'text-amber-600'"
+                                x-text="adherent.dejaVerseBrut >= adherent.montantBrut ? ('Total réglé sur ' + adherent.source) : 'Total à régler'">
                             </span>
                             <span class="text-base font-black"
-                                :class="adherent.source === 'HelloAsso' ? 'text-[#16987C]' : 'text-amber-600'"
+                                :class="adherent.dejaVerseBrut >= adherent.montantBrut ? 'text-[#16987C]' : 'text-amber-600'"
                                 x-text="adherent.montant">
                             </span>
                         </div>
