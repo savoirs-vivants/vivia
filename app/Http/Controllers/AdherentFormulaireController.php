@@ -342,6 +342,10 @@ class AdherentFormulaireController extends Controller
 
         $stages = $activites->where('type', 'stage')->values()
             ->filter(fn($a) => !in_array($a->id, $activitesDejaInscritesIds))
+            ->filter(function ($stage) use ($nbInscritsParActivite) {
+                $nbInscrits = $nbInscritsParActivite[$stage->id] ?? 0;
+                return $stage->max_eleves === null || $nbInscrits < $stage->max_eleves;
+            })
             ->filter(function ($stage) {
                 $horaires = is_string($stage->horaires)
                     ? json_decode($stage->horaires, true)
