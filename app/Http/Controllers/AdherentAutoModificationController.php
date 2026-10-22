@@ -18,11 +18,11 @@ class AdherentAutoModificationController extends Controller
     {
         $formData = $request->session()->get("adhesion_{$token}", []);
 
-        if (empty($formData['_adherent_id'])) {
+        if (empty($formData['_adherent_connu_id'])) {
             return null;
         }
 
-        return Adherent::find($formData['_adherent_id']);
+        return Adherent::find($formData['_adherent_connu_id']);
     }
 
     private function cotisationDejaPayee(Adherent $adherent): bool
