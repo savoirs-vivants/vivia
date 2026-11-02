@@ -13,18 +13,15 @@ return new class extends Migration
         Schema::create('activites', function (Blueprint $table) {
             $table->id();
             $table->string('nom');
-            $table->text('description')->nullable();
             $table->string('type', 50)->default('activite');
             $table->string('adresse')->nullable();
             $table->string('ville')->nullable();
             $table->integer('tarif')->nullable();
-            $table->smallInteger('max_eleves')->unsigned()->nullable();
             $table->longText('horaires')->nullable();
-            $table->longText('classes')->nullable();
-            $table->boolean('is_archived')->default(false);
-            $table->foreignId('id_dossier')->nullable()->constrained('dossiers_activite')->nullOnDelete();
             $table->timestamps();
         });
+        // description, max_eleves, classes, is_archived et id_dossier sont ajoutés par
+        // leurs migrations dédiées respectives (plus bas dans l'historique).
     }
 
     public function down(): void

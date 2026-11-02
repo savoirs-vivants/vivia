@@ -55,7 +55,12 @@ Route::get('/adhesion/{token}/helloasso2/{status}', [HelloAssoController::class,
 Route::post('/adhesion/{token}/verifier-cotisation', [HelloAssoController::class, 'verifierCotisation'])->name('adhesion.verifier.cotisation');
 Route::post('/adhesion/helloasso/webhook', [HelloAssoController::class, 'helloassoWebhook'])->name('adhesion.helloasso.webhook');
 
-Route::post('/helloasso/webhook', [AdherentFormulaireController::class, 'helloassoWebhook']);
+// Alias vers la même implémentation que /adhesion/helloasso/webhook : HelloAsso appelle
+// bien cette URL (sans doute configurée historiquement côté HelloAsso), mais elle pointait
+// vers une méthode inexistante sur AdherentFormulaireController, ce qui faisait planter
+// chaque notification de paiement en erreur 500 (voir logs : "Call to undefined method
+// ...helloassoWebhook()"). Aucun paiement reçu par ce canal n'était donc jamais enregistré.
+Route::post('/helloasso/webhook', [HelloAssoController::class, 'helloassoWebhook']);
 
 Route::get('/cron/bH4U$m+=vc5fpJf', function () {
     try {
