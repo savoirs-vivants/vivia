@@ -417,14 +417,99 @@
                 </div>
 
                 <div
-                    class="bg-white rounded-2xl border border-gray-100 shadow-[0_2px_12px_rgba(0,0,0,0.03)] overflow-hidden">
-                    <div class="px-6 py-4 border-b border-gray-50 flex items-center gap-2">
-                        <svg class="w-4 h-4 text-[#222A60]/40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
-                        </svg>
-                        <h2 class="text-xs font-black text-gray-400 uppercase tracking-widest">Activités inscrites</h2>
+                    class="bg-white rounded-2xl border border-gray-100 shadow-[0_2px_12px_rgba(0,0,0,0.03)] overflow-hidden"
+                    x-data="{ open: false, confirming: false, selection: {{ json_encode($adherent->activitesActives->where('type', 'activite')->pluck('id')->values()) }} }">
+                    <div class="px-6 py-4 border-b border-gray-50 flex items-center justify-between gap-2">
+                        <div class="flex items-center gap-2">
+                            <svg class="w-4 h-4 text-[#222A60]/40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
+                            </svg>
+                            <h2 class="text-xs font-black text-gray-400 uppercase tracking-widest">Activités inscrites</h2>
+                        </div>
+                        <button type="button" @click="open = true; confirming = false"
+                            class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#222A60]/5 hover:bg-[#222A60]/10 text-[#222A60] text-xs font-bold rounded-lg transition-colors">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                            </svg>
+                            Modifier
+                        </button>
                     </div>
+
+                    {{-- Pop-up de modification des cours (ateliers) --}}
+                    <div x-show="open" x-cloak @click.self="open = false"
+                        class="fixed inset-0 z-50 bg-black/30 backdrop-blur-sm flex items-center justify-center p-4">
+                        <div class="bg-white rounded-2xl shadow-[0_20px_60px_rgba(0,0,0,0.15)] w-full max-w-lg max-h-[85vh] flex flex-col overflow-hidden"
+                            @click.stop>
+
+                            <div class="flex items-center justify-between p-5 border-b border-gray-100">
+                                <h3 class="font-bold text-[#0F143A]" x-text="confirming ? 'Confirmer les changements' : 'Modifier les cours'"></h3>
+                                <button type="button" @click="open = false"
+                                    class="w-7 h-7 flex items-center justify-center rounded-lg text-gray-300 hover:text-gray-500 hover:bg-gray-100 transition-all">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                                    </svg>
+                                </button>
+                            </div>
+
+                            <form action="{{ route('adherents.modifier-cours', $adherent) }}" method="POST" class="flex flex-col flex-1 overflow-hidden">
+                                @csrf
+
+                                {{-- Étape 1 : sélection --}}
+                                <div x-show="!confirming" class="p-5 space-y-2 overflow-y-auto flex-1">
+                                    <p class="text-xs text-gray-400 mb-3">Cochez les cours auxquels {{ $adherent->prenom }} doit être inscrit·e. Vous pouvez en sélectionner plusieurs.</p>
+                                    @forelse ($ateliersDisponibles as $atelier)
+                                        <label class="flex items-start gap-3 p-3 rounded-xl border border-gray-100 hover:border-[#16987C]/40 hover:bg-[#16987C]/5 cursor-pointer transition-colors">
+                                            <input type="checkbox" value="{{ $atelier->id }}" x-model.number="selection"
+                                                class="mt-0.5 rounded border-gray-300 text-[#16987C] focus:ring-[#16987C]/30">
+                                            <span>
+                                                <span class="block text-sm font-semibold text-[#0F143A]">{{ $atelier->nom }}</span>
+                                                @if (!empty($atelier->horaires_list))
+                                                    <span class="block text-xs text-gray-400 mt-0.5">{{ implode(' · ', $atelier->horaires_list) }}</span>
+                                                @endif
+                                            </span>
+                                        </label>
+                                    @empty
+                                        <p class="text-sm text-gray-400 text-center py-6">Aucun atelier disponible.</p>
+                                    @endforelse
+                                </div>
+
+                                {{-- Étape 2 : confirmation --}}
+                                <div x-show="confirming" class="p-5 space-y-3 overflow-y-auto flex-1">
+                                    <div class="p-4 bg-amber-50 border border-amber-100 rounded-xl flex items-start gap-2.5">
+                                        <span class="text-base">⚠️</span>
+                                        <p class="text-xs text-amber-700 font-medium leading-relaxed">
+                                            Les cours décochés seront marqués comme abandonnés (ils resteront visibles dans l'historique des présences). Les cours cochés non encore suivis seront ajoutés dès aujourd'hui.
+                                        </p>
+                                    </div>
+                                    <template x-for="id in selection" :key="id">
+                                        <input type="hidden" name="activites_selectionnees[]" :value="id">
+                                    </template>
+                                    <p class="text-sm text-gray-600 font-semibold">Confirmez-vous ces changements ?</p>
+                                </div>
+
+                                <div class="flex items-center justify-between px-5 py-4 border-t border-gray-100 bg-gray-50/50">
+                                    <button type="button" @click="confirming ? (confirming = false) : (open = false)"
+                                        class="px-4 py-2 text-sm font-bold text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-xl transition-all">
+                                        <span x-text="confirming ? '← Retour' : 'Annuler'"></span>
+                                    </button>
+                                    <button type="button" x-show="!confirming" @click="confirming = true"
+                                        class="inline-flex items-center gap-2 px-5 py-2 bg-[#222A60] hover:bg-[#1a2050] text-white text-sm font-bold rounded-xl transition-all shadow-sm">
+                                        Continuer
+                                    </button>
+                                    <button type="submit" x-show="confirming"
+                                        class="inline-flex items-center gap-2 px-5 py-2 bg-[#16987C] hover:bg-[#138a6f] text-white text-sm font-bold rounded-xl transition-all shadow-sm">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7" />
+                                        </svg>
+                                        Confirmer
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+
                     <div class="divide-y divide-gray-50">
                         @php
                             $year = now()->month >= 9 ? now()->year : now()->year - 1;

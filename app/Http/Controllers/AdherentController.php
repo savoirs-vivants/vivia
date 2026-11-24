@@ -271,6 +271,11 @@ class AdherentController extends Controller
         $paiementPrincipal = $adherent->paiements->sortByDesc('date_paiement')->first();
         $saisons           = $adherent->inscriptions->sortByDesc('saison');
 
+        $ateliersDisponibles = \App\Models\Activite::where('type', 'activite')
+            ->where('is_archived', false)
+            ->orderBy('nom')
+            ->get(['id', 'nom', 'type', 'horaires']);
+
         return view('adherents.show', compact(
             'adherent',
             'presences',
@@ -279,7 +284,57 @@ class AdherentController extends Controller
             'tauxPresence',
             'paiementPrincipal',
             'saisons',
+            'ateliersDisponibles',
         ));
+    }
+
+    public function modifierCours(Request $request, Adherent $adherent)
+    {
+        $request->validate([
+            'activites_selectionnees'   => 'array',
+            'activites_selectionnees.*' => 'integer|exists:activites,id',
+        ]);
+
+        $nouvelleSelection = array_map('intval', $request->input('activites_selectionnees', []));
+        $saison = Saison::current();
+
+        $ateliersActifsIds = $adherent->activitesActives()
+            ->where('type', 'activite')
+            ->pluck('activites.id')
+            ->toArray();
+
+        $aRetirer = array_diff($ateliersActifsIds, $nouvelleSelection);
+        $aAjouter = array_diff($nouvelleSelection, $ateliersActifsIds);
+
+        DB::transaction(function () use ($adherent, $aRetirer, $aAjouter, $saison) {
+            foreach ($aRetirer as $idActivite) {
+                $adherent->activites()->updateExistingPivot($idActivite, [
+                    'date_sortie'    => now()->toDateString(),
+                    'motif_sortie'   => 'Changement de cours',
+                    'est_un_abandon' => true,
+                ]);
+            }
+
+            if (!empty($aAjouter)) {
+                $pivotData = array_map(fn($idActivite) => [
+                    'id_adherent'    => $adherent->id,
+                    'id_activite'    => $idActivite,
+                    'saison'         => $saison,
+                    'date_entree'    => now()->toDateString(),
+                    'est_un_abandon' => 0,
+                    'created_at'     => now(),
+                    'updated_at'     => now(),
+                ], $aAjouter);
+
+                DB::table('activites_adherents')->insert($pivotData);
+            }
+        });
+
+        $nbChangements = count($aRetirer) + count($aAjouter);
+
+        return back()->with('success', $nbChangements > 0
+            ? "Cours mis à jour pour {$adherent->prenom} {$adherent->nom}."
+            : 'Aucun changement à appliquer.');
     }
 
     public function destroy(Adherent $adherent)
