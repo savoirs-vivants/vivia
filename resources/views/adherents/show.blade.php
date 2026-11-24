@@ -418,7 +418,8 @@
 
                 <div
                     class="bg-white rounded-2xl border border-gray-100 shadow-[0_2px_12px_rgba(0,0,0,0.03)] overflow-hidden"
-                    x-data="{ open: false, confirming: false, selection: {{ json_encode($adherent->activitesActives->where('type', 'activite')->pluck('id')->values()) }} }">
+                    x-data="{ open: false, confirming: false, selection: {{ json_encode($adherent->activitesActives->where('type', 'activite')->pluck('id')->values()) }} }"
+                    x-effect="document.body.style.overflow = open ? 'hidden' : ''">
                     <div class="px-6 py-4 border-b border-gray-50 flex items-center justify-between gap-2">
                         <div class="flex items-center gap-2">
                             <svg class="w-4 h-4 text-[#222A60]/40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -437,10 +438,12 @@
                         </button>
                     </div>
 
-                    {{-- Pop-up de modification des cours (ateliers) --}}
+                    {{-- Pop-up de modification des cours (ateliers) — téléportée hors de la carte
+                         (qui a overflow-hidden) pour que le positionnement fixed/centré fonctionne. --}}
+                    <template x-teleport="body">
                     <div x-show="open" x-cloak @click.self="open = false"
-                        class="fixed inset-0 z-50 bg-black/30 backdrop-blur-sm flex items-center justify-center p-4">
-                        <div class="bg-white rounded-2xl shadow-[0_20px_60px_rgba(0,0,0,0.15)] w-full max-w-lg max-h-[85vh] flex flex-col overflow-hidden"
+                        class="fixed inset-0 z-50 bg-black/30 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
+                        <div class="bg-white rounded-2xl shadow-[0_20px_60px_rgba(0,0,0,0.15)] w-full max-w-lg max-h-[85vh] my-auto flex flex-col overflow-hidden"
                             @click.stop>
 
                             <div class="flex items-center justify-between p-5 border-b border-gray-100">
@@ -509,6 +512,7 @@
                             </form>
                         </div>
                     </div>
+                    </template>
 
                     <div class="divide-y divide-gray-50">
                         @php
