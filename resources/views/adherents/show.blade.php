@@ -442,11 +442,14 @@
                          (qui a overflow-hidden) pour que le positionnement fixed/centré fonctionne. --}}
                     <template x-teleport="body">
                     <div x-show="open" x-cloak @click.self="open = false"
-                        class="fixed inset-0 z-50 bg-black/30 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
-                        <div class="bg-white rounded-2xl shadow-[0_20px_60px_rgba(0,0,0,0.15)] w-full max-w-lg max-h-[85vh] my-auto flex flex-col overflow-hidden"
+                        class="fixed inset-0 z-50 bg-black/30 backdrop-blur-sm flex items-center justify-center p-4">
+                        {{-- Tailles en style inline : les classes Tailwind arbitraires (max-h-[..]) ne sont
+                             présentes dans le CSS que si elles existaient au dernier npm run build. --}}
+                        <div class="bg-white rounded-2xl shadow-xl w-full flex flex-col overflow-hidden"
+                            style="max-width: 32rem; max-height: 80vh;"
                             @click.stop>
 
-                            <div class="flex items-center justify-between p-5 border-b border-gray-100">
+                            <div class="flex items-center justify-between p-5 border-b border-gray-100" style="flex-shrink: 0;">
                                 <h3 class="font-bold text-[#0F143A]" x-text="confirming ? 'Confirmer les changements' : 'Modifier les cours'"></h3>
                                 <button type="button" @click="open = false"
                                     class="w-7 h-7 flex items-center justify-center rounded-lg text-gray-300 hover:text-gray-500 hover:bg-gray-100 transition-all">
@@ -456,11 +459,12 @@
                                 </button>
                             </div>
 
-                            <form action="{{ route('adherents.modifier-cours', $adherent) }}" method="POST" class="flex flex-col flex-1 overflow-hidden">
+                            <form action="{{ route('adherents.modifier-cours', $adherent) }}" method="POST" class="flex flex-col flex-1 overflow-hidden"
+                                style="min-height: 0;">
                                 @csrf
 
                                 {{-- Étape 1 : sélection --}}
-                                <div x-show="!confirming" class="p-5 space-y-2 overflow-y-auto flex-1">
+                                <div x-show="!confirming" class="p-5 space-y-2 flex-1" style="min-height: 0; overflow-y: auto;">
                                     <p class="text-xs text-gray-400 mb-3">Cochez les cours auxquels {{ $adherent->prenom }} doit être inscrit·e. Vous pouvez en sélectionner plusieurs.</p>
                                     @forelse ($ateliersDisponibles as $atelier)
                                         <label class="flex items-start gap-3 p-3 rounded-xl border border-gray-100 hover:border-[#16987C]/40 hover:bg-[#16987C]/5 cursor-pointer transition-colors">
@@ -479,7 +483,7 @@
                                 </div>
 
                                 {{-- Étape 2 : confirmation --}}
-                                <div x-show="confirming" class="p-5 space-y-3 overflow-y-auto flex-1">
+                                <div x-show="confirming" class="p-5 space-y-3 flex-1" style="min-height: 0; overflow-y: auto;">
                                     <div class="p-4 bg-amber-50 border border-amber-100 rounded-xl flex items-start gap-2.5">
                                         <span class="text-base">⚠️</span>
                                         <p class="text-xs text-amber-700 font-medium leading-relaxed">
@@ -492,7 +496,7 @@
                                     <p class="text-sm text-gray-600 font-semibold">Confirmez-vous ces changements ?</p>
                                 </div>
 
-                                <div class="flex items-center justify-between px-5 py-4 border-t border-gray-100 bg-gray-50/50">
+                                <div class="flex items-center justify-between px-5 py-4 border-t border-gray-100 bg-gray-50/50" style="flex-shrink: 0;">
                                     <button type="button" @click="confirming ? (confirming = false) : (open = false)"
                                         class="px-4 py-2 text-sm font-bold text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-xl transition-all">
                                         <span x-text="confirming ? '← Retour' : 'Annuler'"></span>
